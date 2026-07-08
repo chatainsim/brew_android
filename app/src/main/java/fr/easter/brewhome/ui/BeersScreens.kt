@@ -1,0 +1,294 @@
+package fr.easter.brewhome.ui
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.data.Beer
+import fr.easter.brewhome.data.TastingPut
+
+@Composable
+fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
+    val state by vm.state.collectAsState()
+    if (state.beers.isEmpty() && state.loaded) {
+        EmptyHint("Aucune bière en cave.")
+        return
+    }
+    LazyColumn(
+        contentPadding = PaddingValues(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        items(state.beers, key = { it.id }) { beer ->
+            BeerCard(beer, vm, onOpen)
+        }
+    }
+}
+
+@Composable
+fun EmptyHint(text: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text, color = MaterialTheme.colorScheme.outline)
+    }
+}
+
+@Composable
+private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpen(beer.id) },
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            val photoUrl = vm.photoUrl(beer.photo)
+            if (photoUrl != null) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = beer.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    beer.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = listOfNotNull(
+                    beer.type,
+                    beer.abv?.let { "${fmtQty(it)}%" },
+                ).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                StockRow("33 cl", beer.stock33 ?: 0) { d -> vm.adjustBeerStock(beer, d33 = d) }
+                StockRow("75 cl", beer.stock75 ?: 0) { d -> vm.adjustBeerStock(beer, d75 = d) }
+                if ((beer.kegLiters ?: 0.0) > 0.0 || (beer.kegInitialLiters ?: 0.0) > 0.0) {
+                    KegRow(beer.kegLiters ?: 0.0) { d -> vm.adjustBeerStock(beer, dKeg = d) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(44.dp),
+        )
+        IconButton(onClick = { onAdjust(-1) }, enabled = count > 0, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Filled.Remove, contentDescription = "Retirer une $label")
+        }
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.widthIn(min = 28.dp),
+            color = if (count == 0) MaterialTheme.colorScheme.outline
+                    else MaterialTheme.colorScheme.onSurface,
+        )
+        IconButton(onClick = { onAdjust(1) }, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Filled.Add, contentDescription = "Ajouter une $label")
+        }
+    }
+}
+
+@Composable
+private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Fût", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
+        IconButton(onClick = { onAdjust(-0.5) }, enabled = liters > 0, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Filled.Remove, contentDescription = "Retirer 0,5 L du fût")
+        }
+        Text(
+            "${fmtQty(liters)} L",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.widthIn(min = 28.dp),
+        )
+        IconButton(onClick = { onAdjust(0.5) }, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Filled.Add, contentDescription = "Ajouter 0,5 L au fût")
+        }
+    }
+}
+
+@Composable
+fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
+    val state by vm.state.collectAsState()
+    val beer = state.beers.find { it.id == beerId }
+    if (beer == null) {
+        EmptyHint("Bière introuvable.")
+        return
+    }
+    var showTastingDialog by remember { mutableStateOf(false) }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        val photoUrl = vm.photoUrl(beer.photo)
+        if (photoUrl != null) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = beer.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+            )
+        }
+        Text(beer.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        val subtitle = listOfNotNull(beer.type, beer.abv?.let { "${fmtQty(it)}% alc." }, beer.origin)
+            .joinToString(" · ")
+        if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
+
+        InfoCard {
+            InfoLine("Recette", beer.recipeName)
+            InfoLine("Brassée le", beer.brewDate)
+            InfoLine("Embouteillée le", beer.bottlingDate)
+            InfoLine("Stock 33 cl", (beer.stock33 ?: 0).toString())
+            InfoLine("Stock 75 cl", (beer.stock75 ?: 0).toString())
+            if ((beer.kegLiters ?: 0.0) > 0.0)
+                InfoLine("Fût", "${fmtQty(beer.kegLiters)} L")
+        }
+
+        if (!beer.description.isNullOrBlank()) {
+            Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(beer.description, style = MaterialTheme.typography.bodyMedium)
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Dégustation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { showTastingDialog = true }) {
+                Icon(Icons.Filled.Edit, contentDescription = "Modifier la dégustation")
+            }
+        }
+        StarRating(beer.tasteRating)
+        InfoCard {
+            InfoLine("Apparence", beer.tasteAppearance)
+            InfoLine("Arôme", beer.tasteAroma)
+            InfoLine("Saveur", beer.tasteFlavor)
+            InfoLine("Amertume", beer.tasteBitterness)
+            InfoLine("Bouche", beer.tasteMouthfeel)
+            InfoLine("Finale", beer.tasteFinish)
+            InfoLine("Général", beer.tasteOverall)
+            InfoLine("Dégustée le", beer.tasteDate)
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+
+    if (showTastingDialog) {
+        TastingDialog(
+            beer = beer,
+            onDismiss = { showTastingDialog = false },
+            onSave = { tasting ->
+                vm.saveTasting(beer.id, tasting) { showTastingDialog = false }
+            },
+        )
+    }
+}
+
+@Composable
+fun InfoCard(content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+fun InfoLine(label: String, value: String?) {
+    if (value.isNullOrBlank()) return
+    Row {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.width(120.dp),
+        )
+        Text(value, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut) -> Unit) {
+    var rating by remember { mutableStateOf(beer.tasteRating) }
+    var appearance by remember { mutableStateOf(beer.tasteAppearance ?: "") }
+    var aroma by remember { mutableStateOf(beer.tasteAroma ?: "") }
+    var flavor by remember { mutableStateOf(beer.tasteFlavor ?: "") }
+    var overall by remember { mutableStateOf(beer.tasteOverall ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Notes de dégustation") },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                StarRating(rating) { rating = it }
+                OutlinedTextField(value = appearance, onValueChange = { appearance = it }, label = { Text("Apparence") })
+                OutlinedTextField(value = aroma, onValueChange = { aroma = it }, label = { Text("Arôme") })
+                OutlinedTextField(value = flavor, onValueChange = { flavor = it }, label = { Text("Saveur") })
+                OutlinedTextField(value = overall, onValueChange = { overall = it }, label = { Text("Impression générale") })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(
+                    TastingPut(
+                        tasteRating = rating,
+                        tasteAppearance = appearance.ifBlank { null },
+                        tasteAroma = aroma.ifBlank { null },
+                        tasteFlavor = flavor.ifBlank { null },
+                        tasteOverall = overall.ifBlank { null },
+                        tasteDate = java.time.LocalDate.now().toString(),
+                    )
+                )
+            }) { Text("Enregistrer") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuler") }
+        },
+    )
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Chope de bière stylisée -->
+    <group android:translateX="27" android:translateY="26">
+        <!-- Corps de la chope -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8,14 L8,50 Q8,56 14,56 L34,56 Q40,56 40,50 L40,14 Z" />
+        <!-- Anse -->
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:fillColor="#00000000"
+            android:pathData="M40,22 Q52,22 52,32 Q52,42 40,42" />
+        <!-- Mousse -->
+        <path
+            android:fillColor="#FFF8E1"
+            android:pathData="M6,14 Q6,4 15,6 Q18,0 24,2 Q30,-2 34,4 Q42,2 42,12 Q42,16 38,16 L10,16 Q6,16 6,14 Z" />
+        <!-- Reflet -->
+        <path
+            android:fillColor="#F5A623"
+            android:fillAlpha="0.35"
+            android:pathData="M14,20 L18,20 L18,50 L14,50 Z" />
+    </group>
+</vector>
