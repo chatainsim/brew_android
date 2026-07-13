@@ -3,11 +3,13 @@ package fr.easter.brewhome.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocalDrink
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -43,10 +46,22 @@ data class Tab(val route: String, val label: String, val icon: ImageVector)
 
 val tabs = listOf(
     Tab("beers", "Cave", Icons.Outlined.LocalDrink),
-    Tab("recipes", "Recettes", Icons.Outlined.MenuBook),
-    Tab("inventory", "Ingrédients", Icons.Outlined.Inventory2),
+    Tab("recipes", "Recettes", Icons.AutoMirrored.Outlined.MenuBook),
+    Tab("inventory", "Stock", Icons.Outlined.Inventory2),
     Tab("brews", "Brassins", Icons.Outlined.Science),
+    Tab("tools", "Outils", Icons.Outlined.Calculate),
 )
+
+/** Onglet auquel appartient une route (pour la sélection de la barre du bas). */
+private fun tabOf(route: String?): String? = when {
+    route == null -> null
+    route == "beers" || route.startsWith("beer/") -> "beers"
+    route == "recipes" || route.startsWith("recipe/") -> "recipes"
+    route == "inventory" -> "inventory"
+    route == "brews" -> "brews"
+    route == "tools" || route.startsWith("tools/") -> "tools"
+    else -> null
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,9 +78,12 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
         if (!serverUrl.isNullOrBlank() && !state.loaded && !state.loading) vm.refreshAll()
     }
 
-    LaunchedEffect(state.error) {
-        state.error?.let {
-            snackbar.showSnackbar(it)
+    // Avant le premier chargement, l'erreur reste affichée dans l'écran
+    // « Réessayer » ; ensuite elle passe en snackbar.
+    LaunchedEffect(state.error, state.loaded) {
+        val err = state.error
+        if (err != null && state.loaded) {
+            snackbar.showSnackbar(err)
             vm.clearError()
         }
     }
@@ -73,6 +91,9 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val startDestination = if (serverUrl.isNullOrBlank()) "settings" else "beers"
+    val currentTab = tabOf(currentRoute)
+    val canGoBack = currentRoute != null && currentRoute != startDestination &&
+        currentRoute !in tabs.map { it.route }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -84,6 +105,9 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                             currentRoute == "settings" -> "Réglages"
                             currentRoute?.startsWith("recipe/") == true -> "Recette"
                             currentRoute?.startsWith("beer/") == true -> "Bière"
+                            currentRoute == "tools" -> "Outils"
+                            currentRoute?.startsWith("tools/") == true ->
+                                toolTitle(backStack?.arguments?.getString("id"))
                             else -> "BrewHome"
                         },
                         fontWeight = FontWeight.Bold,
@@ -92,23 +116,31 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                 ),
+                navigationIcon = {
+                    if (canGoBack) {
+                        IconButton(onClick = { navController.navigateUp() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        }
+                    }
+                },
                 actions = {
-                    if (state.loading) {
+                    val dataScreen = currentTab != null && currentTab != "tools"
+                    if (state.loading && dataScreen) {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .padding(end = 16.dp)
                                 .size(24.dp),
                             strokeWidth = 2.5.dp,
                         )
-                    } else {
+                    } else if (dataScreen) {
                         IconButton(onClick = { vm.refreshAll() }) {
                             Icon(Icons.Filled.Refresh, contentDescription = "Rafraîchir")
                         }
                     }
-                    IconButton(onClick = {
-                        if (currentRoute != "settings") navController.navigate("settings")
-                    }) {
-                        Icon(Icons.Filled.Settings, contentDescription = "Réglages")
+                    if (currentRoute != "settings") {
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "Réglages")
+                        }
                     }
                 },
             )
@@ -117,11 +149,14 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
             NavigationBar {
                 tabs.forEach { tab ->
                     NavigationBarItem(
-                        selected = currentRoute == tab.route,
+                        selected = currentTab == tab.route,
                         onClick = {
                             navController.navigate(tab.route) {
-                                popUpTo("beers") { inclusive = tab.route == "beers" }
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
                                 launchSingleTop = true
+                                restoreState = true
                             }
                         },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
@@ -148,6 +183,10 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
             }
             composable("inventory") { InventoryScreen(vm) }
             composable("brews") { BrewsScreen(vm) }
+            composable("tools") { ToolsScreen { navController.navigate("tools/$it") } }
+            composable("tools/{id}") { entry ->
+                ToolScreen(entry.arguments?.getString("id"))
+            }
             composable("settings") {
                 SettingsScreen(vm) {
                     navController.navigate("beers") { popUpTo("settings") { inclusive = true } }

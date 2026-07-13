@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,17 +22,19 @@ import fr.easter.brewhome.data.Brew
 @Composable
 fun BrewsScreen(vm: BrewViewModel) {
     val state by vm.state.collectAsState()
-    if (state.brews.isEmpty() && state.loaded) {
-        EmptyHint("Aucun brassin.")
-        return
-    }
-    LazyColumn(
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        items(state.brews, key = { it.id }) { brew ->
-            BrewCard(brew)
+    RefreshableContent(vm) {
+        if (state.brews.isEmpty()) {
+            EmptyHint("Aucun brassin.")
+            return@RefreshableContent
+        }
+        LazyColumn(
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(state.brews, key = { it.id }) { brew ->
+                BrewCard(brew)
+            }
         }
     }
 }
@@ -49,9 +52,14 @@ private fun BrewCard(brew: Brew) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                val statusColor = brewStatusColor(brew.status)
                 AssistChip(
                     onClick = {},
-                    label = { Text(brewStatusLabel(brew.status)) },
+                    label = { Text(brewStatusLabel(brew.status), color = statusColor) },
+                    border = AssistChipDefaults.assistChipBorder(
+                        enabled = true,
+                        borderColor = statusColor,
+                    ),
                 )
             }
             val line1 = listOfNotNull(

@@ -10,6 +10,9 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,36 +33,50 @@ private fun stepFor(unit: String): Double = when (unit.lowercase()) {
 fun InventoryScreen(vm: BrewViewModel) {
     val state by vm.state.collectAsState()
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
 
-    if (state.inventory.isEmpty() && state.loaded) {
-        EmptyHint("Aucun ingrédient en stock.")
-        return
-    }
+    RefreshableContent(vm) {
+        if (state.inventory.isEmpty()) {
+            EmptyHint("Aucun ingrédient en stock.")
+            return@RefreshableContent
+        }
 
-    val grouped = state.inventory.groupBy { it.category.lowercase() }
-    val orderedCats = categoryOrder.filter { grouped.containsKey(it) } +
-        grouped.keys.filterNot { it in categoryOrder }.sorted()
+        val filtered = state.inventory.filter { item ->
+            query.isBlank() || listOfNotNull(item.name, item.origin)
+                .any { it.contains(query, ignoreCase = true) }
+        }
+        val grouped = filtered.groupBy { it.category.lowercase() }
+        val orderedCats = categoryOrder.filter { grouped.containsKey(it) } +
+            grouped.keys.filterNot { it in categoryOrder }.sorted()
 
-    LazyColumn(
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        orderedCats.forEach { cat ->
-            item(key = "header-$cat") {
-                Text(
-                    categoryLabel(cat),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-                )
-            }
-            items(grouped.getValue(cat), key = { it.id }) { item ->
-                InventoryRow(
-                    item = item,
-                    onAdjust = { delta -> vm.setInventoryQty(item, item.quantity + delta) },
-                    onClick = { editing = item },
-                )
+        Column(Modifier.fillMaxSize()) {
+            SearchField(query, { query = it }, "Rechercher un ingrédient…")
+            if (filtered.isEmpty()) {
+                EmptyHint("Aucun résultat pour « $query ».")
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    orderedCats.forEach { cat ->
+                        item(key = "header-$cat") {
+                            Text(
+                                categoryLabel(cat),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                            )
+                        }
+                        items(grouped.getValue(cat), key = { it.id }) { item ->
+                            InventoryRow(
+                                item = item,
+                                onAdjust = { delta -> vm.setInventoryQty(item, item.quantity + delta) },
+                                onClick = { editing = item },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -153,6 +170,7 @@ private fun QtyDialog(item: InventoryItem, onDismiss: () -> Unit, onSave: (Doubl
                 label = { Text("Quantité (${item.unit})") },
                 isError = parsed == null,
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
         },
         confirmButton = {

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,17 +29,32 @@ import fr.easter.brewhome.data.TastingPut
 @Composable
 fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
     val state by vm.state.collectAsState()
-    if (state.beers.isEmpty() && state.loaded) {
-        EmptyHint("Aucune bière en cave.")
-        return
-    }
-    LazyColumn(
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        items(state.beers, key = { it.id }) { beer ->
-            BeerCard(beer, vm, onOpen)
+    var query by rememberSaveable { mutableStateOf("") }
+
+    RefreshableContent(vm) {
+        if (state.beers.isEmpty()) {
+            EmptyHint("Aucune bière en cave.")
+            return@RefreshableContent
+        }
+        val filtered = state.beers.filter { beer ->
+            query.isBlank() || listOfNotNull(beer.name, beer.type, beer.origin, beer.recipeName)
+                .any { it.contains(query, ignoreCase = true) }
+        }
+        Column(Modifier.fillMaxSize()) {
+            SearchField(query, { query = it }, "Rechercher une bière…")
+            if (filtered.isEmpty()) {
+                EmptyHint("Aucun résultat pour « $query ».")
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(filtered, key = { it.id }) { beer ->
+                        BeerCard(beer, vm, onOpen)
+                    }
+                }
+            }
         }
     }
 }
@@ -256,6 +272,9 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
     var appearance by remember { mutableStateOf(beer.tasteAppearance ?: "") }
     var aroma by remember { mutableStateOf(beer.tasteAroma ?: "") }
     var flavor by remember { mutableStateOf(beer.tasteFlavor ?: "") }
+    var bitterness by remember { mutableStateOf(beer.tasteBitterness ?: "") }
+    var mouthfeel by remember { mutableStateOf(beer.tasteMouthfeel ?: "") }
+    var finish by remember { mutableStateOf(beer.tasteFinish ?: "") }
     var overall by remember { mutableStateOf(beer.tasteOverall ?: "") }
 
     AlertDialog(
@@ -270,17 +289,25 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
                 OutlinedTextField(value = appearance, onValueChange = { appearance = it }, label = { Text("Apparence") })
                 OutlinedTextField(value = aroma, onValueChange = { aroma = it }, label = { Text("Arôme") })
                 OutlinedTextField(value = flavor, onValueChange = { flavor = it }, label = { Text("Saveur") })
+                OutlinedTextField(value = bitterness, onValueChange = { bitterness = it }, label = { Text("Amertume") })
+                OutlinedTextField(value = mouthfeel, onValueChange = { mouthfeel = it }, label = { Text("Bouche") })
+                OutlinedTextField(value = finish, onValueChange = { finish = it }, label = { Text("Finale") })
                 OutlinedTextField(value = overall, onValueChange = { overall = it }, label = { Text("Impression générale") })
             }
         },
         confirmButton = {
             TextButton(onClick = {
+                // Le serveur écrase toutes les colonnes de dégustation à chaque
+                // PUT : il faut renvoyer tous les champs, pas seulement ceux édités.
                 onSave(
                     TastingPut(
                         tasteRating = rating,
                         tasteAppearance = appearance.ifBlank { null },
                         tasteAroma = aroma.ifBlank { null },
                         tasteFlavor = flavor.ifBlank { null },
+                        tasteBitterness = bitterness.ifBlank { null },
+                        tasteMouthfeel = mouthfeel.ifBlank { null },
+                        tasteFinish = finish.ifBlank { null },
                         tasteOverall = overall.ifBlank { null },
                         tasteDate = java.time.LocalDate.now().toString(),
                     )

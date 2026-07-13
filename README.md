@@ -14,7 +14,14 @@ depuis le téléphone.
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
   alerte visuelle de stock bas.
-- **Brassins** : suivi en lecture (statut, date, volume, densités, ABV, notes).
+- **Brassins** : suivi en lecture (statut coloré, date, volume, densités, ABV, notes).
+- **Outils** : calculateurs de brassage hors-ligne, identiques à ceux du serveur —
+  ABV/atténuation, correction densimètre (température), correction réfractomètre
+  (Novotný), température d'empâtage, répartition en bouteilles 33/75 cl, primage
+  (styles + types de sucre), starter de levure (viabilité Mr. Malty, 1 ou 2 étapes).
+- **UX** : recherche dans les listes (cave, recettes, ingrédients), tirer-pour-rafraîchir,
+  écran d'erreur avec « Réessayer », clavier numérique sur les champs de quantité,
+  flèche de retour sur les fiches, onglets avec état préservé.
 - **Réglages** : URL du serveur configurable (stockée dans DataStore), affichée au premier
   lancement si non configurée.
 
@@ -59,17 +66,20 @@ Ou par ADB : `adb install BrewHome-debug.apk`.
 app/src/main/java/fr/easter/brewhome/
 ├── MainActivity.kt          # Entrée, edge-to-edge, thème
 ├── BrewViewModel.kt         # État global (bières, recettes, inventaire, brassins) + actions API
+├── calc/
+│   └── BrewCalc.kt          # Formules de brassage (mêmes calculs que la page Outils du serveur)
 ├── data/
 │   ├── Models.kt            # Modèles kotlinx.serialization (champs inconnus ignorés)
 │   ├── Api.kt               # Retrofit + OkHttp, base URL dynamique normalisée
 │   └── Settings.kt          # DataStore (URL du serveur)
 └── ui/
-    ├── App.kt               # Scaffold, barre de navigation, NavHost
+    ├── App.kt               # Scaffold, barres de navigation, NavHost
     ├── Theme.kt             # Palette ambrée clair/sombre
-    ├── Common.kt            # Helpers (formats, catégories, étoiles)
+    ├── Common.kt            # Helpers (formats, recherche, pull-to-refresh, erreurs, étoiles)
     ├── BeersScreens.kt      # Cave : liste + détail + dialog dégustation
     ├── RecipesScreens.kt    # Recettes : liste + détail
     ├── InventoryScreen.kt   # Ingrédients + dialog quantité
     ├── BrewsScreen.kt       # Brassins (lecture)
+    ├── ToolsScreens.kt      # Calculateurs de brassage
     └── SettingsScreen.kt    # URL serveur
 ```

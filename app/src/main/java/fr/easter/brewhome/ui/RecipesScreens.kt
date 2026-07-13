@@ -13,6 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -25,17 +28,32 @@ import fr.easter.brewhome.data.RecipeIngredient
 @Composable
 fun RecipesScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
     val state by vm.state.collectAsState()
-    if (state.recipes.isEmpty() && state.loaded) {
-        EmptyHint("Aucune recette.")
-        return
-    }
-    LazyColumn(
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        items(state.recipes, key = { it.id }) { recipe ->
-            RecipeCard(recipe, onOpen)
+    var query by rememberSaveable { mutableStateOf("") }
+
+    RefreshableContent(vm) {
+        if (state.recipes.isEmpty()) {
+            EmptyHint("Aucune recette.")
+            return@RefreshableContent
+        }
+        val filtered = state.recipes.filter { recipe ->
+            query.isBlank() || listOfNotNull(recipe.name, recipe.style)
+                .any { it.contains(query, ignoreCase = true) }
+        }
+        Column(Modifier.fillMaxSize()) {
+            SearchField(query, { query = it }, "Rechercher une recette…")
+            if (filtered.isEmpty()) {
+                EmptyHint("Aucun résultat pour « $query ».")
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(filtered, key = { it.id }) { recipe ->
+                        RecipeCard(recipe, onOpen)
+                    }
+                }
+            }
         }
     }
 }
