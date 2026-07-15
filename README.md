@@ -17,7 +17,8 @@ depuis le téléphone.
   la fiche : en stock / insuffisant / manquant / unités ≠, mêmes règles que le site) ;
   partage de la recette en texte (mail, Telegram, WhatsApp…) ; onglet **Brouillons**
   (idées de recettes : statut, ingrédients, date cible, notes, partage en texte,
-  création et modification depuis le téléphone).
+  création et modification depuis le téléphone, autocomplétion des noms
+  d'ingrédients depuis le catalogue et l'inventaire du serveur).
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
   alerte visuelle de stock bas ; partage du stock complet en texte structuré

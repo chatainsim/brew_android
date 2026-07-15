@@ -119,6 +119,17 @@ data class FermReading(
     val notes: String? = null,
 )
 
+/** Entrée du catalogue d'ingrédients (référentiel pour l'autocomplétion). */
+@Serializable
+data class CatalogItem(
+    val id: Int,
+    val name: String,
+    val category: String,
+    val subcategory: String? = null,
+    val ebc: Double? = null,
+    val alpha: Double? = null,
+)
+
 /** Brouillon de recette (idées en cours). */
 @Serializable
 data class Draft(

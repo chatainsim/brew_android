@@ -8,6 +8,7 @@ import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
@@ -170,6 +171,21 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
                 )
+            }
+        }
+    }
+
+    private val _catalog = MutableStateFlow<List<CatalogItem>>(emptyList())
+    val catalog: StateFlow<List<CatalogItem>> = _catalog
+    private var catalogLoaded = false
+
+    /** Charge le catalogue d'ingrédients (autocomplétion de l'éditeur de brouillons). */
+    fun loadCatalog() {
+        if (catalogLoaded) return
+        viewModelScope.launch {
+            runCatching { api().getCatalog() }.onSuccess {
+                _catalog.value = it
+                catalogLoaded = true
             }
         }
     }

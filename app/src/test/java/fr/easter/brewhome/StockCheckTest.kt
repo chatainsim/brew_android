@@ -1,11 +1,13 @@
 package fr.easter.brewhome
 
 import fr.easter.brewhome.calc.StockCheck
+import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftIngredient
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.RecipeIngredient
 import fr.easter.brewhome.data.parsedIngredients
+import fr.easter.brewhome.ui.ingredientSuggestions
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -96,6 +98,26 @@ class StockCheckTest {
         // JSON invalide ou absent → liste vide, pas d'exception
         assertTrue(Draft(id = 2, title = "x", ingredients = "pas du json").parsedIngredients().isEmpty())
         assertTrue(Draft(id = 3, title = "x").parsedIngredients().isEmpty())
+    }
+
+    @Test
+    fun `suggestions d'ingredients`() {
+        val catalog = listOf(
+            CatalogItem(1, "Cascade", "houblon"),
+            CatalogItem(2, "Citra", "houblon"),
+            CatalogItem(3, "Pilsner", "malt"),
+        )
+        val inventory = listOf(
+            inv("cascade", 100.0, "g", "houblon"),      // doublon du catalogue → ignoré
+            inv("Mosaic", 50.0, "g", "houblon"),          // absent du catalogue → ajouté
+            inv("Munich", 2.0, "kg", "malt"),
+        )
+        // Filtre par catégorie + frappe, insensible à la casse
+        assertEquals(listOf("Cascade", "Citra", "Mosaic"), ingredientSuggestions(catalog, inventory, "houblon", ""))
+        assertEquals(listOf("Cascade"), ingredientSuggestions(catalog, inventory, "houblon", "cas"))
+        assertEquals(listOf("Mosaic"), ingredientSuggestions(catalog, inventory, "houblon", "mos"))
+        assertEquals(listOf("Pilsner", "Munich"), ingredientSuggestions(catalog, inventory, "malt", ""))
+        assertTrue(ingredientSuggestions(catalog, inventory, "levure", "").isEmpty())
     }
 
     @Test

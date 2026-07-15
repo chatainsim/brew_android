@@ -47,6 +47,9 @@ interface BrewApi {
     @GET("api/app-settings")
     suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
 
+    @GET("api/catalog")
+    suspend fun getCatalog(): List<CatalogItem>
+
     @GET("api/drafts")
     suspend fun getDrafts(): List<Draft>
 

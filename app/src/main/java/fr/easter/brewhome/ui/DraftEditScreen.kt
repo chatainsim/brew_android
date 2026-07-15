@@ -29,10 +29,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.window.PopupProperties
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftIngredient
 import fr.easter.brewhome.data.DraftPut
+import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.parsedIngredients
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -57,6 +62,29 @@ private data class EditIng(
 
 private fun numToField(v: Double): String =
     if (v % 1.0 == 0.0) v.toInt().toString() else v.toString()
+
+/**
+ * Suggestions de noms pour une catégorie : catalogue d'ingrédients filtré à la
+ * frappe, complété par les articles de l'inventaire absents du catalogue —
+ * même logique que draftIngSearch() dans bh-brouillons.js.
+ */
+fun ingredientSuggestions(
+    catalog: List<CatalogItem>,
+    inventory: List<InventoryItem>,
+    category: String,
+    query: String,
+): List<String> {
+    val q = query.trim().lowercase()
+    fun matches(name: String) = q.isEmpty() || name.lowercase().contains(q)
+    val fromCatalog = catalog
+        .filter { it.category == category && matches(it.name) }
+        .map { it.name }
+    val fromInventory = inventory
+        .filter { it.category == category && matches(it.name) }
+        .map { it.name }
+        .filter { inv -> fromCatalog.none { it.equals(inv, ignoreCase = true) } }
+    return (fromCatalog + fromInventory).distinctBy { it.lowercase() }
+}
 
 private val putJson = Json { encodeDefaults = true }
 
@@ -90,6 +118,9 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         }
     }
     var saving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { vm.loadCatalog() }
+    val catalog by vm.catalog.collectAsState()
 
     Column(
         Modifier
@@ -153,6 +184,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         ings.forEachIndexed { i, ing ->
             IngredientEditor(
                 ing = ing,
+                suggest = { cat, q -> ingredientSuggestions(catalog, state.inventory, cat, q) },
                 onChange = { ings[i] = it },
                 onDelete = { ings.removeAt(i) },
             )
@@ -213,6 +245,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
 @Composable
 private fun IngredientEditor(
     ing: EditIng,
+    suggest: (String, String) -> List<String>,
     onChange: (EditIng) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -232,11 +265,10 @@ private fun IngredientEditor(
                     },
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
+                NameFieldWithSuggestions(
                     value = ing.name,
-                    onValueChange = { onChange(ing.copy(name = it)) },
-                    placeholder = { Text("Nom") },
-                    singleLine = true,
+                    suggestions = { q -> suggest(ing.category, q) },
+                    onChange = { onChange(ing.copy(name = it)) },
                     modifier = Modifier.weight(2f),
                 )
             }
@@ -266,6 +298,48 @@ private fun IngredientEditor(
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Champ nom avec liste de suggestions filtrée à la frappe (catalogue +
+ * inventaire BrewHome). Le menu n'est pas focusable pour laisser le clavier
+ * ouvert pendant la saisie.
+ */
+@Composable
+private fun NameFieldWithSuggestions(
+    value: String,
+    suggestions: (String) -> List<String>,
+    onChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val items = if (focused) {
+        suggestions(value).filterNot { it.equals(value.trim(), ignoreCase = true) }.take(10)
+    } else emptyList()
+    Box(modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            placeholder = { Text("Nom") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focused = it.isFocused },
+        )
+        DropdownMenu(
+            expanded = items.isNotEmpty(),
+            onDismissRequest = {},
+            properties = PopupProperties(focusable = false),
+            modifier = Modifier.heightIn(max = 260.dp),
+        ) {
+            items.forEach { name ->
+                DropdownMenuItem(
+                    text = { Text(name) },
+                    onClick = { onChange(name) },
+                )
             }
         }
     }
