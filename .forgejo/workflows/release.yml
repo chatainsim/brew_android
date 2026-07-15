@@ -26,7 +26,10 @@ jobs:
           # ── Sources au commit poussé ──
           HOST_PATH="${GITHUB_SERVER_URL#http://}"
           rm -rf src
-          git clone --branch "${GITHUB_REF_NAME}" --depth 20 \
+          # credential.helper vide : ne surtout pas laisser le helper « store »
+          # écrire le token éphémère dans ~/.git-credentials (il corrompt le
+          # fichier au passage, cf. incident du 2026-07-15)
+          git -c credential.helper= clone --branch "${GITHUB_REF_NAME}" --depth 20 \
             "http://oauth2:${TOKEN}@${HOST_PATH}/${GITHUB_REPOSITORY}.git" src
           cd src
           git checkout "${GITHUB_SHA}" || echo "SHA hors de la fenêtre de clone, build du tip de ${GITHUB_REF_NAME}"
