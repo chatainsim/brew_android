@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftIngredient
@@ -94,7 +96,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
     val state by vm.state.collectAsState()
     val existing = draftId?.let { id -> state.drafts.find { it.id == id } }
     if (draftId != null && existing == null) {
-        EmptyHint("Brouillon introuvable.")
+        EmptyHint(stringResource(R.string.draft_not_found))
         return
     }
 
@@ -132,7 +134,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Titre") },
+            label = { Text(stringResource(R.string.label_title)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -140,14 +142,14 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             OutlinedTextField(
                 value = style,
                 onValueChange = { style = it },
-                label = { Text("Style") },
+                label = { Text(stringResource(R.string.label_style)) },
                 singleLine = true,
                 modifier = Modifier.weight(2f),
             )
             OutlinedTextField(
                 value = volume,
                 onValueChange = { volume = it },
-                label = { Text("Volume (L)") },
+                label = { Text(stringResource(R.string.label_volume_l)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f),
@@ -166,7 +168,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             OutlinedTextField(
                 value = targetDate,
                 onValueChange = { targetDate = it },
-                label = { Text("Date cible") },
+                label = { Text(stringResource(R.string.label_target_date)) },
                 placeholder = { Text("2026-08-01") },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
@@ -174,13 +176,13 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             OutlinedTextField(
                 value = eventLabel,
                 onValueChange = { eventLabel = it },
-                label = { Text("Événement") },
+                label = { Text(stringResource(R.string.label_event)) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
         }
 
-        Text("Ingrédients", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.label_ingredients), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         ings.forEachIndexed { i, ing ->
             IngredientEditor(
                 ing = ing,
@@ -194,13 +196,13 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(Icons.Filled.Add, contentDescription = null)
-            Text("Ajouter un ingrédient", Modifier.padding(start = 8.dp))
+            Text(stringResource(R.string.add_ingredient), Modifier.padding(start = 8.dp))
         }
 
         OutlinedTextField(
             value = notes,
             onValueChange = { notes = it },
-            label = { Text("Notes") },
+            label = { Text(stringResource(R.string.notes)) },
             minLines = 3,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -235,7 +237,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             enabled = title.isNotBlank() && !saving,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(if (draftId == null) "Créer le brouillon" else "Enregistrer")
+            Text(if (draftId == null) stringResource(R.string.create_draft) else stringResource(R.string.save))
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -279,7 +281,7 @@ private fun IngredientEditor(
                 OutlinedTextField(
                     value = ing.quantity,
                     onValueChange = { onChange(ing.copy(quantity = it)) },
-                    placeholder = { Text("Qté") },
+                    placeholder = { Text(stringResource(R.string.qty_short)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -294,7 +296,7 @@ private fun IngredientEditor(
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Filled.Delete,
-                        contentDescription = "Supprimer l'ingrédient",
+                        contentDescription = stringResource(R.string.cd_delete_ingredient),
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -323,7 +325,7 @@ private fun NameFieldWithSuggestions(
         OutlinedTextField(
             value = value,
             onValueChange = onChange,
-            placeholder = { Text("Nom") },
+            placeholder = { Text(stringResource(R.string.label_name)) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()

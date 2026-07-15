@@ -32,9 +32,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import java.util.Locale
 
 /** Ouvre la feuille de partage Android (mail, Telegram, WhatsApp…) avec un texte. */
@@ -127,7 +129,7 @@ fun ErrorRetry(message: String, onRetry: () -> Unit) {
         )
         Button(onClick = onRetry) {
             Icon(Icons.Filled.Refresh, contentDescription = null)
-            Text("Réessayer", Modifier.padding(start = 8.dp))
+            Text(stringResource(R.string.retry), Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -143,7 +145,7 @@ fun SearchField(query: String, onChange: (String) -> Unit, placeholder: String) 
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onChange("") }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Effacer la recherche")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_clear_search))
                 }
             }
         },
@@ -161,7 +163,7 @@ fun StarRating(rating: Int?, max: Int = 5, onSelect: ((Int) -> Unit)? = null) {
             val filled = rating != null && i <= rating
             Icon(
                 imageVector = if (filled) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                contentDescription = "$i étoiles",
+                contentDescription = stringResource(R.string.cd_stars, i),
                 tint = if (filled) MaterialTheme.colorScheme.primary
                        else MaterialTheme.colorScheme.outline,
                 modifier = if (onSelect != null)

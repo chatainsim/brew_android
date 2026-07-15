@@ -22,7 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.TastingPut
 
@@ -34,7 +36,7 @@ fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
 
     RefreshableContent(vm) {
         if (state.beers.isEmpty()) {
-            EmptyHint("Aucune bière en cave.")
+            EmptyHint(stringResource(R.string.beers_empty))
             return@RefreshableContent
         }
         // Comme le site : les bières archivées sont masquées par défaut
@@ -45,22 +47,22 @@ fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
                 .any { it.contains(query, ignoreCase = true) }
         }
         Column(Modifier.fillMaxSize()) {
-            SearchField(query, { query = it }, "Rechercher une bière…")
+            SearchField(query, { query = it }, stringResource(R.string.beers_search))
             if (archivedCount > 0) {
                 FilterChip(
                     selected = showArchived,
                     onClick = { showArchived = !showArchived },
                     label = {
                         Text(
-                            if (showArchived) "Masquer les $archivedCount archivée(s)"
-                            else "Voir les $archivedCount archivée(s)",
+                            if (showArchived) stringResource(R.string.beers_hide_archived, archivedCount)
+                            else stringResource(R.string.beers_show_archived, archivedCount),
                         )
                     },
                     modifier = Modifier.padding(horizontal = 12.dp),
                 )
             }
             if (filtered.isEmpty()) {
-                EmptyHint("Aucun résultat pour « $query ».")
+                EmptyHint(stringResource(R.string.no_results, query))
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(12.dp),
@@ -123,8 +125,8 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                StockRow("33 cl", beer.stock33 ?: 0) { d -> vm.adjustBeerStock(beer, d33 = d) }
-                StockRow("75 cl", beer.stock75 ?: 0) { d -> vm.adjustBeerStock(beer, d75 = d) }
+                StockRow(stringResource(R.string.unit_33), beer.stock33 ?: 0) { d -> vm.adjustBeerStock(beer, d33 = d) }
+                StockRow(stringResource(R.string.unit_75), beer.stock75 ?: 0) { d -> vm.adjustBeerStock(beer, d75 = d) }
                 if ((beer.kegLiters ?: 0.0) > 0.0 || (beer.kegInitialLiters ?: 0.0) > 0.0) {
                     KegRow(beer.kegLiters ?: 0.0) { d -> vm.adjustBeerStock(beer, dKeg = d) }
                 }
@@ -142,7 +144,7 @@ private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
             modifier = Modifier.width(44.dp),
         )
         IconButton(onClick = { onAdjust(-1) }, enabled = count > 0, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Remove, contentDescription = "Retirer une $label")
+            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_remove_one, label))
         }
         Text(
             count.toString(),
@@ -153,7 +155,7 @@ private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
                     else MaterialTheme.colorScheme.onSurface,
         )
         IconButton(onClick = { onAdjust(1) }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Add, contentDescription = "Ajouter une $label")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_one, label))
         }
     }
 }
@@ -161,9 +163,9 @@ private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
 @Composable
 private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Fût", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
+        Text(stringResource(R.string.keg), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
         IconButton(onClick = { onAdjust(-0.5) }, enabled = liters > 0, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Remove, contentDescription = "Retirer 0,5 L du fût")
+            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_keg_remove))
         }
         Text(
             "${fmtQty(liters)} L",
@@ -172,7 +174,7 @@ private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
             modifier = Modifier.widthIn(min = 28.dp),
         )
         IconButton(onClick = { onAdjust(0.5) }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Filled.Add, contentDescription = "Ajouter 0,5 L au fût")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_keg_add))
         }
     }
 }
@@ -182,7 +184,7 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
     val state by vm.state.collectAsState()
     val beer = state.beers.find { it.id == beerId }
     if (beer == null) {
-        EmptyHint("Bière introuvable.")
+        EmptyHint(stringResource(R.string.beer_not_found))
         return
     }
     var showTastingDialog by remember { mutableStateOf(false) }
@@ -212,37 +214,37 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
         if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
 
         InfoCard {
-            InfoLine("Recette", beer.recipeName)
-            InfoLine("Brassée le", beer.brewDate)
-            InfoLine("Embouteillée le", beer.bottlingDate)
-            InfoLine("Stock 33 cl", (beer.stock33 ?: 0).toString())
-            InfoLine("Stock 75 cl", (beer.stock75 ?: 0).toString())
+            InfoLine(stringResource(R.string.label_recipe), beer.recipeName)
+            InfoLine(stringResource(R.string.label_brewed_on_f), beer.brewDate)
+            InfoLine(stringResource(R.string.label_bottled_on_f), beer.bottlingDate)
+            InfoLine(stringResource(R.string.label_stock_33), (beer.stock33 ?: 0).toString())
+            InfoLine(stringResource(R.string.label_stock_75), (beer.stock75 ?: 0).toString())
             if ((beer.kegLiters ?: 0.0) > 0.0)
-                InfoLine("Fût", "${fmtQty(beer.kegLiters)} L")
+                InfoLine(stringResource(R.string.keg), "${fmtQty(beer.kegLiters)} L")
         }
 
         if (!beer.description.isNullOrBlank()) {
-            Text("Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.label_description), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(beer.description, style = MaterialTheme.typography.bodyMedium)
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Dégustation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.label_tasting), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = { showTastingDialog = true }) {
-                Icon(Icons.Filled.Edit, contentDescription = "Modifier la dégustation")
+                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.cd_edit_tasting))
             }
         }
         StarRating(beer.tasteRating)
         InfoCard {
-            InfoLine("Apparence", beer.tasteAppearance)
-            InfoLine("Arôme", beer.tasteAroma)
-            InfoLine("Saveur", beer.tasteFlavor)
-            InfoLine("Amertume", beer.tasteBitterness)
-            InfoLine("Bouche", beer.tasteMouthfeel)
-            InfoLine("Finale", beer.tasteFinish)
-            InfoLine("Général", beer.tasteOverall)
-            InfoLine("Dégustée le", beer.tasteDate)
+            InfoLine(stringResource(R.string.taste_appearance), beer.tasteAppearance)
+            InfoLine(stringResource(R.string.taste_aroma), beer.tasteAroma)
+            InfoLine(stringResource(R.string.taste_flavor), beer.tasteFlavor)
+            InfoLine(stringResource(R.string.taste_bitterness), beer.tasteBitterness)
+            InfoLine(stringResource(R.string.taste_mouthfeel), beer.tasteMouthfeel)
+            InfoLine(stringResource(R.string.taste_finish), beer.tasteFinish)
+            InfoLine(stringResource(R.string.taste_overall_short), beer.tasteOverall)
+            InfoLine(stringResource(R.string.taste_date), beer.tasteDate)
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -296,20 +298,20 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Notes de dégustation") },
+        title = { Text(stringResource(R.string.tasting_dialog_title)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 StarRating(rating) { rating = it }
-                OutlinedTextField(value = appearance, onValueChange = { appearance = it }, label = { Text("Apparence") })
-                OutlinedTextField(value = aroma, onValueChange = { aroma = it }, label = { Text("Arôme") })
-                OutlinedTextField(value = flavor, onValueChange = { flavor = it }, label = { Text("Saveur") })
-                OutlinedTextField(value = bitterness, onValueChange = { bitterness = it }, label = { Text("Amertume") })
-                OutlinedTextField(value = mouthfeel, onValueChange = { mouthfeel = it }, label = { Text("Bouche") })
-                OutlinedTextField(value = finish, onValueChange = { finish = it }, label = { Text("Finale") })
-                OutlinedTextField(value = overall, onValueChange = { overall = it }, label = { Text("Impression générale") })
+                OutlinedTextField(value = appearance, onValueChange = { appearance = it }, label = { Text(stringResource(R.string.taste_appearance)) })
+                OutlinedTextField(value = aroma, onValueChange = { aroma = it }, label = { Text(stringResource(R.string.taste_aroma)) })
+                OutlinedTextField(value = flavor, onValueChange = { flavor = it }, label = { Text(stringResource(R.string.taste_flavor)) })
+                OutlinedTextField(value = bitterness, onValueChange = { bitterness = it }, label = { Text(stringResource(R.string.taste_bitterness)) })
+                OutlinedTextField(value = mouthfeel, onValueChange = { mouthfeel = it }, label = { Text(stringResource(R.string.taste_mouthfeel)) })
+                OutlinedTextField(value = finish, onValueChange = { finish = it }, label = { Text(stringResource(R.string.taste_finish)) })
+                OutlinedTextField(value = overall, onValueChange = { overall = it }, label = { Text(stringResource(R.string.taste_overall)) })
             }
         },
         confirmButton = {
@@ -329,10 +331,10 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
                         tasteDate = java.time.LocalDate.now().toString(),
                     )
                 )
-            }) { Text("Enregistrer") }
+            }) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuler") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

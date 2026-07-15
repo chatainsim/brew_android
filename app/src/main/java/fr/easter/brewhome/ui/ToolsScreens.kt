@@ -55,6 +55,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.BrewCalc
 import java.util.Locale
 import kotlin.math.abs
@@ -62,22 +65,25 @@ import kotlin.math.roundToInt
 
 data class ToolDef(
     val id: String,
-    val title: String,
-    val subtitle: String,
+    @StringRes val titleRes: Int,
+    @StringRes val subtitleRes: Int,
     val icon: ImageVector,
 )
 
 val toolDefs = listOf(
-    ToolDef("abv", "Calculateur ABV", "DI / DF → alcool et atténuation", Icons.Outlined.Percent),
-    ToolDef("hydro", "Correction densimètre", "Densité corrigée selon la température", Icons.Outlined.Thermostat),
-    ToolDef("refracto", "Correction réfractomètre", "Lecture en fermentation (Novotný)", Icons.Outlined.Colorize),
-    ToolDef("strike", "Température d'empâtage", "Eau à ajouter aux malts", Icons.Outlined.LocalFireDepartment),
-    ToolDef("bottles", "Nombre de bouteilles", "Répartir un volume en 33 / 75 cl", Icons.Outlined.Liquor),
-    ToolDef("priming", "Primage", "Sucre de refermentation en bouteille", Icons.Outlined.BubbleChart),
-    ToolDef("starter", "Starter de levure", "Viabilité et taille du starter", Icons.Outlined.Biotech),
+    ToolDef("abv", R.string.tool_abv_title, R.string.tool_abv_sub, Icons.Outlined.Percent),
+    ToolDef("hydro", R.string.tool_hydro_title, R.string.tool_hydro_sub, Icons.Outlined.Thermostat),
+    ToolDef("refracto", R.string.tool_refracto_title, R.string.tool_refracto_sub, Icons.Outlined.Colorize),
+    ToolDef("strike", R.string.tool_strike_title, R.string.tool_strike_sub, Icons.Outlined.LocalFireDepartment),
+    ToolDef("bottles", R.string.tool_bottles_title, R.string.tool_bottles_sub, Icons.Outlined.Liquor),
+    ToolDef("priming", R.string.tool_priming_title, R.string.tool_priming_sub, Icons.Outlined.BubbleChart),
+    ToolDef("starter", R.string.tool_starter_title, R.string.tool_starter_sub, Icons.Outlined.Biotech),
 )
 
-fun toolTitle(id: String?): String = toolDefs.find { it.id == id }?.title ?: "Outils"
+@Composable
+fun toolTitle(id: String?): String =
+    toolDefs.find { it.id == id }?.let { stringResource(it.titleRes) }
+        ?: stringResource(R.string.tab_tools)
 
 // ── Écran liste ───────────────────────────────────────────────────────────────
 
@@ -90,14 +96,16 @@ fun ToolsScreen(onOpenStats: () -> Unit, onOpen: (String) -> Unit) {
     ) {
         item(key = "stats") {
             ToolCard(
-                "Statistiques",
-                "Production, cave, consommation",
+                stringResource(R.string.title_stats),
+                stringResource(R.string.tools_stats_sub),
                 Icons.Outlined.BarChart,
                 onOpenStats,
             )
         }
         items(toolDefs, key = { it.id }) { tool ->
-            ToolCard(tool.title, tool.subtitle, tool.icon) { onOpen(tool.id) }
+            ToolCard(stringResource(tool.titleRes), stringResource(tool.subtitleRes), tool.icon) {
+                onOpen(tool.id)
+            }
         }
     }
 }
@@ -155,7 +163,7 @@ fun ToolScreen(toolId: String?) {
         "bottles" -> BottlesCalcScreen()
         "priming" -> PrimingCalcScreen()
         "starter" -> StarterCalcScreen()
-        else -> EmptyHint("Calculateur introuvable.")
+        else -> EmptyHint(stringResource(R.string.tool_not_found))
     }
 }
 
@@ -311,10 +319,10 @@ private fun AbvCalcScreen() {
     var fg by rememberSaveable { mutableStateOf("") }
 
     ToolColumn {
-        HintText("Alcool et atténuation apparente à partir des densités (SG).")
+        HintText(stringResource(R.string.hint_abv))
         TwoFields(
-            left = { NumField("DI (densité initiale)", og, { og = it }, placeholder = "1,050") },
-            right = { NumField("DF (densité finale)", fg, { fg = it }, placeholder = "1,010") },
+            left = { NumField(stringResource(R.string.field_og_full), og, { og = it }, placeholder = "1,050") },
+            right = { NumField(stringResource(R.string.field_fg_full), fg, { fg = it }, placeholder = "1,010") },
         )
         val ogV = parseNum(og)
         val fgV = parseNum(fg)
@@ -323,11 +331,11 @@ private fun AbvCalcScreen() {
             val att = BrewCalc.attenuation(ogV, fgV)
             if (abv != null && att != null) {
                 ResultRow(
-                    "${fmt(abv, 1)} %" to "ABV",
-                    "${att.roundToInt()} %" to "Atténuation app.",
+                    "${fmt(abv, 1)} %" to stringResource(R.string.res_abv),
+                    "${att.roundToInt()} %" to stringResource(R.string.res_attenuation),
                 )
             } else {
-                NoteCard("Vérifie les valeurs : la DF doit être inférieure à la DI.", error = true)
+                NoteCard(stringResource(R.string.note_check_fg), error = true)
             }
         }
     }
@@ -342,15 +350,12 @@ private fun HydroCalcScreen() {
     var cal by rememberSaveable { mutableStateOf("20") }
 
     ToolColumn {
-        HintText(
-            "Corrige la lecture du densimètre quand le moût n'est pas à la " +
-                "température d'étalonnage.",
-        )
+        HintText(stringResource(R.string.hint_hydro))
         TwoFields(
-            left = { NumField("Densité lue", sg, { sg = it }, placeholder = "1,050") },
-            right = { NumField("T° mesure (°C)", meas, { meas = it }, placeholder = "25") },
+            left = { NumField(stringResource(R.string.field_sg_read), sg, { sg = it }, placeholder = "1,050") },
+            right = { NumField(stringResource(R.string.field_temp_meas), meas, { meas = it }, placeholder = "25") },
         )
-        NumField("T° étalonnage (°C)", cal, { cal = it })
+        NumField(stringResource(R.string.field_temp_cal), cal, { cal = it })
         val sgV = parseNum(sg)
         val measV = parseNum(meas)
         val calV = parseNum(cal)
@@ -359,11 +364,11 @@ private fun HydroCalcScreen() {
             val delta = corrected - sgV
             if (abs(delta) > 0.0001) {
                 ResultRow(
-                    fmt(corrected, 3) to "Densité corrigée",
-                    "${if (delta > 0) "+" else ""}${fmt(delta, 4)}" to "Écart",
+                    fmt(corrected, 3) to stringResource(R.string.res_sg_corrected),
+                    "${if (delta > 0) "+" else ""}${fmt(delta, 4)}" to stringResource(R.string.res_delta),
                 )
             } else {
-                ResultRow(fmt(corrected, 3) to "Densité corrigée")
+                ResultRow(fmt(corrected, 3) to stringResource(R.string.res_sg_corrected))
             }
         }
     }
@@ -379,33 +384,30 @@ private fun RefractoCalcScreen() {
     var wcf by rememberSaveable { mutableStateOf("1,04") }
 
     ToolColumn {
-        HintText(
-            "Corrige l'erreur introduite par l'alcool sur un réfractomètre en " +
-                "cours de fermentation (formule Novotný).",
-        )
+        HintText(stringResource(R.string.hint_refracto))
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = !ogUnitSg,
                 onClick = { ogUnitSg = false },
                 shape = SegmentedButtonDefaults.itemShape(0, 2),
-            ) { Text("DI en Brix") }
+            ) { Text(stringResource(R.string.seg_og_brix)) }
             SegmentedButton(
                 selected = ogUnitSg,
                 onClick = { ogUnitSg = true },
                 shape = SegmentedButtonDefaults.itemShape(1, 2),
-            ) { Text("DI en SG") }
+            ) { Text(stringResource(R.string.seg_og_sg)) }
         }
         TwoFields(
             left = {
                 NumField(
-                    if (ogUnitSg) "DI (SG)" else "DI (Brix)",
+                    if (ogUnitSg) stringResource(R.string.field_og_sg) else stringResource(R.string.field_og_brix),
                     og, { og = it },
                     placeholder = if (ogUnitSg) "1,050" else "12,0",
                 )
             },
-            right = { NumField("Lecture actuelle (Brix)", current, { current = it }, placeholder = "5,0") },
+            right = { NumField(stringResource(R.string.field_current_brix), current, { current = it }, placeholder = "5,0") },
         )
-        NumField("Facteur de correction (WCF)", wcf, { wcf = it })
+        NumField(stringResource(R.string.field_wcf), wcf, { wcf = it })
         val ogV = parseNum(og)
         val curV = parseNum(current)
         val wcfV = parseNum(wcf) ?: 1.04
@@ -415,14 +417,14 @@ private fun RefractoCalcScreen() {
             if (res != null) {
                 if (res.abv != null) {
                     ResultRow(
-                        fmt(res.fg, 4) to "DF corrigée",
-                        "${fmt(res.abv, 1)} %" to "ABV",
+                        fmt(res.fg, 4) to stringResource(R.string.res_fg_corrected),
+                        "${fmt(res.abv, 1)} %" to stringResource(R.string.res_abv),
                     )
                 } else {
-                    ResultRow(fmt(res.fg, 4) to "DF corrigée")
+                    ResultRow(fmt(res.fg, 4) to stringResource(R.string.res_fg_corrected))
                 }
             } else {
-                NoteCard("Valeurs hors plage : vérifie les lectures.", error = true)
+                NoteCard(stringResource(R.string.note_out_of_range), error = true)
             }
         }
     }
@@ -438,14 +440,14 @@ private fun StrikeCalcScreen() {
     var ratio by rememberSaveable { mutableStateOf("3,0") }
 
     ToolColumn {
-        HintText("Température de l'eau à ajouter aux malts pour atteindre la température de mash cible.")
+        HintText(stringResource(R.string.hint_strike))
         TwoFields(
-            left = { NumField("Poids des malts (kg)", grain, { grain = it }, placeholder = "5,0") },
-            right = { NumField("T° malts (°C)", grainTemp, { grainTemp = it }) },
+            left = { NumField(stringResource(R.string.field_grain_kg), grain, { grain = it }, placeholder = "5,0") },
+            right = { NumField(stringResource(R.string.field_grain_temp), grainTemp, { grainTemp = it }) },
         )
         TwoFields(
-            left = { NumField("T° mash cible (°C)", mashTemp, { mashTemp = it }) },
-            right = { NumField("Ratio eau/malt (L/kg)", ratio, { ratio = it }) },
+            left = { NumField(stringResource(R.string.field_mash_target), mashTemp, { mashTemp = it }) },
+            right = { NumField(stringResource(R.string.field_ratio), ratio, { ratio = it }) },
         )
         val res = parseNum(grain)?.let { g ->
             parseNum(grainTemp)?.let { gt ->
@@ -456,24 +458,17 @@ private fun StrikeCalcScreen() {
         }
         if (res != null) {
             ResultRow(
-                "${fmt(res.strikeTempC, 1)} °C" to "T° d'empâtage",
-                "${fmt(res.waterLiters, 1)} L" to "Volume d'eau",
+                "${fmt(res.strikeTempC, 1)} °C" to stringResource(R.string.res_strike_temp),
+                "${fmt(res.waterLiters, 1)} L" to stringResource(R.string.res_water_vol),
             )
             val mt = parseNum(mashTemp)!!
             when {
                 res.strikeTempC > 100 ->
-                    NoteCard(
-                        "T° au-dessus de 100 °C : impossible. Augmente le ratio eau/malt " +
-                            "ou préchauffe les malts.",
-                        error = true,
-                    )
+                    NoteCard(stringResource(R.string.note_strike_over100), error = true)
                 res.strikeTempC <= mt ->
-                    NoteCard("L'eau serait plus froide que la cible : vérifie les températures.", error = true)
+                    NoteCard(stringResource(R.string.note_strike_cold), error = true)
                 else ->
-                    NoteCard(
-                        "Astuce : vise ${fmt(res.strikeTempC + 2, 1)} °C pour compenser les " +
-                            "pertes d'une cuve froide.",
-                    )
+                    NoteCard(stringResource(R.string.note_strike_tip, fmt(res.strikeTempC + 2, 1)))
             }
         }
     }
@@ -488,9 +483,9 @@ private fun BottlesCalcScreen() {
     var n75 by rememberSaveable { mutableStateOf("") }
 
     ToolColumn {
-        HintText("Modifie un nombre de bouteilles : l'autre est recalculé automatiquement.")
+        HintText(stringResource(R.string.hint_bottles))
         NumField(
-            "Volume (L)", vol,
+            stringResource(R.string.label_volume_l), vol,
             onChange = { v ->
                 vol = v
                 val volV = parseNum(v)
@@ -507,7 +502,7 @@ private fun BottlesCalcScreen() {
         val volV = parseNum(vol)
         TwoFields(
             left = {
-                NumField("Bouteilles 33 cl", n33, onChange = { v ->
+                NumField(stringResource(R.string.stat_bottles_33), n33, onChange = { v ->
                     n33 = v
                     if (volV != null && volV > 0) {
                         n75 = BrewCalc.bottlesAfter33(volV, v.toIntOrNull() ?: 0).n75.toString()
@@ -515,7 +510,7 @@ private fun BottlesCalcScreen() {
                 })
             },
             right = {
-                NumField("Bouteilles 75 cl", n75, onChange = { v ->
+                NumField(stringResource(R.string.stat_bottles_75), n75, onChange = { v ->
                     n75 = v
                     if (volV != null && volV > 0) {
                         n33 = BrewCalc.bottlesAfter75(volV, v.toIntOrNull() ?: 0).n33.toString()
@@ -527,9 +522,9 @@ private fun BottlesCalcScreen() {
             val used = (n33.toIntOrNull() ?: 0) * 330 + (n75.toIntOrNull() ?: 0) * 750
             val diff = (volV * 1000).roundToInt() - used
             when {
-                diff == 0 -> NoteCard("Volume réparti exactement.")
-                diff > 0 -> NoteCard("Reste ${diff} mL non embouteillés.")
-                else -> NoteCard("Dépassement de ${abs(diff)} mL : trop de bouteilles.", error = true)
+                diff == 0 -> NoteCard(stringResource(R.string.note_exact))
+                diff > 0 -> NoteCard(stringResource(R.string.note_rest, diff))
+                else -> NoteCard(stringResource(R.string.note_overflow, abs(diff)), error = true)
             }
         }
     }
@@ -537,24 +532,24 @@ private fun BottlesCalcScreen() {
 
 // ── Primage ───────────────────────────────────────────────────────────────────
 
-private val primingStyles = listOf(
-    "— Choisir un style —" to null,
-    "Ales britanniques (1,5–2,0)" to 1.7,
-    "Ales américaines / IPA (2,2–2,8)" to 2.5,
-    "Stout / Porter (1,5–2,1)" to 1.8,
-    "Weizen / Hefeweizen (3,3–4,5)" to 3.5,
-    "Belges — Tripel, Saison (2,8–3,8)" to 3.2,
-    "Lager / Pilsner (2,3–2,7)" to 2.5,
-    "Sour / Lambic (3,0–4,0)" to 3.0,
-    "Cidre (2,5–4,0)" to 3.0,
+private val primingStyles = listOf<Pair<Int, Double?>>(
+    R.string.priming_style_none to null,
+    R.string.priming_style_uk to 1.7,
+    R.string.priming_style_us to 2.5,
+    R.string.priming_style_stout to 1.8,
+    R.string.priming_style_weizen to 3.5,
+    R.string.priming_style_belgian to 3.2,
+    R.string.priming_style_lager to 2.5,
+    R.string.priming_style_sour to 3.0,
+    R.string.priming_style_cider to 3.0,
 )
 
 private val primingSugars = listOf(
-    "Sucrose (sucre de table)" to 3.97,
-    "Dextrose anhydre" to 4.21,
-    "Dextrose monohydraté (corn sugar)" to 4.64,
-    "Extrait de malt sec (DME)" to 6.14,
-    "Miel" to 8.57,
+    R.string.sugar_sucrose to 3.97,
+    R.string.sugar_dextrose_anh to 4.21,
+    R.string.sugar_dextrose_mono to 4.64,
+    R.string.sugar_dme to 6.14,
+    R.string.sugar_honey to 8.57,
 )
 
 @Composable
@@ -566,21 +561,21 @@ private fun PrimingCalcScreen() {
     var sugarIdx by rememberSaveable { mutableStateOf(2) }
 
     ToolColumn {
-        HintText("Quantité de sucre pour la refermentation en bouteille.")
+        HintText(stringResource(R.string.hint_priming))
         DropdownField(
-            "Style de référence",
-            primingStyles.map { it.first },
+            stringResource(R.string.field_style_ref),
+            primingStyles.map { stringResource(it.first) },
             styleIdx,
         ) { i ->
             styleIdx = i
             primingStyles[i].second?.let { co2 = fmt(it, 1) }
         }
         TwoFields(
-            left = { NumField("Volume (L)", vol, { vol = it }) },
-            right = { NumField("Température (°C)", temp, { temp = it }) },
+            left = { NumField(stringResource(R.string.label_volume_l), vol, { vol = it }) },
+            right = { NumField(stringResource(R.string.field_temp), temp, { temp = it }) },
         )
-        NumField("CO₂ cible (volumes)", co2, { co2 = it })
-        DropdownField("Type de sucre", primingSugars.map { it.first }, sugarIdx) { sugarIdx = it }
+        NumField(stringResource(R.string.field_co2_target), co2, { co2 = it })
+        DropdownField(stringResource(R.string.field_sugar_type), primingSugars.map { stringResource(it.first) }, sugarIdx) { sugarIdx = it }
 
         val volV = parseNum(vol)
         val tempV = parseNum(temp)
@@ -588,23 +583,15 @@ private fun PrimingCalcScreen() {
         if (volV != null && volV > 0 && tempV != null && co2V != null) {
             val res = BrewCalc.priming(volV, tempV, co2V, primingSugars[sugarIdx].second)
             if (res.co2ToAdd <= 0.0) {
-                NoteCard(
-                    "La bière contient déjà ${fmt(res.residualCo2, 2)} volumes de CO₂ " +
-                        "résiduel à cette température : aucun sucre à ajouter.",
-                    error = true,
-                )
+                NoteCard(stringResource(R.string.note_no_sugar, fmt(res.residualCo2, 2)), error = true)
             } else {
-                ResultRow("${fmt(res.gramsTotal, 1)} g" to "Sucre total")
+                ResultRow("${fmt(res.gramsTotal, 1)} g" to stringResource(R.string.res_sugar_total))
                 ResultRow(
-                    "${fmt(res.per33cl, 1)} g" to "par 33 cl",
-                    "${fmt(res.per50cl, 1)} g" to "par 50 cl",
-                    "${fmt(res.per75cl, 1)} g" to "par 75 cl",
+                    "${fmt(res.per33cl, 1)} g" to stringResource(R.string.res_per_33),
+                    "${fmt(res.per50cl, 1)} g" to stringResource(R.string.res_per_50),
+                    "${fmt(res.per75cl, 1)} g" to stringResource(R.string.res_per_75),
                 )
-                NoteCard(
-                    "CO₂ résiduel à ${fmt(tempV, 0)} °C : ${fmt(res.residualCo2, 2)} vol — " +
-                        "à ajouter : ${fmt(res.co2ToAdd, 2)} vol. Dissoudre le sucre dans un " +
-                        "peu d'eau bouillie avant de l'ajouter au fût de soutirage.",
-                )
+                NoteCard(stringResource(R.string.note_priming_info, fmt(tempV, 0), fmt(res.residualCo2, 2), fmt(res.co2ToAdd, 2)))
             }
         }
     }
@@ -613,9 +600,9 @@ private fun PrimingCalcScreen() {
 // ── Starter de levure ─────────────────────────────────────────────────────────
 
 private val pitchRates = listOf(
-    "Ale standard (0,75 M/mL/°P)" to 0.75,
-    "Haute densité (1,0 M/mL/°P)" to 1.0,
-    "Lager (1,5 M/mL/°P)" to 1.5,
+    R.string.pitch_ale to 0.75,
+    R.string.pitch_high to 1.0,
+    R.string.pitch_lager to 1.5,
 )
 
 @Composable
@@ -629,25 +616,22 @@ private fun StarterCalcScreen() {
     var stir by rememberSaveable { mutableStateOf(true) }
 
     ToolColumn {
-        HintText(
-            "Starter pour levure liquide : viabilité selon l'âge du paquet " +
-                "(Mr. Malty) et taille du starter au DME.",
-        )
+        HintText(stringResource(R.string.hint_starter))
         TwoFields(
-            left = { NumField("Âge du paquet (jours)", age, { age = it }) },
-            right = { NumField("Cellules initiales (Mds)", cells, { cells = it }) },
+            left = { NumField(stringResource(R.string.field_age), age, { age = it }) },
+            right = { NumField(stringResource(R.string.field_cells), cells, { cells = it }) },
         )
-        DropdownField("Taux de pitch", pitchRates.map { it.first }, pitchIdx) { pitchIdx = it }
+        DropdownField(stringResource(R.string.field_pitch), pitchRates.map { stringResource(it.first) }, pitchIdx) { pitchIdx = it }
         TwoFields(
-            left = { NumField("Volume à brasser (L)", vol, { vol = it }) },
-            right = { NumField("DI cible", og, { og = it }) },
+            left = { NumField(stringResource(R.string.field_brew_vol), vol, { vol = it }) },
+            right = { NumField(stringResource(R.string.field_og_target), og, { og = it }) },
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = stir, onCheckedChange = { stir = it })
-            Text("Stir plate (agitation)", Modifier.clickable { stir = !stir })
+            Text(stringResource(R.string.check_stir), Modifier.clickable { stir = !stir })
             Spacer(Modifier.width(16.dp))
             Checkbox(checked = twoSteps, onCheckedChange = { twoSteps = it })
-            Text("2 étapes", Modifier.clickable { twoSteps = !twoSteps })
+            Text(stringResource(R.string.check_two_steps), Modifier.clickable { twoSteps = !twoSteps })
         }
 
         val ageV = age.trim().toIntOrNull()
@@ -665,23 +649,23 @@ private fun StarterCalcScreen() {
                 twoSteps = twoSteps,
             )
             ResultRow(
-                "${(res.viability * 100).roundToInt()} %" to "Viabilité",
-                "${res.viableCells.roundToInt()} Mds" to "Cellules viables",
-                "${res.requiredCells.roundToInt()} Mds" to "Requises",
+                "${(res.viability * 100).roundToInt()} %" to stringResource(R.string.res_viability),
+                "${res.viableCells.roundToInt()} Mds" to stringResource(R.string.res_viable_cells),
+                "${res.requiredCells.roundToInt()} Mds" to stringResource(R.string.res_required),
             )
             if (res.steps.isEmpty()) {
-                NoteCard("Le paquet suffit : aucun starter nécessaire.")
+                NoteCard(stringResource(R.string.note_pack_enough))
             } else {
                 res.steps.forEachIndexed { i, step ->
                     val volStr = if (step.volumeL >= 1) "${fmt(step.volumeL, 2)} L"
                                  else "${(step.volumeL * 1000).roundToInt()} mL"
                     ResultRow(
-                        volStr to if (res.steps.size > 1) "Étape ${i + 1} — moût" else "Volume de moût",
-                        "${step.dmeGrams.roundToInt()} g" to "DME",
-                        fmt(res.starterGravity, 3) to "Densité",
+                        volStr to if (res.steps.size > 1) stringResource(R.string.res_step_wort, i + 1) else stringResource(R.string.res_wort_vol),
+                        "${step.dmeGrams.roundToInt()} g" to stringResource(R.string.res_dme),
+                        fmt(res.starterGravity, 3) to stringResource(R.string.res_gravity),
                     )
                     if (res.steps.size > 1 && i == 0) {
-                        HintText("Laisser fermenter, décanter au froid, puis relancer l'étape 2.")
+                        HintText(stringResource(R.string.hint_two_steps))
                     }
                 }
             }

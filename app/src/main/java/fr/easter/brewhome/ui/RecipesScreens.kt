@@ -34,7 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.Recipe
@@ -76,12 +78,12 @@ fun RecipesScreen(
                     selected = !showDrafts,
                     onClick = { showDrafts = false },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                ) { Text("Recettes (${state.recipes.size})") }
+                ) { Text(stringResource(R.string.recipes_seg, state.recipes.size)) }
                 SegmentedButton(
                     selected = showDrafts,
                     onClick = { showDrafts = true },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                ) { Text("Brouillons (${state.drafts.size})") }
+                ) { Text(stringResource(R.string.drafts_seg, state.drafts.size)) }
             }
             if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft, onNewDraft)
             else RecipesList(state.recipes, state, query, { query = it }, onOpen)
@@ -98,16 +100,16 @@ private fun RecipesList(
     onOpen: (Int) -> Unit,
 ) {
     if (recipes.isEmpty()) {
-        EmptyHint("Aucune recette.")
+        EmptyHint(stringResource(R.string.recipes_empty))
         return
     }
     val filtered = recipes.filter { recipe ->
         query.isBlank() || listOfNotNull(recipe.name, recipe.style)
             .any { it.contains(query, ignoreCase = true) }
     }
-    SearchField(query, onQuery, "Rechercher une recette…")
+    SearchField(query, onQuery, stringResource(R.string.recipes_search))
     if (filtered.isEmpty()) {
-        EmptyHint("Aucun résultat pour « $query ».")
+        EmptyHint(stringResource(R.string.no_results, query))
     } else {
         LazyColumn(
             contentPadding = PaddingValues(12.dp),
@@ -160,7 +162,7 @@ private fun RecipeCard(
             val subtitle = listOfNotNull(
                 recipe.style,
                 recipe.volume?.let { "${fmtQty(it)} L" },
-                "${recipe.ingredients.size} ingrédients",
+                stringResource(R.string.n_ingredients, recipe.ingredients.size),
             ).joinToString(" · ")
             Text(
                 subtitle,
@@ -181,7 +183,7 @@ private fun StockBadge(stock: StockCheck.Result) {
     if (stock.allOk) {
         Icon(
             Icons.Filled.CheckCircle,
-            contentDescription = "Stock complet",
+            contentDescription = stringResource(R.string.stock_banner_ok),
             tint = StockOk,
             modifier = Modifier.size(20.dp),
         )
@@ -193,7 +195,7 @@ private fun StockBadge(stock: StockCheck.Result) {
         }
         Icon(
             Icons.Filled.WarningAmber,
-            contentDescription = "Stock incomplet",
+            contentDescription = stringResource(R.string.stock_incomplete),
             tint = tint,
             modifier = Modifier.size(20.dp),
         )
@@ -205,7 +207,7 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
     val state by vm.state.collectAsState()
     val recipe = state.recipes.find { it.id == recipeId }
     if (recipe == null) {
-        EmptyHint("Recette introuvable.")
+        EmptyHint(stringResource(R.string.recipe_not_found))
         return
     }
     val stock = remember(recipe.ingredients, state.inventory) {
@@ -224,7 +226,7 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         Text(recipe.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         val subtitle = listOfNotNull(
             recipe.style,
-            recipe.batchNo?.let { "brassin n°$it" },
+            recipe.batchNo?.let { stringResource(R.string.recipe_batch_no, it) },
         ).joinToString(" · ")
         if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
         if (recipe.rating != null) StarRating(recipe.rating)
@@ -232,12 +234,12 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         if (stock != null) StockBanner(stock)
 
         InfoCard {
-            InfoLine("Volume", recipe.volume?.let { "${fmtQty(it)} L" })
-            InfoLine("Empâtage", recipe.mashTemp?.let { t ->
+            InfoLine(stringResource(R.string.label_volume), recipe.volume?.let { "${fmtQty(it)} L" })
+            InfoLine(stringResource(R.string.label_mash), recipe.mashTemp?.let { t ->
                 "${fmtQty(t)} °C" + (recipe.mashTime?.let { " · $it min" } ?: "")
             })
-            InfoLine("Ébullition", recipe.boilTime?.let { "$it min" })
-            InfoLine("Fermentation", recipe.fermTemp?.let { t ->
+            InfoLine(stringResource(R.string.label_boil), recipe.boilTime?.let { "$it min" })
+            InfoLine(stringResource(R.string.label_ferm), recipe.fermTemp?.let { t ->
                 "${fmtQty(t)} °C" + (recipe.fermTime?.let { " · $it jours" } ?: "")
             })
         }
@@ -262,7 +264,7 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         }
 
         if (!recipe.notes.isNullOrBlank()) {
-            Text("Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(recipe.notes, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(Modifier.height(24.dp))
@@ -276,13 +278,13 @@ private fun StockBanner(stock: StockCheck.Result) {
             StockBadge(stock)
             Spacer(Modifier.width(10.dp))
             if (stock.allOk) {
-                Text("Stock complet pour cette recette", color = StockOk, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.stock_banner_ok_recipe), color = StockOk, fontWeight = FontWeight.SemiBold)
             } else {
                 val parts = listOfNotNull(
-                    stock.nOk.takeIf { it > 0 }?.let { "$it en stock" },
-                    stock.nLow.takeIf { it > 0 }?.let { "$it insuffisant(s)" },
-                    stock.nMissing.takeIf { it > 0 }?.let { "$it manquant(s)" },
-                    stock.nMismatch.takeIf { it > 0 }?.let { "$it en unités ≠" },
+                    stock.nOk.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_ok, it) },
+                    stock.nLow.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_low, it) },
+                    stock.nMissing.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_missing, it) },
+                    stock.nMismatch.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_mismatch, it) },
                 )
                 Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
             }
@@ -311,13 +313,17 @@ private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?) {
             }
             if (stock != null) {
                 val label = when (stock.status) {
-                    StockCheck.Status.OK ->
-                        "✓ en stock (${StockCheck.formatBase(stock.available, stock.base)})"
-                    StockCheck.Status.LOW ->
-                        "manque ${StockCheck.formatBase(stock.needed - stock.available, stock.base)} " +
-                            "(dispo ${StockCheck.formatBase(stock.available, stock.base)})"
-                    StockCheck.Status.MISSING -> "pas en stock"
-                    StockCheck.Status.UNIT_MISMATCH -> "en stock dans une autre unité"
+                    StockCheck.Status.OK -> stringResource(
+                        R.string.stock_line_ok,
+                        StockCheck.formatBase(stock.available, stock.base),
+                    )
+                    StockCheck.Status.LOW -> stringResource(
+                        R.string.stock_line_low,
+                        StockCheck.formatBase(stock.needed - stock.available, stock.base),
+                        StockCheck.formatBase(stock.available, stock.base),
+                    )
+                    StockCheck.Status.MISSING -> stringResource(R.string.stock_line_missing)
+                    StockCheck.Status.UNIT_MISMATCH -> stringResource(R.string.stock_line_mismatch)
                 }
                 Text(
                     label,
@@ -360,15 +366,15 @@ private fun DraftsList(
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             if (drafts.isEmpty()) {
-                EmptyHint("Aucun brouillon. Crée le premier avec le bouton +.")
+                EmptyHint(stringResource(R.string.drafts_empty))
             } else {
                 val filtered = drafts.filter { d ->
                     query.isBlank() || listOfNotNull(d.title, d.style, d.eventLabel)
                         .any { it.contains(query, ignoreCase = true) }
                 }
-                SearchField(query, onQuery, "Rechercher un brouillon…")
+                SearchField(query, onQuery, stringResource(R.string.drafts_search))
                 if (filtered.isEmpty()) {
-                    EmptyHint("Aucun résultat pour « $query ».")
+                    EmptyHint(stringResource(R.string.no_results, query))
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(
@@ -390,7 +396,7 @@ private fun DraftsList(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "Nouveau brouillon")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.title_draft_new))
         }
     }
 }
@@ -423,8 +429,8 @@ private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit) {
             val subtitle = listOfNotNull(
                 draft.style,
                 draft.volume?.let { "${fmtQty(it)} L" },
-                nIng.takeIf { it > 0 }?.let { "$it ingrédients" },
-                draft.targetDate?.let { "cible $it" },
+                nIng.takeIf { it > 0 }?.let { stringResource(R.string.n_ingredients, it) },
+                draft.targetDate?.let { stringResource(R.string.draft_target, it) },
             ).joinToString(" · ")
             if (subtitle.isNotEmpty()) {
                 Text(
@@ -442,7 +448,7 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
     val state by vm.state.collectAsState()
     val draft = state.drafts.find { it.id == draftId }
     if (draft == null) {
-        EmptyHint("Brouillon introuvable.")
+        EmptyHint(stringResource(R.string.draft_not_found))
         return
     }
     Column(
@@ -464,10 +470,10 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
         draft.style?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
 
         InfoCard {
-            InfoLine("Volume", draft.volume?.let { "${fmtQty(it)} L" })
-            InfoLine("Date cible", draft.targetDate)
-            InfoLine("Événement", draft.eventLabel)
-            InfoLine("Modifié le", draft.updatedAt?.take(10))
+            InfoLine(stringResource(R.string.label_volume), draft.volume?.let { "${fmtQty(it)} L" })
+            InfoLine(stringResource(R.string.label_target_date), draft.targetDate)
+            InfoLine(stringResource(R.string.label_event), draft.eventLabel)
+            InfoLine(stringResource(R.string.label_updated_on), draft.updatedAt?.take(10))
         }
 
         val ings = draft.parsedIngredients().filter { it.name.isNotBlank() }
@@ -506,7 +512,7 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
         }
 
         if (!draft.notes.isNullOrBlank()) {
-            Text("Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(draft.notes, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(Modifier.height(24.dp))

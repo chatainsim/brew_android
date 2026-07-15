@@ -30,7 +30,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.BrewCalc
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewLogEntry
@@ -41,7 +43,7 @@ fun BrewsScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
     val state by vm.state.collectAsState()
     RefreshableContent(vm) {
         if (state.brews.isEmpty()) {
-            EmptyHint("Aucun brassin.")
+            EmptyHint(stringResource(R.string.brews_empty))
             return@RefreshableContent
         }
         LazyColumn(
@@ -84,7 +86,7 @@ private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit) {
                 )
             }
             val line1 = listOfNotNull(
-                brew.brewDate?.let { "Brassé le $it" },
+                brew.brewDate?.let { stringResource(R.string.brewed_on, it) },
                 brew.volumeBrewed?.let { "${fmtQty(it)} L" },
             ).joinToString(" · ")
             if (line1.isNotEmpty()) {
@@ -104,8 +106,8 @@ private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit) {
                 Text(line2, style = MaterialTheme.typography.bodyMedium)
             }
             val extras = listOfNotNull(
-                brew.fermentationCount?.takeIf { it > 0 }?.let { "$it mesures" },
-                brew.logCount?.takeIf { it > 0 }?.let { "$it notes de journal" },
+                brew.fermentationCount?.takeIf { it > 0 }?.let { stringResource(R.string.n_readings, it) },
+                brew.logCount?.takeIf { it > 0 }?.let { stringResource(R.string.n_log_entries, it) },
             ).joinToString(" · ")
             if (extras.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
@@ -124,7 +126,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     val state by vm.state.collectAsState()
     val brew = state.brews.find { it.id == brewId }
     if (brew == null) {
-        EmptyHint("Brassin introuvable.")
+        EmptyHint(stringResource(R.string.brew_not_found))
         return
     }
     LaunchedEffect(brew.id) { vm.loadBrewExtras(brew.id) }
@@ -165,7 +167,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             if (brew.recipeId != null) {
                 AssistChip(
                     onClick = { onOpenRecipe(brew.recipeId) },
-                    label = { Text(brew.recipeName ?: "Voir la recette") },
+                    label = { Text(brew.recipeName ?: stringResource(R.string.see_recipe)) },
                     leadingIcon = {
                         Icon(
                             Icons.AutoMirrored.Outlined.MenuBook,
@@ -179,27 +181,27 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
         brew.recipeStyle?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
 
         InfoCard {
-            InfoLine("Brassé le", brew.brewDate)
-            InfoLine("Embouteillé le", brew.bottlingDate?.take(10))
-            InfoLine("Volume obtenu", brew.volumeBrewed?.let { "${fmtQty(it)} L" })
-            InfoLine("Densité initiale", brew.og?.let { fmtGravity(it) })
-            InfoLine("Densité finale", brew.fg?.let { fmtGravity(it) })
-            InfoLine("Alcool", brew.abv?.let { "${fmtQty(it)} %" })
+            InfoLine(stringResource(R.string.label_brew_date), brew.brewDate)
+            InfoLine(stringResource(R.string.label_bottling_date), brew.bottlingDate?.take(10))
+            InfoLine(stringResource(R.string.label_volume_brewed), brew.volumeBrewed?.let { "${fmtQty(it)} L" })
+            InfoLine(stringResource(R.string.label_og), brew.og?.let { fmtGravity(it) })
+            InfoLine(stringResource(R.string.label_fg), brew.fg?.let { fmtGravity(it) })
+            InfoLine(stringResource(R.string.label_abv), brew.abv?.let { "${fmtQty(it)} %" })
             InfoLine(
-                "Atténuation",
+                stringResource(R.string.label_attenuation),
                 if (brew.og != null && brew.fg != null)
                     BrewCalc.attenuation(brew.og, brew.fg)?.let { "${fmtQty(kotlin.math.round(it * 10) / 10)} %" }
                 else null,
             )
-            InfoLine("Efficacité", brew.actualEfficiency?.let { "${fmtQty(it)} %" })
-            InfoLine("Fermentation", brew.fermTime?.let { "$it jours" })
+            InfoLine(stringResource(R.string.label_efficiency), brew.actualEfficiency?.let { "${fmtQty(it)} %" })
+            InfoLine(stringResource(R.string.label_ferm), brew.fermTime?.let { "$it jours" })
             InfoLine(
-                "Coût",
+                stringResource(R.string.label_cost),
                 brew.costSnapshot?.let { c ->
                     "${fmtQty(c)} €" + (brew.costPerLiter?.let { " · ${fmtQty(it)} €/L" } ?: "")
                 },
             )
-            InfoLine("Reste en cave", brew.caveLiters?.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
+            InfoLine(stringResource(R.string.label_cave_left), brew.caveLiters?.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
         }
 
         when {
@@ -217,7 +219,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             else -> {
                 if (extras.readings.isNotEmpty()) {
                     Text(
-                        "Fermentation (${extras.readings.size} mesures)",
+                        stringResource(R.string.ferm_section, extras.readings.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -225,7 +227,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                 }
                 if (extras.log.isNotEmpty()) {
                     Text(
-                        "Journal",
+                        stringResource(R.string.log_section),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -235,7 +237,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
         }
 
         if (!brew.notes.isNullOrBlank()) {
-            Text("Notes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(brew.notes, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(Modifier.height(24.dp))
@@ -257,7 +259,7 @@ private fun FermentationCard(readings: List<FermReading>) {
                 last.temperature?.let { "${fmtQty(it)} °C" },
             ).joinToString(" · ")
             Text(
-                "Dernière mesure : $summary",
+                stringResource(R.string.last_reading, summary),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
@@ -317,10 +319,10 @@ private fun GravityChart(readings: List<FermReading>) {
     }
     Spacer(Modifier.height(4.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Legend("Densité ${fmtGravity(gravities.max())} → ${fmtGravity(gravities.min())}", gravityColor)
+        Legend(stringResource(R.string.legend_gravity, fmtGravity(gravities.max()), fmtGravity(gravities.min())), gravityColor)
         if (tempPts.size >= 2) {
             val temps = tempPts.map { it.second }
-            Legend("Temp. ${fmtQty(temps.min())}–${fmtQty(temps.max())} °C", tempColor)
+            Legend(stringResource(R.string.legend_temp, fmtQty(temps.min()), fmtQty(temps.max())), tempColor)
         }
     }
 }

@@ -19,16 +19,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
+import fr.easter.brewhome.data.VpnController
 
-private const val WG_PERMISSION = "com.wireguard.android.permission.CONTROL_TUNNELS"
+private const val WG_PERMISSION = "${VpnController.WIREGUARD_PACKAGE}.permission.CONTROL_TUNNELS"
 
 private val themeModes = listOf(
-    "system" to "Auto",
-    "light" to "Clair",
-    "dark" to "Sombre",
+    "system" to R.string.theme_auto,
+    "light" to R.string.theme_light,
+    "dark" to R.string.theme_dark,
 )
 
 @Composable
@@ -44,18 +47,17 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Serveur BrewHome", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.settings_server_title), style = MaterialTheme.typography.titleLarge)
         Text(
-            "Adresse du serveur sur ton réseau local (ou via VPN). " +
-                "Exemple : http://192.168.1.50:5000",
+            stringResource(R.string.settings_server_help),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
         )
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
-            label = { Text("URL du serveur") },
-            placeholder = { Text("http://192.168.1.50:5000") },
+            label = { Text(stringResource(R.string.settings_server_url_label)) },
+            placeholder = { Text(stringResource(R.string.settings_server_placeholder)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -64,23 +66,23 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             enabled = url.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Enregistrer et se connecter")
+            Text(stringResource(R.string.settings_save_connect))
         }
 
         Spacer(Modifier.height(8.dp))
-        Text("Apparence", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleLarge)
         Text(
-            "« Auto » suit le thème clair/sombre du téléphone.",
+            stringResource(R.string.settings_appearance_help),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            themeModes.forEachIndexed { i, (mode, label) ->
+            themeModes.forEachIndexed { i, (mode, labelRes) ->
                 SegmentedButton(
                     selected = themeMode == mode,
                     onClick = { vm.setThemeMode(mode) },
                     shape = SegmentedButtonDefaults.itemShape(index = i, count = themeModes.size),
-                ) { Text(label) }
+                ) { Text(stringResource(labelRes)) }
             }
         }
 
@@ -89,10 +91,12 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             val dynamicColor by vm.dynamicColor.collectAsState()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Couleurs du téléphone", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Material You : palette dérivée de ton fond d'écran " +
-                            "au lieu de l'ambre BrewHome.",
+                        stringResource(R.string.settings_dynamic_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        stringResource(R.string.settings_dynamic_help),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -105,12 +109,9 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         }
 
         Spacer(Modifier.height(8.dp))
-        Text("VPN WireGuard", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.settings_vpn_title), style = MaterialTheme.typography.titleLarge)
         Text(
-            "Si le serveur ne répond pas au lancement (hors du réseau local), " +
-                "l'app monte le tunnel WireGuard puis réessaie. Nécessite l'app " +
-                "WireGuard avec « Autoriser les applications de contrôle à " +
-                "distance » activé dans ses réglages avancés.",
+            stringResource(R.string.settings_vpn_help),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
         )
@@ -123,7 +124,7 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         ) { granted -> vm.setWgAuto(granted) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "VPN automatique si serveur injoignable",
+                stringResource(R.string.settings_vpn_switch),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -148,12 +149,11 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
                 tunnel = it
                 vm.setWgTunnel(it)
             },
-            label = { Text("Nom du tunnel WireGuard") },
-            placeholder = { Text("maison") },
+            label = { Text(stringResource(R.string.settings_vpn_tunnel_label)) },
+            placeholder = { Text(stringResource(R.string.settings_vpn_tunnel_placeholder)) },
             singleLine = true,
             enabled = wgAuto,
             modifier = Modifier.fillMaxWidth(),
         )
-
     }
 }

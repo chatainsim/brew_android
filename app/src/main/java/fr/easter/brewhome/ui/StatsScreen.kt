@@ -20,7 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 
 /** Statistiques de brasserie — même esprit que la page Stats du site. */
 @Composable
@@ -46,22 +48,22 @@ fun StatsScreen(vm: BrewViewModel) {
         val abvs = done.mapNotNull { it.abv }
         val totalCost = done.sumOf { it.costSnapshot ?: 0.0 }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("${done.size}", "brassins terminés", Modifier.weight(1f))
-            StatCard("${fmtQty(totalVol)} L", "litres brassés", Modifier.weight(1f))
+            StatCard("${done.size}", stringResource(R.string.stat_brews_done), Modifier.weight(1f))
+            StatCard("${fmtQty(totalVol)} L", stringResource(R.string.stat_liters_brewed), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
                 if (abvs.isEmpty()) "—" else "${fmtQty(kotlin.math.round(abvs.average() * 10) / 10)} %",
-                "alcool moyen", Modifier.weight(1f),
+                stringResource(R.string.stat_avg_abv), Modifier.weight(1f),
             )
             StatCard(
                 if (totalCost > 0) "${fmtQty(kotlin.math.round(totalCost))} €" else "—",
-                "coût total", Modifier.weight(1f),
+                stringResource(R.string.stat_total_cost), Modifier.weight(1f),
             )
         }
         if (done.isEmpty()) {
             Text(
-                "Aucun brassin terminé pour l'instant.",
+                stringResource(R.string.stat_no_brews),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -72,31 +74,31 @@ fun StatsScreen(vm: BrewViewModel) {
             val vols = done.mapNotNull { it.volumeBrewed }
             val effs = done.mapNotNull { it.actualEfficiency }
             val fermDays = done.mapNotNull { it.fermTime }
-            SectionTitle("Production en détail")
+            SectionTitle(stringResource(R.string.stat_prod_details))
             InfoCard {
                 InfoLine(
-                    "Volume moyen / brassin",
+                    stringResource(R.string.stat_avg_volume),
                     vols.takeIf { it.isNotEmpty() }
                         ?.let { "${fmtQty(kotlin.math.round(it.average() * 10) / 10)} L" },
                 )
                 InfoLine(
-                    "Efficacité moyenne",
+                    stringResource(R.string.stat_avg_efficiency),
                     effs.takeIf { it.isNotEmpty() }
                         ?.let { "${fmtQty(kotlin.math.round(it.average() * 10) / 10)} %" },
                 )
                 InfoLine(
-                    "Fermentation moyenne",
+                    stringResource(R.string.stat_avg_ferm),
                     fermDays.takeIf { it.isNotEmpty() }
                         ?.let { "${kotlin.math.round(it.average()).toInt()} jours" },
                 )
                 InfoLine(
-                    "Coût moyen",
+                    stringResource(R.string.stat_avg_cost),
                     if (totalCost > 0 && totalVol > 0)
                         "${fmtQty(kotlin.math.round(totalCost / totalVol * 100) / 100)} €/L"
                     else null,
                 )
                 InfoLine(
-                    "Densité initiale moyenne",
+                    stringResource(R.string.stat_avg_og),
                     done.mapNotNull { it.og }.takeIf { it.isNotEmpty() }
                         ?.let { String.format(java.util.Locale.US, "%.3f", it.average()) },
                 )
@@ -108,7 +110,7 @@ fun StatsScreen(vm: BrewViewModel) {
             .mapValues { (_, brews) -> brews.sumOf { it.volumeBrewed ?: 0.0 } }
             .toSortedMap(compareByDescending { it })
         if (byYear.isNotEmpty()) {
-            SectionTitle("Volume brassé par année")
+            SectionTitle(stringResource(R.string.stat_volume_by_year))
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     val max = byYear.values.max().takeIf { it > 0 } ?: 1.0
@@ -125,7 +127,7 @@ fun StatsScreen(vm: BrewViewModel) {
             b.recipeStyle ?: b.recipeId?.let { recipeById[it]?.style }
         }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(6)
         if (styles.isNotEmpty()) {
-            SectionTitle("Styles les plus brassés")
+            SectionTitle(stringResource(R.string.stat_top_styles))
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
                     val max = styles.first().value.toDouble()
@@ -142,22 +144,22 @@ fun StatsScreen(vm: BrewViewModel) {
         val n75 = beers.sumOf { it.stock75 ?: 0 }
         val keg = beers.sumOf { it.kegLiters ?: 0.0 }
         val caveL = n33 * 0.33 + n75 * 0.75 + keg
-        SectionTitle("Cave actuelle")
+        SectionTitle(stringResource(R.string.stat_cave))
         InfoCard {
-            InfoLine("Bouteilles 33 cl", "$n33")
-            InfoLine("Bouteilles 75 cl", "$n75")
-            InfoLine("Fûts", keg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
-            InfoLine("Total", "${fmtQty(kotlin.math.round(caveL * 100) / 100)} L")
+            InfoLine(stringResource(R.string.stat_bottles_33), "$n33")
+            InfoLine(stringResource(R.string.stat_bottles_75), "$n75")
+            InfoLine(stringResource(R.string.stat_kegs), keg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
+            InfoLine(stringResource(R.string.stat_total), "${fmtQty(kotlin.math.round(caveL * 100) / 100)} L")
         }
 
         // ── Dégustations ──
         val rated = beers.filter { (it.tasteRating ?: 0) > 0 }
         if (rated.isNotEmpty()) {
-            SectionTitle("Dégustations")
+            SectionTitle(stringResource(R.string.stat_tastings))
             InfoCard {
-                InfoLine("Bières notées", "${rated.size}")
+                InfoLine(stringResource(R.string.stat_rated_beers), "${rated.size}")
                 InfoLine(
-                    "Note moyenne",
+                    stringResource(R.string.stat_avg_rating),
                     "${fmtQty(kotlin.math.round(rated.mapNotNull { it.tasteRating }.average() * 10) / 10)} / 5",
                 )
             }
@@ -186,30 +188,30 @@ fun StatsScreen(vm: BrewViewModel) {
         val stockValue = state.inventory
             .mapNotNull { item -> item.pricePerUnit?.let { it * item.quantity } }
             .sum()
-        SectionTitle("Stock d'ingrédients")
+        SectionTitle(stringResource(R.string.stat_inventory))
         InfoCard {
-            InfoLine("Articles", "${state.inventory.size}")
-            InfoLine("En stock bas", if (lowCount > 0) "$lowCount ⚠️" else "aucun")
+            InfoLine(stringResource(R.string.stat_items), "${state.inventory.size}")
+            InfoLine(stringResource(R.string.stat_low_stock), if (lowCount > 0) "$lowCount ⚠️" else stringResource(R.string.stat_none))
             InfoLine(
-                "Valeur estimée",
+                stringResource(R.string.stat_value),
                 stockValue.takeIf { it > 0 }
                     ?.let { "${fmtQty(kotlin.math.round(it))} €" },
             )
-            InfoLine("Sur la liste de courses", state.shopping.size.takeIf { it > 0 }?.let { "$it" })
+            InfoLine(stringResource(R.string.stat_on_shopping), state.shopping.size.takeIf { it > 0 }?.let { "$it" })
         }
 
         // ── Consommation ──
         val cons = consumption
         if (cons == null) {
             Text(
-                "Chargement de la consommation…",
+                stringResource(R.string.stat_loading_consumption),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
         } else {
             val months = cons.byMonth.takeLast(12)
             if (months.isNotEmpty()) {
-                SectionTitle("Consommation (12 derniers mois)")
+                SectionTitle(stringResource(R.string.stat_consumption_12m))
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         fun liters(m: fr.easter.brewhome.data.ConsumptionMonth) =
@@ -227,13 +229,13 @@ fun StatsScreen(vm: BrewViewModel) {
             val t75 = cons.byMonth.sumOf { it.total75 ?: 0 }
             val tKeg = cons.byMonth.sumOf { it.totalKeg ?: 0.0 }
             if (t33 + t75 > 0 || tKeg > 0) {
-                SectionTitle("Consommation totale")
+                SectionTitle(stringResource(R.string.stat_consumption_total))
                 InfoCard {
-                    InfoLine("Bouteilles 33 cl", t33.takeIf { it > 0 }?.let { "$it" })
-                    InfoLine("Bouteilles 75 cl", t75.takeIf { it > 0 }?.let { "$it" })
-                    InfoLine("Au fût", tKeg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
+                    InfoLine(stringResource(R.string.stat_bottles_33), t33.takeIf { it > 0 }?.let { "$it" })
+                    InfoLine(stringResource(R.string.stat_bottles_75), t75.takeIf { it > 0 }?.let { "$it" })
+                    InfoLine(stringResource(R.string.stat_from_keg), tKeg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
                     InfoLine(
-                        "Total",
+                        stringResource(R.string.stat_total),
                         "${fmtQty(kotlin.math.round((t33 * 0.33 + t75 * 0.75 + tKeg) * 10) / 10)} L",
                     )
                 }
@@ -241,7 +243,7 @@ fun StatsScreen(vm: BrewViewModel) {
 
             val topBeers = cons.byBeer.filter { (it.totalLiters ?: 0.0) > 0 }.take(5)
             if (topBeers.isNotEmpty()) {
-                SectionTitle("Bières les plus consommées")
+                SectionTitle(stringResource(R.string.stat_top_beers))
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         val max = topBeers.first().totalLiters ?: 1.0

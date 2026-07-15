@@ -10,7 +10,7 @@
     </queries>
 
     <application
-        android:label="BrewHome"
+        android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.BrewHome"

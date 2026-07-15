@@ -2,6 +2,7 @@ package fr.easter.brewhome.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -37,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,18 +49,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.share.ShareText
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-data class Tab(val route: String, val label: String, val icon: ImageVector)
+data class Tab(val route: String, @StringRes val labelRes: Int, val icon: ImageVector)
 
 val tabs = listOf(
-    Tab("beers", "Cave", Icons.Outlined.LocalDrink),
-    Tab("recipes", "Recettes", Icons.AutoMirrored.Outlined.MenuBook),
-    Tab("inventory", "Stock", Icons.Outlined.Inventory2),
-    Tab("brews", "Brassins", Icons.Outlined.Science),
-    Tab("tools", "Outils", Icons.Outlined.Calculate),
+    Tab("beers", R.string.tab_beers, Icons.Outlined.LocalDrink),
+    Tab("recipes", R.string.tab_recipes, Icons.AutoMirrored.Outlined.MenuBook),
+    Tab("inventory", R.string.tab_inventory, Icons.Outlined.Inventory2),
+    Tab("brews", R.string.tab_brews, Icons.Outlined.Science),
+    Tab("tools", R.string.tab_tools, Icons.Outlined.Calculate),
 )
 
 /** Onglet auquel appartient une route (pour la sélection de la barre du bas). */
@@ -112,19 +115,20 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 title = {
                     Text(
                         when {
-                            currentRoute == "settings" -> "Réglages"
-                            currentRoute?.startsWith("recipe/") == true -> "Recette"
-                            currentRoute?.startsWith("beer/") == true -> "Bière"
-                            currentRoute?.startsWith("brew/") == true -> "Brassin"
-                            currentRoute?.startsWith("draft/") == true -> "Brouillon"
+                            currentRoute == "settings" -> stringResource(R.string.title_settings)
+                            currentRoute?.startsWith("recipe/") == true -> stringResource(R.string.title_recipe)
+                            currentRoute?.startsWith("beer/") == true -> stringResource(R.string.title_beer)
+                            currentRoute?.startsWith("brew/") == true -> stringResource(R.string.title_brew)
+                            currentRoute?.startsWith("draft/") == true -> stringResource(R.string.title_draft)
                             currentRoute?.startsWith("draftEdit/") == true ->
                                 if (backStack?.arguments?.getString("id") == "new")
-                                    "Nouveau brouillon" else "Modifier le brouillon"
-                            currentRoute == "stats" -> "Statistiques"
-                            currentRoute == "tools" -> "Outils"
+                                    stringResource(R.string.title_draft_new)
+                                else stringResource(R.string.title_draft_edit)
+                            currentRoute == "stats" -> stringResource(R.string.title_stats)
+                            currentRoute == "tools" -> stringResource(R.string.tab_tools)
                             currentRoute?.startsWith("tools/") == true ->
                                 toolTitle(backStack?.arguments?.getString("id"))
-                            else -> "BrewHome"
+                            else -> stringResource(R.string.app_name)
                         },
                         fontWeight = FontWeight.Bold,
                     )
@@ -135,7 +139,10 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 navigationIcon = {
                     if (canGoBack) {
                         IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.cd_back),
+                            )
                         }
                     }
                 },
@@ -147,14 +154,14 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     } else null
                     if (recipeToShare != null) {
                         val context = LocalContext.current
+                        val subject = stringResource(R.string.share_subject_recipe, recipeToShare.name)
                         IconButton(onClick = {
-                            shareText(
-                                context,
-                                ShareText.recipe(recipeToShare),
-                                "Recette ${recipeToShare.name}",
-                            )
+                            shareText(context, ShareText.recipe(recipeToShare), subject)
                         }) {
-                            Icon(Icons.Filled.Share, contentDescription = "Partager la recette")
+                            Icon(
+                                Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.cd_share_recipe),
+                            )
                         }
                     }
                     // Partage du brouillon ouvert
@@ -164,34 +171,37 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     } else null
                     if (draftToShare != null) {
                         val context = LocalContext.current
+                        val subject = stringResource(R.string.share_subject_draft, draftToShare.title)
                         IconButton(onClick = {
                             navController.navigate("draftEdit/${draftToShare.id}")
                         }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Modifier le brouillon")
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = stringResource(R.string.cd_edit_draft),
+                            )
                         }
                         IconButton(onClick = {
-                            shareText(
-                                context,
-                                ShareText.draft(draftToShare),
-                                "Brouillon ${draftToShare.title}",
-                            )
+                            shareText(context, ShareText.draft(draftToShare), subject)
                         }) {
-                            Icon(Icons.Filled.Share, contentDescription = "Partager le brouillon")
+                            Icon(
+                                Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.cd_share_draft),
+                            )
                         }
                     }
                     // Partage du stock complet
                     if (currentRoute == "inventory" && state.inventory.isNotEmpty()) {
                         val context = LocalContext.current
+                        val subject = stringResource(R.string.share_subject_inventory)
                         IconButton(onClick = {
                             val date = LocalDate.now()
                                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                            shareText(
-                                context,
-                                ShareText.inventory(state.inventory, date),
-                                "Stock d'ingrédients de brasserie",
-                            )
+                            shareText(context, ShareText.inventory(state.inventory, date), subject)
                         }) {
-                            Icon(Icons.Filled.Share, contentDescription = "Partager le stock")
+                            Icon(
+                                Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.cd_share_inventory),
+                            )
                         }
                     }
                     // Ouvre la vitrine GitHub Pages (ou à défaut la page Cave du site)
@@ -206,7 +216,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = "Ouvrir la vitrine de la cave",
+                                contentDescription = stringResource(R.string.cd_open_vitrine),
                             )
                         }
                     }
@@ -220,12 +230,18 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                         )
                     } else if (dataScreen) {
                         IconButton(onClick = { vm.refreshAll() }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Rafraîchir")
+                            Icon(
+                                Icons.Filled.Refresh,
+                                contentDescription = stringResource(R.string.cd_refresh),
+                            )
                         }
                     }
                     if (currentRoute != "settings") {
                         IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(Icons.Filled.Settings, contentDescription = "Réglages")
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.title_settings),
+                            )
                         }
                     }
                 },
@@ -234,6 +250,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
         bottomBar = {
             NavigationBar {
                 tabs.forEach { tab ->
+                    val label = stringResource(tab.labelRes)
                     NavigationBarItem(
                         selected = currentTab == tab.route,
                         onClick = {
@@ -245,8 +262,8 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
+                        icon = { Icon(tab.icon, contentDescription = label) },
+                        label = { Text(label) },
                     )
                 }
             }

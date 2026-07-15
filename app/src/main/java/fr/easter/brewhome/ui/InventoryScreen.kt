@@ -21,7 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
@@ -52,12 +54,12 @@ fun InventoryScreen(vm: BrewViewModel) {
                     selected = !showShopping,
                     onClick = { showShopping = false },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                ) { Text("Stock (${state.inventory.size})") }
+                ) { Text(stringResource(R.string.inventory_seg, state.inventory.size)) }
                 SegmentedButton(
                     selected = showShopping,
                     onClick = { showShopping = true },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                ) { Text("Courses (${state.shopping.size})") }
+                ) { Text(stringResource(R.string.shopping_seg, state.shopping.size)) }
             }
             if (showShopping) {
                 ShoppingContent(vm)
@@ -88,7 +90,7 @@ private fun InventoryContent(
     onEdit: (InventoryItem) -> Unit,
 ) {
     if (inventory.isEmpty()) {
-        EmptyHint("Aucun ingrédient en stock.")
+        EmptyHint(stringResource(R.string.inventory_empty))
         return
     }
     val filtered = inventory.filter { item ->
@@ -100,9 +102,9 @@ private fun InventoryContent(
         grouped.keys.filterNot { it in categoryOrder }.sorted()
 
     Column(Modifier.fillMaxSize()) {
-        SearchField(query, onQuery, "Rechercher un ingrédient…")
+        SearchField(query, onQuery, stringResource(R.string.inventory_search))
         if (filtered.isEmpty()) {
-            EmptyHint("Aucun résultat pour « $query ».")
+            EmptyHint(stringResource(R.string.no_results, query))
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(12.dp),
@@ -150,13 +152,13 @@ private fun ShoppingContent(vm: BrewViewModel) {
                 ) {
                     Icon(Icons.Filled.ShoppingCart, contentDescription = null)
                     Text(
-                        "Transférer $checkedCount acheté(s) dans le stock",
+                        stringResource(R.string.shopping_buy, checkedCount),
                         Modifier.padding(start = 8.dp),
                     )
                 }
             }
             if (state.shopping.isEmpty()) {
-                EmptyHint("Liste de courses vide. Ajoute un article avec le bouton +.")
+                EmptyHint(stringResource(R.string.shopping_empty))
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(
@@ -181,7 +183,7 @@ private fun ShoppingContent(vm: BrewViewModel) {
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = "Ajouter un article")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_add_title))
         }
     }
 
@@ -229,7 +231,7 @@ private fun ShoppingRow(item: ShoppingItem, onToggle: () -> Unit, onDelete: () -
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Filled.Delete,
-                    contentDescription = "Supprimer l'article",
+                    contentDescription = stringResource(R.string.cd_delete_item),
                     tint = MaterialTheme.colorScheme.error,
                 )
             }
@@ -250,18 +252,18 @@ private fun AddShoppingDialog(onAdd: (ShoppingPost) -> Unit, onDismiss: () -> Un
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ajouter aux courses") },
+        title = { Text(stringResource(R.string.shopping_add_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nom") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 DialogDropdown(
-                    label = "Catégorie",
+                    label = stringResource(R.string.label_category),
                     value = categoryLabel(category),
                     options = categoryOrder,
                     optionLabel = { categoryLabel(it) },
@@ -271,14 +273,14 @@ private fun AddShoppingDialog(onAdd: (ShoppingPost) -> Unit, onDismiss: () -> Un
                     OutlinedTextField(
                         value = qty,
                         onValueChange = { qty = it },
-                        label = { Text("Quantité") },
+                        label = { Text(stringResource(R.string.label_quantity)) },
                         singleLine = true,
                         isError = parsedQty == null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.weight(1f),
                     )
                     DialogDropdown(
-                        label = "Unité",
+                        label = stringResource(R.string.label_unit),
                         value = unit,
                         options = shoppingUnits,
                         optionLabel = { it },
@@ -299,10 +301,10 @@ private fun AddShoppingDialog(onAdd: (ShoppingPost) -> Unit, onDismiss: () -> Un
                     ))
                 },
                 enabled = name.isNotBlank() && parsedQty != null && parsedQty >= 0,
-            ) { Text("Ajouter") }
+            ) { Text(stringResource(R.string.add)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuler") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -358,7 +360,7 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                     if (low) {
                         Icon(
                             Icons.Filled.Warning,
-                            contentDescription = "Stock bas",
+                            contentDescription = stringResource(R.string.low_stock),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp),
                         )
@@ -390,7 +392,7 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                 enabled = item.quantity > 0,
                 modifier = Modifier.size(34.dp),
             ) {
-                Icon(Icons.Filled.Remove, contentDescription = "Retirer")
+                Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_decrease))
             }
             Text(
                 "${fmtQty(item.quantity)} ${item.unit}",
@@ -400,7 +402,7 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                 modifier = Modifier.widthIn(min = 60.dp),
             )
             IconButton(onClick = { onAdjust(step) }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = "Ajouter")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_increase))
             }
         }
     }
@@ -418,7 +420,7 @@ private fun QtyDialog(item: InventoryItem, onDismiss: () -> Unit, onSave: (Doubl
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                label = { Text("Quantité (${item.unit})") },
+                label = { Text(stringResource(R.string.qty_with_unit, item.unit)) },
                 isError = parsed == null,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -428,10 +430,10 @@ private fun QtyDialog(item: InventoryItem, onDismiss: () -> Unit, onSave: (Doubl
             TextButton(
                 onClick = { parsed?.let(onSave) },
                 enabled = parsed != null && parsed >= 0,
-            ) { Text("Enregistrer") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuler") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
