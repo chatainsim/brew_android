@@ -64,10 +64,10 @@ val tabs = listOf(
 private fun tabOf(route: String?): String? = when {
     route == null -> null
     route == "beers" || route.startsWith("beer/") -> "beers"
-    route == "recipes" || route.startsWith("recipe/") -> "recipes"
+    route == "recipes" || route.startsWith("recipe/") || route.startsWith("draft/") -> "recipes"
     route == "inventory" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
-    route == "tools" || route.startsWith("tools/") -> "tools"
+    route == "tools" || route.startsWith("tools/") || route == "stats" -> "tools"
     else -> null
 }
 
@@ -114,6 +114,8 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                             currentRoute?.startsWith("recipe/") == true -> "Recette"
                             currentRoute?.startsWith("beer/") == true -> "Bière"
                             currentRoute?.startsWith("brew/") == true -> "Brassin"
+                            currentRoute?.startsWith("draft/") == true -> "Brouillon"
+                            currentRoute == "stats" -> "Statistiques"
                             currentRoute == "tools" -> "Outils"
                             currentRoute?.startsWith("tools/") == true ->
                                 toolTitle(backStack?.arguments?.getString("id"))
@@ -233,10 +235,20 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 BeerDetailScreen(vm, id)
             }
-            composable("recipes") { RecipesScreen(vm) { navController.navigate("recipe/$it") } }
+            composable("recipes") {
+                RecipesScreen(
+                    vm,
+                    onOpen = { navController.navigate("recipe/$it") },
+                    onOpenDraft = { navController.navigate("draft/$it") },
+                )
+            }
             composable("recipe/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 RecipeDetailScreen(vm, id)
+            }
+            composable("draft/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull()
+                DraftDetailScreen(vm, id)
             }
             composable("inventory") { InventoryScreen(vm) }
             composable("brews") { BrewsScreen(vm) { navController.navigate("brew/$it") } }
@@ -244,10 +256,16 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 BrewDetailScreen(vm, id) { navController.navigate("recipe/$it") }
             }
-            composable("tools") { ToolsScreen { navController.navigate("tools/$it") } }
+            composable("tools") {
+                ToolsScreen(
+                    onOpenStats = { navController.navigate("stats") },
+                    onOpen = { navController.navigate("tools/$it") },
+                )
+            }
             composable("tools/{id}") { entry ->
                 ToolScreen(entry.arguments?.getString("id"))
             }
+            composable("stats") { StatsScreen(vm) }
             composable("settings") {
                 SettingsScreen(vm) {
                     navController.navigate("beers") { popUpTo("settings") { inclusive = true } }

@@ -2,6 +2,7 @@ package fr.easter.brewhome.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 @Serializable
 data class Beer(
@@ -9,6 +10,7 @@ data class Beer(
     val name: String,
     val type: String? = null,
     val abv: Double? = null,
+    val archived: Int? = 0,
     @SerialName("stock_33cl") val stock33: Int? = 0,
     @SerialName("stock_75cl") val stock75: Int? = 0,
     @SerialName("keg_liters") val kegLiters: Double? = null,
@@ -85,6 +87,7 @@ data class Brew(
     val id: Int,
     @SerialName("recipe_id") val recipeId: Int? = null,
     val name: String,
+    val archived: Int? = 0,
     @SerialName("batch_number") val batchNumber: Int? = null,
     @SerialName("brew_date") val brewDate: String? = null,
     @SerialName("bottling_date") val bottlingDate: String? = null,
@@ -114,6 +117,61 @@ data class FermReading(
     val temperature: Double? = null,
     val source: String? = null,
     val notes: String? = null,
+)
+
+/** Brouillon de recette (idées en cours). */
+@Serializable
+data class Draft(
+    val id: Int,
+    val title: String,
+    val style: String? = null,
+    val volume: Double? = null,
+    /** JSON : liste de [DraftIngredient] sérialisée en chaîne côté serveur. */
+    val ingredients: String? = null,
+    val notes: String? = null,
+    @SerialName("target_date") val targetDate: String? = null,
+    @SerialName("event_label") val eventLabel: String? = null,
+    /** idea | in_progress | ready */
+    val status: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    val image: String? = null,
+)
+
+@Serializable
+data class DraftIngredient(
+    val name: String = "",
+    val category: String = "autre",
+    val quantity: Double? = null,
+    val unit: String? = null,
+)
+
+private val draftJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+
+fun Draft.parsedIngredients(): List<DraftIngredient> {
+    val raw = ingredients
+    if (raw.isNullOrBlank()) return emptyList()
+    return runCatching { draftJson.decodeFromString<List<DraftIngredient>>(raw) }
+        .getOrDefault(emptyList())
+}
+
+@Serializable
+data class ConsumptionMonth(
+    val period: String,
+    @SerialName("total_33cl") val total33: Int? = 0,
+    @SerialName("total_75cl") val total75: Int? = 0,
+    @SerialName("total_keg") val totalKeg: Double? = 0.0,
+)
+
+@Serializable
+data class ConsumptionBeer(
+    @SerialName("beer_name") val beerName: String? = null,
+    @SerialName("total_liters") val totalLiters: Double? = 0.0,
+)
+
+@Serializable
+data class Consumption(
+    @SerialName("by_month") val byMonth: List<ConsumptionMonth> = emptyList(),
+    @SerialName("by_beer") val byBeer: List<ConsumptionBeer> = emptyList(),
 )
 
 /** Entrée du journal de brassage. */

@@ -13,7 +13,10 @@ depuis le téléphone.
   (repo lu dans les réglages GitHub du serveur ; à défaut, page Cave du site).
 - **Recettes** : liste et fiche détaillée (paramètres d'empâtage/ébullition/fermentation,
   ingrédients groupés par catégorie avec temps d'ajout des houblons, alpha, EBC, notes) ;
-  partage de la recette en texte (mail, Telegram, WhatsApp…).
+  disponibilité du stock (coche verte si tout est en stock, détail par ingrédient dans
+  la fiche : en stock / insuffisant / manquant / unités ≠, mêmes règles que le site) ;
+  partage de la recette en texte (mail, Telegram, WhatsApp…) ; onglet **Brouillons**
+  (idées de recettes : statut, ingrédients, date cible, notes).
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
   alerte visuelle de stock bas ; partage du stock complet en texte structuré
@@ -21,6 +24,9 @@ depuis le téléphone.
 - **Brassins** : liste (statut coloré, date, volume, densités, ABV) et fiche détaillée :
   lien vers la recette, atténuation, efficacité, coût, courbe de fermentation
   (densité + température, mesures manuelles et densimètre connecté), journal de brassage.
+- **Statistiques** (depuis l'onglet Outils) : brassins terminés, litres brassés, alcool
+  moyen, coût total, volume par année, styles les plus brassés, cave actuelle,
+  consommation mensuelle et bières les plus consommées.
 - **Outils** : calculateurs de brassage hors-ligne, identiques à ceux du serveur —
   ABV/atténuation, correction densimètre (température), correction réfractomètre
   (Novotný), température d'empâtage, répartition en bouteilles 33/75 cl, primage

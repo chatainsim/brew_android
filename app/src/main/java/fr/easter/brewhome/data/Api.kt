@@ -45,6 +45,12 @@ interface BrewApi {
 
     @GET("api/app-settings")
     suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
+
+    @GET("api/drafts")
+    suspend fun getDrafts(): List<Draft>
+
+    @GET("api/consumption")
+    suspend fun getConsumption(): Consumption
 }
 
 object ApiClient {

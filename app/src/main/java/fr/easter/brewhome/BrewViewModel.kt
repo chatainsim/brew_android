@@ -8,6 +8,8 @@ import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.Consumption
+import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
@@ -32,6 +34,7 @@ data class UiState(
     val recipes: List<Recipe> = emptyList(),
     val inventory: List<InventoryItem> = emptyList(),
     val brews: List<Brew> = emptyList(),
+    val drafts: List<Draft> = emptyList(),
     val loaded: Boolean = false,
 )
 
@@ -80,9 +83,10 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 val recipes = api.getRecipes()
                 val inventory = api.getInventory()
                 val brews = api.getBrews()
+                val drafts = runCatching { api.getDrafts() }.getOrDefault(emptyList())
                 _state.value = UiState(
                     beers = beers, recipes = recipes,
-                    inventory = inventory, brews = brews, loaded = true,
+                    inventory = inventory, brews = brews, drafts = drafts, loaded = true,
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -158,6 +162,17 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
                 )
             }
+        }
+    }
+
+    private val _consumption = MutableStateFlow<Consumption?>(null)
+    val consumption: StateFlow<Consumption?> = _consumption
+
+    /** Charge les stats de consommation (écran Statistiques). */
+    fun loadConsumption() {
+        viewModelScope.launch {
+            runCatching { api().getConsumption() }
+                .onSuccess { _consumption.value = it }
         }
     }
 
