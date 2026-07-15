@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocalDrink
@@ -45,6 +46,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.share.ShareText
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 data class Tab(val route: String, val label: String, val icon: ImageVector)
 
@@ -129,6 +133,38 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     }
                 },
                 actions = {
+                    // Partage de la recette ouverte
+                    val recipeToShare = if (currentRoute?.startsWith("recipe/") == true) {
+                        val id = backStack?.arguments?.getString("id")?.toIntOrNull()
+                        state.recipes.find { it.id == id }
+                    } else null
+                    if (recipeToShare != null) {
+                        val context = LocalContext.current
+                        IconButton(onClick = {
+                            shareText(
+                                context,
+                                ShareText.recipe(recipeToShare),
+                                "Recette ${recipeToShare.name}",
+                            )
+                        }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Partager la recette")
+                        }
+                    }
+                    // Partage du stock complet
+                    if (currentRoute == "inventory" && state.inventory.isNotEmpty()) {
+                        val context = LocalContext.current
+                        IconButton(onClick = {
+                            val date = LocalDate.now()
+                                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                            shareText(
+                                context,
+                                ShareText.inventory(state.inventory, date),
+                                "Stock d'ingrédients de brasserie",
+                            )
+                        }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Partager le stock")
+                        }
+                    }
                     // Ouvre la vitrine GitHub Pages (ou à défaut la page Cave du site)
                     if (currentRoute == "beers" && !serverUrl.isNullOrBlank()) {
                         val context = LocalContext.current

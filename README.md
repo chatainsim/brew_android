@@ -12,10 +12,12 @@ depuis le téléphone.
   barre du haut pour ouvrir la vitrine GitHub Pages de la cave dans le navigateur
   (repo lu dans les réglages GitHub du serveur ; à défaut, page Cave du site).
 - **Recettes** : liste et fiche détaillée (paramètres d'empâtage/ébullition/fermentation,
-  ingrédients groupés par catégorie avec temps d'ajout des houblons, alpha, EBC, notes).
+  ingrédients groupés par catégorie avec temps d'ajout des houblons, alpha, EBC, notes) ;
+  partage de la recette en texte (mail, Telegram, WhatsApp…).
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
-  alerte visuelle de stock bas.
+  alerte visuelle de stock bas ; partage du stock complet en texte structuré
+  (pour un copain ou une IA).
 - **Brassins** : liste (statut coloré, date, volume, densités, ABV) et fiche détaillée :
   lien vers la recette, atténuation, efficacité, coût, courbe de fermentation
   (densité + température, mesures manuelles et densimètre connecté), journal de brassage.
