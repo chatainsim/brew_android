@@ -18,6 +18,9 @@ import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.SettingsRepository
+import fr.easter.brewhome.data.ShoppingItem
+import fr.easter.brewhome.data.ShoppingPost
+import fr.easter.brewhome.data.BulkCheckPut
 import fr.easter.brewhome.data.StockPatch
 import fr.easter.brewhome.data.TastingPut
 import fr.easter.brewhome.data.Vitrine
@@ -40,6 +43,7 @@ data class UiState(
     val inventory: List<InventoryItem> = emptyList(),
     val brews: List<Brew> = emptyList(),
     val drafts: List<Draft> = emptyList(),
+    val shopping: List<ShoppingItem> = emptyList(),
     val loaded: Boolean = false,
 )
 
@@ -116,9 +120,11 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         val inventory = api.getInventory()
         val brews = api.getBrews()
         val drafts = runCatching { api.getDrafts() }.getOrDefault(emptyList())
+        val shopping = runCatching { api.getShoppingList() }.getOrDefault(emptyList())
         _state.value = UiState(
             beers = beers, recipes = recipes,
-            inventory = inventory, brews = brews, drafts = drafts, loaded = true,
+            inventory = inventory, brews = brews, drafts = drafts,
+            shopping = shopping, loaded = true,
         )
     }
 
@@ -247,6 +253,68 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { api().getCatalog() }.onSuccess {
                 _catalog.value = it
                 catalogLoaded = true
+            }
+        }
+    }
+
+    // ── Liste de courses ──────────────────────────────────────────────────
+
+    private suspend fun reloadShopping() {
+        runCatching { api().getShoppingList() }.onSuccess {
+            _state.value = _state.value.copy(shopping = it)
+        }
+    }
+
+    fun toggleShoppingChecked(item: ShoppingItem) {
+        viewModelScope.launch {
+            val newChecked = (item.checked ?: 0) == 0
+            try {
+                api().bulkCheckShopping(BulkCheckPut(listOf(item.id), newChecked))
+                _state.value = _state.value.copy(
+                    shopping = _state.value.shopping.map {
+                        if (it.id == item.id) it.copy(checked = if (newChecked) 1 else 0) else it
+                    },
+                    error = null,
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Échec de la coche : ${e.message}")
+            }
+        }
+    }
+
+    fun addShoppingItem(post: ShoppingPost) {
+        viewModelScope.launch {
+            try {
+                api().createShoppingItem(post)
+                reloadShopping()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Échec de l'ajout : ${e.message}")
+            }
+        }
+    }
+
+    fun deleteShoppingItem(id: Int) {
+        viewModelScope.launch {
+            try {
+                api().deleteShoppingItem(id)
+                _state.value = _state.value.copy(
+                    shopping = _state.value.shopping.filterNot { it.id == id },
+                    error = null,
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Échec de la suppression : ${e.message}")
+            }
+        }
+    }
+
+    /** Transfère les articles cochés dans l'inventaire, puis recharge tout. */
+    fun buyCheckedShopping() {
+        viewModelScope.launch {
+            try {
+                api().buyShoppingItems()
+                refreshAll()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "Échec du transfert : ${e.message}")
             }
         }
     }

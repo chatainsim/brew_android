@@ -119,6 +119,31 @@ data class FermReading(
     val notes: String? = null,
 )
 
+/** Article de la liste de courses (actif tant que bought_at est null). */
+@Serializable
+data class ShoppingItem(
+    val id: Int,
+    val name: String,
+    val category: String,
+    val quantity: Double = 1.0,
+    val unit: String = "g",
+    val notes: String? = null,
+    val checked: Int? = 0,
+    @SerialName("inventory_item_id") val inventoryItemId: Int? = null,
+)
+
+@Serializable
+data class ShoppingPost(
+    val name: String,
+    val category: String,
+    val quantity: Double = 1.0,
+    val unit: String = "g",
+    val notes: String? = null,
+)
+
+@Serializable
+data class BulkCheckPut(val ids: List<Int>, val checked: Boolean)
+
 /** Entrée du catalogue d'ingrédients (référentiel pour l'autocomplétion). */
 @Serializable
 data class CatalogItem(

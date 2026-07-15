@@ -22,13 +22,17 @@ depuis le téléphone.
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
   alerte visuelle de stock bas ; partage du stock complet en texte structuré
-  (pour un copain ou une IA).
+  (pour un copain ou une IA) ; onglet **Courses** : liste de courses avec coche,
+  ajout d'articles, suppression, et transfert des articles cochés dans
+  l'inventaire (comme le bouton « Acheté » du site).
 - **Brassins** : liste (statut coloré, date, volume, densités, ABV) et fiche détaillée :
   lien vers la recette, atténuation, efficacité, coût, courbe de fermentation
   (densité + température, mesures manuelles et densimètre connecté), journal de brassage.
 - **Statistiques** (depuis l'onglet Outils) : brassins terminés, litres brassés, alcool
-  moyen, coût total, volume par année, styles les plus brassés, cave actuelle,
-  consommation mensuelle et bières les plus consommées.
+  moyen, coût total ; production en détail (volume moyen, efficacité, fermentation,
+  coût au litre, DI moyenne) ; volume par année, styles les plus brassés, cave
+  actuelle, dégustations (note moyenne, top 3), stock (valeur estimée, stock bas),
+  consommation mensuelle, totaux par format et bières les plus consommées.
 - **Outils** : calculateurs de brassage hors-ligne, identiques à ceux du serveur —
   ABV/atténuation, correction densimètre (température), correction réfractomètre
   (Novotný), température d'empâtage, répartition en bouteilles 33/75 cl, primage

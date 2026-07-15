@@ -67,6 +67,42 @@ fun StatsScreen(vm: BrewViewModel) {
             )
         }
 
+        // ── Production en détail ──
+        if (done.isNotEmpty()) {
+            val vols = done.mapNotNull { it.volumeBrewed }
+            val effs = done.mapNotNull { it.actualEfficiency }
+            val fermDays = done.mapNotNull { it.fermTime }
+            SectionTitle("Production en détail")
+            InfoCard {
+                InfoLine(
+                    "Volume moyen / brassin",
+                    vols.takeIf { it.isNotEmpty() }
+                        ?.let { "${fmtQty(kotlin.math.round(it.average() * 10) / 10)} L" },
+                )
+                InfoLine(
+                    "Efficacité moyenne",
+                    effs.takeIf { it.isNotEmpty() }
+                        ?.let { "${fmtQty(kotlin.math.round(it.average() * 10) / 10)} %" },
+                )
+                InfoLine(
+                    "Fermentation moyenne",
+                    fermDays.takeIf { it.isNotEmpty() }
+                        ?.let { "${kotlin.math.round(it.average()).toInt()} jours" },
+                )
+                InfoLine(
+                    "Coût moyen",
+                    if (totalCost > 0 && totalVol > 0)
+                        "${fmtQty(kotlin.math.round(totalCost / totalVol * 100) / 100)} €/L"
+                    else null,
+                )
+                InfoLine(
+                    "Densité initiale moyenne",
+                    done.mapNotNull { it.og }.takeIf { it.isNotEmpty() }
+                        ?.let { String.format(java.util.Locale.US, "%.3f", it.average()) },
+                )
+            }
+        }
+
         // ── Volume par année ──
         val byYear = done.groupBy { it.brewDate!!.take(4) }
             .mapValues { (_, brews) -> brews.sumOf { it.volumeBrewed ?: 0.0 } }
@@ -114,6 +150,54 @@ fun StatsScreen(vm: BrewViewModel) {
             InfoLine("Total", "${fmtQty(kotlin.math.round(caveL * 100) / 100)} L")
         }
 
+        // ── Dégustations ──
+        val rated = beers.filter { (it.tasteRating ?: 0) > 0 }
+        if (rated.isNotEmpty()) {
+            SectionTitle("Dégustations")
+            InfoCard {
+                InfoLine("Bières notées", "${rated.size}")
+                InfoLine(
+                    "Note moyenne",
+                    "${fmtQty(kotlin.math.round(rated.mapNotNull { it.tasteRating }.average() * 10) / 10)} / 5",
+                )
+            }
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    rated.sortedByDescending { it.tasteRating }.take(3).forEach { beer ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                beer.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f),
+                            )
+                            StarRating(beer.tasteRating)
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Stock d'ingrédients ──
+        val lowCount = state.inventory.count {
+            it.minStock != null && it.quantity < it.minStock!!
+        }
+        val stockValue = state.inventory
+            .mapNotNull { item -> item.pricePerUnit?.let { it * item.quantity } }
+            .sum()
+        SectionTitle("Stock d'ingrédients")
+        InfoCard {
+            InfoLine("Articles", "${state.inventory.size}")
+            InfoLine("En stock bas", if (lowCount > 0) "$lowCount ⚠️" else "aucun")
+            InfoLine(
+                "Valeur estimée",
+                stockValue.takeIf { it > 0 }
+                    ?.let { "${fmtQty(kotlin.math.round(it))} €" },
+            )
+            InfoLine("Sur la liste de courses", state.shopping.size.takeIf { it > 0 }?.let { "$it" })
+        }
+
         // ── Consommation ──
         val cons = consumption
         if (cons == null) {
@@ -138,6 +222,23 @@ fun StatsScreen(vm: BrewViewModel) {
                     }
                 }
             }
+            // Totaux toutes périodes, par format
+            val t33 = cons.byMonth.sumOf { it.total33 ?: 0 }
+            val t75 = cons.byMonth.sumOf { it.total75 ?: 0 }
+            val tKeg = cons.byMonth.sumOf { it.totalKeg ?: 0.0 }
+            if (t33 + t75 > 0 || tKeg > 0) {
+                SectionTitle("Consommation totale")
+                InfoCard {
+                    InfoLine("Bouteilles 33 cl", t33.takeIf { it > 0 }?.let { "$it" })
+                    InfoLine("Bouteilles 75 cl", t75.takeIf { it > 0 }?.let { "$it" })
+                    InfoLine("Au fût", tKeg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
+                    InfoLine(
+                        "Total",
+                        "${fmtQty(kotlin.math.round((t33 * 0.33 + t75 * 0.75 + tKeg) * 10) / 10)} L",
+                    )
+                }
+            }
+
             val topBeers = cons.byBeer.filter { (it.totalLiters ?: 0.0) > 0 }.take(5)
             if (topBeers.isNotEmpty()) {
                 SectionTitle("Bières les plus consommées")

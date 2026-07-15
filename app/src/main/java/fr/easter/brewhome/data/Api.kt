@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -49,6 +50,22 @@ interface BrewApi {
 
     @GET("api/catalog")
     suspend fun getCatalog(): List<CatalogItem>
+
+    @GET("api/shopping-list")
+    suspend fun getShoppingList(): List<ShoppingItem>
+
+    @POST("api/shopping-list")
+    suspend fun createShoppingItem(@Body body: ShoppingPost): ShoppingItem
+
+    @PUT("api/shopping-list/bulk-check")
+    suspend fun bulkCheckShopping(@Body body: BulkCheckPut): kotlinx.serialization.json.JsonObject
+
+    /** Transfère les articles cochés dans l'inventaire (soft-delete via bought_at). */
+    @POST("api/shopping-list/buy")
+    suspend fun buyShoppingItems(): kotlinx.serialization.json.JsonObject
+
+    @DELETE("api/shopping-list/{id}")
+    suspend fun deleteShoppingItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
 
     @GET("api/drafts")
     suspend fun getDrafts(): List<Draft>
