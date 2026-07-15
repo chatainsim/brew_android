@@ -1,10 +1,13 @@
 package fr.easter.brewhome.share
 
+import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredient
+import fr.easter.brewhome.data.parsedIngredients
 import fr.easter.brewhome.ui.categoryLabel
 import fr.easter.brewhome.ui.categoryOrder
+import fr.easter.brewhome.ui.draftStatusLabel
 import fr.easter.brewhome.ui.fmtQty
 
 /**
@@ -62,6 +65,46 @@ object ShareText {
         ).joinToString(" · ")
         return "- ${ing.name} : ${fmtQty(ing.quantity)} ${ing.unit}" +
             (if (details.isNotEmpty()) " ($details)" else "")
+    }
+
+    fun draft(d: Draft): String = buildString {
+        append("💡 ").append(d.title)
+        d.style?.let { append(" (").append(it).append(")") }
+        appendLine()
+        val meta = listOfNotNull(
+            "brouillon · ${draftStatusLabel(d.status)}",
+            d.volume?.let { "${fmtQty(it)} L" },
+            d.targetDate?.let { "cible $it" },
+            d.eventLabel,
+        ).joinToString(" — ")
+        appendLine(meta)
+
+        val ings = d.parsedIngredients().filter { it.name.isNotBlank() }
+        if (ings.isNotEmpty()) {
+            val grouped = ings.groupBy { it.category.lowercase() }
+            val cats = categoryOrder.filter { grouped.containsKey(it) } +
+                grouped.keys.filterNot { it in categoryOrder }.sorted()
+            cats.forEach { cat ->
+                appendLine()
+                appendLine(categoryLabel(cat))
+                grouped.getValue(cat).forEach { ing ->
+                    append("- ").append(ing.name)
+                    ing.quantity?.let {
+                        append(" : ${fmtQty(it)}")
+                        ing.unit?.let { u -> append(" $u") }
+                    }
+                    appendLine()
+                }
+            }
+        }
+
+        if (!d.notes.isNullOrBlank()) {
+            appendLine()
+            appendLine("Notes")
+            appendLine(d.notes.trim())
+        }
+        appendLine()
+        append("Partagé depuis BrewHome Android")
     }
 
     fun inventory(items: List<InventoryItem>, date: String): String = buildString {

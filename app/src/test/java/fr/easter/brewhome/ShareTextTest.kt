@@ -1,5 +1,6 @@
 package fr.easter.brewhome
 
+import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.share.ShareText
@@ -40,6 +41,26 @@ class ShareTextTest {
         val text = ShareText.inventory(items, "15/07/2026")
         assertTrue(text.startsWith("📦 Stock d'ingrédients de brasserie (BrewHome) — 15/07/2026"))
         assertTrue("Houblons\n- Cascade : 150 g (6,5 % α)" in text)
+        assertTrue(text.endsWith("Partagé depuis BrewHome Android"))
+    }
+
+    @Test
+    fun `partage brouillon`() {
+        val draft = Draft(
+            id = 1, title = "NEIPA d'été", style = "NEIPA", volume = 20.0,
+            status = "in_progress", targetDate = "2026-08-01",
+            ingredients = """[
+                {"name":"Citra","category":"houblon","quantity":50,"unit":"g","_rid":3},
+                {"name":"Pilsner","category":"malt","quantity":4.2,"unit":"kg"}
+            ]""",
+            notes = "Tester le dry hop à froid.",
+        )
+        val text = ShareText.draft(draft)
+        assertTrue(text.startsWith("💡 NEIPA d'été (NEIPA)"))
+        assertTrue("brouillon · En cours — 20 L — cible 2026-08-01" in text)
+        assertTrue("Malts\n- Pilsner : 4,2 kg" in text)
+        assertTrue("Houblons\n- Citra : 50 g" in text)
+        assertTrue("Tester le dry hop à froid." in text)
         assertTrue(text.endsWith("Partagé depuis BrewHome Android"))
     }
 

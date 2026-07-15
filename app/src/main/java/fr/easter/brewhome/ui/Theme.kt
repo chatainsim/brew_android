@@ -35,10 +35,18 @@ private val DarkColors = darkColorScheme(
     background = Color(0xFF1D1611),
 )
 
+/** true si le thème effectif doit être sombre pour ce mode ("system"|"light"|"dark"). */
 @Composable
-fun BrewHomeTheme(content: @Composable () -> Unit) {
+fun isDarkTheme(mode: String): Boolean = when (mode) {
+    "dark" -> true
+    "light" -> false
+    else -> isSystemInDarkTheme()
+}
+
+@Composable
+fun BrewHomeTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         content = content,
     )
 }

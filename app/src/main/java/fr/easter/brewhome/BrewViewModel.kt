@@ -53,6 +53,14 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     val serverUrl: StateFlow<String?> = settings.serverUrl
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** "system" | "light" | "dark" */
+    val themeMode: StateFlow<String> = settings.themeMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch { settings.setThemeMode(mode) }
+    }
+
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
 

@@ -152,6 +152,23 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                             Icon(Icons.Filled.Share, contentDescription = "Partager la recette")
                         }
                     }
+                    // Partage du brouillon ouvert
+                    val draftToShare = if (currentRoute?.startsWith("draft/") == true) {
+                        val id = backStack?.arguments?.getString("id")?.toIntOrNull()
+                        state.drafts.find { it.id == id }
+                    } else null
+                    if (draftToShare != null) {
+                        val context = LocalContext.current
+                        IconButton(onClick = {
+                            shareText(
+                                context,
+                                ShareText.draft(draftToShare),
+                                "Brouillon ${draftToShare.title}",
+                            )
+                        }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Partager le brouillon")
+                        }
+                    }
                     // Partage du stock complet
                     if (currentRoute == "inventory" && state.inventory.isNotEmpty()) {
                         val context = LocalContext.current
