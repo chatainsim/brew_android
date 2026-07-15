@@ -70,8 +70,11 @@ export PATH=$JAVA_HOME/bin:$PATH
 ~/android-toolchain/gradle-8.7/bin/gradle assembleDebug
 ```
 
-APK produit : `app/build/outputs/apk/debug/app-debug.apk` (copié en `BrewHome-debug.apk`
-à la racine).
+APK produit : `app/build/outputs/apk/debug/app-debug.apk`.
+
+À chaque push sur `main`, la CI (`.forgejo/workflows/release.yml`, runner local
+« wsl-simon ») compile l'APK, lance les tests et publie une release Gitea taguée
+avec la version, APK attaché. L'APK n'est plus commité dans le dépôt.
 
 ## Tests
 
@@ -84,9 +87,9 @@ BrewHome 0.0.5 (fixtures dans `app/src/test/resources/`) avec les modèles de l'
 
 ## Installation sur le téléphone
 
-Transférer `BrewHome-debug.apk` sur le téléphone (câble, Syncthing, partage réseau…)
-et l'ouvrir — autoriser l'installation de sources inconnues si demandé.
-Ou par ADB : `adb install BrewHome-debug.apk`.
+Télécharger `BrewHome-{version}.apk` depuis la page **Releases** du dépôt Gitea
+(directement depuis le navigateur du téléphone) et l'ouvrir — autoriser
+l'installation de sources inconnues si demandé. Ou par ADB : `adb install BrewHome-{version}.apk`.
 
 ## Architecture
 

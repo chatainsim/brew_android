@@ -1,7 +1,10 @@
-# Crée (ou met à jour) une release Gitea avec l'APK commité à chaque push sur main.
-# Une release par versionName (app/build.gradle.kts) : re-pousser sans changer la
-# version remplace l'APK de la release existante.
-# S'exécute sur le runner « wsl-simon » (mode host, machine WSL de Simon).
+# À chaque push sur main : compile l'APK, lance les tests unitaires, puis crée
+# (ou met à jour) la release Gitea taguée avec versionName et y attache l'APK.
+# Une release par versionName ; re-pousser sans changer la version remplace l'APK.
+#
+# S'exécute sur le runner « wsl-simon » (mode host) : il utilise le toolchain
+# Android de la machine (~/android-toolchain : JDK 17, SDK, Gradle 8.7) et le
+# cache Gradle de l'utilisateur, donc pas de téléchargement à chaque build.
 name: Release APK
 
 on:
@@ -12,7 +15,7 @@ jobs:
   release:
     runs-on: host
     steps:
-      - name: Publier l'APK en release
+      - name: Compiler, tester et publier l'APK
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -20,20 +23,31 @@ jobs:
           API="${GITHUB_SERVER_URL}/api/v1/repos/${GITHUB_REPOSITORY}"
           AUTH="Authorization: token ${TOKEN}"
 
-          VERSION=$(curl -sf -H "$AUTH" "$API/raw/app/build.gradle.kts?ref=${GITHUB_SHA}" \
-                    | grep -oP 'versionName = "\K[^"]+')
-          echo "Version : $VERSION"
+          # ── Sources au commit poussé ──
+          HOST_PATH="${GITHUB_SERVER_URL#http://}"
+          rm -rf src
+          git clone --branch "${GITHUB_REF_NAME}" --depth 20 \
+            "http://oauth2:${TOKEN}@${HOST_PATH}/${GITHUB_REPOSITORY}.git" src
+          cd src
+          git checkout "${GITHUB_SHA}" || echo "SHA hors de la fenêtre de clone, build du tip de ${GITHUB_REF_NAME}"
 
-          curl -sf -H "$AUTH" -o BrewHome.apk "$API/raw/BrewHome-debug.apk?ref=${GITHUB_SHA}"
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "Version : $VERSION (commit $(git rev-parse --short HEAD))"
 
-          # Tags sans préfixe « v », comme les releases créées à la main
+          # ── Build + tests avec le toolchain local ──
+          export JAVA_HOME="$HOME/android-toolchain/jdk-17.0.11+9"
+          echo "sdk.dir=$HOME/android-toolchain/sdk" > local.properties
+          "$HOME/android-toolchain/gradle-8.7/bin/gradle" -q assembleDebug testDebugUnitTest
+          test -f app/build/outputs/apk/debug/app-debug.apk
+
+          # ── Release Gitea (tags sans préfixe « v », convention existante) ──
           REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/$VERSION" \
                    | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
 
           if [ -z "$REL_ID" ]; then
             REL_ID=$(curl -sf -X POST -H "$AUTH" -H 'Content-Type: application/json' \
               -d "{\"tag_name\":\"$VERSION\",\"name\":\"BrewHome Android $VERSION\",
-                   \"body\":\"APK de la version $VERSION (commit ${GITHUB_SHA})\",
+                   \"body\":\"APK compilé par la CI (commit ${GITHUB_SHA})\",
                    \"target_commitish\":\"${GITHUB_SHA}\"}" \
               "$API/releases" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
             echo "Release $VERSION créée (id $REL_ID)"
@@ -45,6 +59,7 @@ jobs:
             done
           fi
 
-          curl -sf -X POST -H "$AUTH" -F "attachment=@BrewHome.apk" \
+          curl -sf -X POST -H "$AUTH" \
+            -F "attachment=@app/build/outputs/apk/debug/app-debug.apk" \
             "$API/releases/$REL_ID/assets?name=BrewHome-$VERSION.apk" >/dev/null
           echo "APK attaché : BrewHome-$VERSION.apk"
