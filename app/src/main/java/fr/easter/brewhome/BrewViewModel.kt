@@ -29,6 +29,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -113,18 +115,19 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun loadAll() {
+    private suspend fun loadAll() = coroutineScope {
         val api = api()
-        val beers = api.getBeers()
-        val recipes = api.getRecipes()
-        val inventory = api.getInventory()
-        val brews = api.getBrews()
-        val drafts = runCatching { api.getDrafts() }.getOrDefault(emptyList())
-        val shopping = runCatching { api.getShoppingList() }.getOrDefault(emptyList())
+        // Tout en parallèle : le lancement ne coûte qu'un aller-retour réseau
+        val beers = async { api.getBeers() }
+        val recipes = async { api.getRecipes() }
+        val inventory = async { api.getInventory() }
+        val brews = async { api.getBrews() }
+        val drafts = async { runCatching { api.getDrafts() }.getOrDefault(emptyList()) }
+        val shopping = async { runCatching { api.getShoppingList() }.getOrDefault(emptyList()) }
         _state.value = UiState(
-            beers = beers, recipes = recipes,
-            inventory = inventory, brews = brews, drafts = drafts,
-            shopping = shopping, loaded = true,
+            beers = beers.await(), recipes = recipes.await(),
+            inventory = inventory.await(), brews = brews.await(),
+            drafts = drafts.await(), shopping = shopping.await(), loaded = true,
         )
     }
 
@@ -231,9 +234,12 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
             _brewExtras.value += brewId to BrewExtras(loading = true)
             try {
                 val api = api()
-                val readings = api.getBrewFermentation(brewId)
-                val log = api.getBrewLog(brewId)
-                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log)
+                coroutineScope {
+                    val readings = async { api.getBrewFermentation(brewId) }
+                    val log = async { api.getBrewLog(brewId) }
+                    _brewExtras.value += brewId to
+                        BrewExtras(readings = readings.await(), log = log.await())
+                }
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",

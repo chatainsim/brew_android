@@ -30,18 +30,35 @@ import fr.easter.brewhome.data.TastingPut
 fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
     val state by vm.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
+    var showArchived by rememberSaveable { mutableStateOf(false) }
 
     RefreshableContent(vm) {
         if (state.beers.isEmpty()) {
             EmptyHint("Aucune bière en cave.")
             return@RefreshableContent
         }
-        val filtered = state.beers.filter { beer ->
+        // Comme le site : les bières archivées sont masquées par défaut
+        val archivedCount = state.beers.count { (it.archived ?: 0) != 0 }
+        val visible = state.beers.filter { showArchived || (it.archived ?: 0) == 0 }
+        val filtered = visible.filter { beer ->
             query.isBlank() || listOfNotNull(beer.name, beer.type, beer.origin, beer.recipeName)
                 .any { it.contains(query, ignoreCase = true) }
         }
         Column(Modifier.fillMaxSize()) {
             SearchField(query, { query = it }, "Rechercher une bière…")
+            if (archivedCount > 0) {
+                FilterChip(
+                    selected = showArchived,
+                    onClick = { showArchived = !showArchived },
+                    label = {
+                        Text(
+                            if (showArchived) "Masquer les $archivedCount archivée(s)"
+                            else "Voir les $archivedCount archivée(s)",
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                )
+            }
             if (filtered.isEmpty()) {
                 EmptyHint("Aucun résultat pour « $query ».")
             } else {

@@ -269,42 +269,73 @@ private fun FermentationCard(readings: List<FermReading>) {
     }
 }
 
+/** "2026-05-01T08:00:00" ou "2026-05-01 08:00" → secondes epoch, null si illisible. */
+internal fun parseFermTimestamp(ts: String): Long? = runCatching {
+    var s = ts.take(19).replace(' ', 'T')
+    if (s.length == 16) s += ":00"
+    java.time.LocalDateTime.parse(s).toEpochSecond(java.time.ZoneOffset.UTC)
+}.getOrNull()
+
+/**
+ * Positions X (0..1) des mesures : proportionnelles au temps réel quand toutes
+ * les dates sont lisibles, sinon repli sur un espacement régulier. Sans ça, un
+ * densimètre qui mesure toutes les 15 min écraserait visuellement les mesures
+ * manuelles espacées d'une journée.
+ */
+internal fun timeFractions(timestamps: List<String>): List<Float> {
+    val n = timestamps.size
+    if (n < 2) return List(n) { 0f }
+    val times = timestamps.map { parseFermTimestamp(it) }
+    val tMin = times.minOfOrNull { it ?: Long.MAX_VALUE } ?: 0L
+    val tMax = times.maxOfOrNull { it ?: Long.MIN_VALUE } ?: 0L
+    val timed = times.all { it != null } && tMax > tMin
+    return if (timed) {
+        val range = (tMax - tMin).toFloat()
+        times.map { (it!! - tMin) / range }
+    } else {
+        List(n) { it / (n - 1).toFloat() }
+    }
+}
+
 /** Courbe de densité (et température si dispo) sur toute la fermentation. */
 @Composable
 private fun GravityChart(readings: List<FermReading>) {
     val gravityColor = MaterialTheme.colorScheme.primary
     val tempColor = MaterialTheme.colorScheme.tertiary
-    val gravities = readings.mapNotNull { it.gravity }
-    val temps = readings.mapNotNull { it.temperature }
+    val xs = timeFractions(readings.map { it.recordedAt })
+    val gravityPts = readings.mapIndexedNotNull { i, r -> r.gravity?.let { xs[i] to it } }
+    val tempPts = readings.mapIndexedNotNull { i, r -> r.temperature?.let { xs[i] to it } }
+    val gravities = gravityPts.map { it.second }
 
     Canvas(
         Modifier
             .fillMaxWidth()
             .height(120.dp),
     ) {
-        drawSeries(gravities, gravityColor)
-        if (temps.size >= 2) drawSeries(temps, tempColor)
+        drawSeries(gravityPts, gravityColor)
+        if (tempPts.size >= 2) drawSeries(tempPts, tempColor)
     }
     Spacer(Modifier.height(4.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Legend("Densité ${fmtGravity(gravities.max())} → ${fmtGravity(gravities.min())}", gravityColor)
-        if (temps.size >= 2) {
+        if (tempPts.size >= 2) {
+            val temps = tempPts.map { it.second }
             Legend("Temp. ${fmtQty(temps.min())}–${fmtQty(temps.max())} °C", tempColor)
         }
     }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSeries(
-    values: List<Double>,
+    points: List<Pair<Float, Double>>,
     color: Color,
 ) {
-    if (values.size < 2) return
-    val min = values.min()
-    val max = values.max()
+    if (points.size < 2) return
+    val min = points.minOf { it.second }
+    val max = points.maxOf { it.second }
     val range = (max - min).takeIf { it > 1e-9 } ?: 1.0
     val path = Path()
-    values.forEachIndexed { i, v ->
-        val x = size.width * i / (values.size - 1)
+    points.forEachIndexed { i, (xFrac, v) ->
+        val x = size.width * xFrac
         // marge de 4 % en haut/bas pour ne pas couper le trait
         val y = size.height * (0.04f + 0.92f * (1f - ((v - min) / range).toFloat()))
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)

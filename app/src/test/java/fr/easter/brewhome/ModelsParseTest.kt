@@ -94,6 +94,32 @@ class ModelsParseTest {
     }
 
     @Test
+    fun `axe temporel de la courbe de fermentation`() {
+        // Timestamps aux deux formats du serveur
+        assertEquals(
+            java.time.LocalDateTime.of(2026, 5, 1, 8, 0).toEpochSecond(java.time.ZoneOffset.UTC),
+            fr.easter.brewhome.ui.parseFermTimestamp("2026-05-01T08:00:00"),
+        )
+        assertEquals(
+            java.time.LocalDateTime.of(2026, 5, 1, 8, 30).toEpochSecond(java.time.ZoneOffset.UTC),
+            fr.easter.brewhome.ui.parseFermTimestamp("2026-05-01 08:30"),
+        )
+        assertEquals(null, fr.easter.brewhome.ui.parseFermTimestamp("pas une date"))
+
+        // Espacement proportionnel au temps : 0 h, 1 h, 4 h → 0, 0.25, 1
+        val xs = fr.easter.brewhome.ui.timeFractions(listOf(
+            "2026-05-01T00:00:00", "2026-05-01T01:00:00", "2026-05-01T04:00:00",
+        ))
+        assertEquals(0f, xs[0], 1e-6f)
+        assertEquals(0.25f, xs[1], 1e-6f)
+        assertEquals(1f, xs[2], 1e-6f)
+
+        // Date illisible quelque part → repli sur l'espacement régulier
+        val fallback = fr.easter.brewhome.ui.timeFractions(listOf("a", "b", "c"))
+        assertEquals(listOf(0f, 0.5f, 1f), fallback)
+    }
+
+    @Test
     fun parseBrewLog() {
         val raw = """[
             {"id": 7, "brew_id": 3, "ts": "2026-05-01 10:30", "step": "Empâtage", "note": "65 °C stable"},
