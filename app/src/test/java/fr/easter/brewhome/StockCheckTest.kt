@@ -2,9 +2,12 @@ package fr.easter.brewhome
 
 import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.Draft
+import fr.easter.brewhome.data.DraftIngredient
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.RecipeIngredient
 import fr.easter.brewhome.data.parsedIngredients
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -93,5 +96,16 @@ class StockCheckTest {
         // JSON invalide ou absent → liste vide, pas d'exception
         assertTrue(Draft(id = 2, title = "x", ingredients = "pas du json").parsedIngredients().isEmpty())
         assertTrue(Draft(id = 3, title = "x").parsedIngredients().isEmpty())
+    }
+
+    @Test
+    fun `aller-retour des ingredients edites`() {
+        // Ce que l'éditeur envoie en PUT doit se relire à l'identique
+        val ings = listOf(
+            DraftIngredient("Citra", "houblon", 50.0, "g"),
+            DraftIngredient("US-05", "levure", null, "sachet"),
+        )
+        val encoded = Json { encodeDefaults = true }.encodeToString(ings)
+        assertEquals(ings, Draft(id = 1, title = "t", ingredients = encoded).parsedIngredients())
     }
 }

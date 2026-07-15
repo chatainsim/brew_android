@@ -10,6 +10,7 @@ import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.Draft
+import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
@@ -168,6 +169,26 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
+                )
+            }
+        }
+    }
+
+    /** Crée (id == null) ou met à jour un brouillon. */
+    fun saveDraft(id: Int?, draft: DraftPut, onDone: (Draft) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val saved = if (id == null) api().createDraft(draft)
+                    else api().updateDraft(id, draft)
+                _state.value = _state.value.copy(
+                    drafts = if (id == null) listOf(saved) + _state.value.drafts
+                        else _state.value.drafts.map { if (it.id == saved.id) saved else it },
+                    error = null,
+                )
+                onDone(saved)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = "Échec d'enregistrement du brouillon : ${e.message}",
                 )
             }
         }

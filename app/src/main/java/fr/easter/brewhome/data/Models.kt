@@ -135,6 +135,28 @@ data class Draft(
     val status: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     val image: String? = null,
+    /** JSON : liste d'URLs des photos — à renvoyer telle quelle en PUT sinon elles sont supprimées. */
+    val images: String? = null,
+    val color: String? = null,
+)
+
+/**
+ * Corps de POST/PUT /api/drafts. Le PUT écrase toutes les colonnes : toujours
+ * renvoyer tous les champs, y compris `images` et `color` (repris du brouillon
+ * existant), sous peine de les perdre.
+ */
+@Serializable
+data class DraftPut(
+    val title: String,
+    val style: String? = null,
+    val volume: Double? = null,
+    val ingredients: String? = null,
+    val notes: String? = null,
+    val color: String? = null,
+    @SerialName("target_date") val targetDate: String? = null,
+    @SerialName("event_label") val eventLabel: String? = null,
+    val status: String = "idea",
+    val images: String? = null,
 )
 
 @Serializable

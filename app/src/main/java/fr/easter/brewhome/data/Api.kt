@@ -8,6 +8,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
@@ -48,6 +49,12 @@ interface BrewApi {
 
     @GET("api/drafts")
     suspend fun getDrafts(): List<Draft>
+
+    @POST("api/drafts")
+    suspend fun createDraft(@Body body: DraftPut): Draft
+
+    @PUT("api/drafts/{id}")
+    suspend fun updateDraft(@Path("id") id: Int, @Body body: DraftPut): Draft
 
     @GET("api/consumption")
     suspend fun getConsumption(): Consumption

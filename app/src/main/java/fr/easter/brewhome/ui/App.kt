@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -64,7 +65,8 @@ val tabs = listOf(
 private fun tabOf(route: String?): String? = when {
     route == null -> null
     route == "beers" || route.startsWith("beer/") -> "beers"
-    route == "recipes" || route.startsWith("recipe/") || route.startsWith("draft/") -> "recipes"
+    route == "recipes" || route.startsWith("recipe/") ||
+        route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
     route == "tools" || route.startsWith("tools/") || route == "stats" -> "tools"
@@ -115,6 +117,9 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                             currentRoute?.startsWith("beer/") == true -> "Bière"
                             currentRoute?.startsWith("brew/") == true -> "Brassin"
                             currentRoute?.startsWith("draft/") == true -> "Brouillon"
+                            currentRoute?.startsWith("draftEdit/") == true ->
+                                if (backStack?.arguments?.getString("id") == "new")
+                                    "Nouveau brouillon" else "Modifier le brouillon"
                             currentRoute == "stats" -> "Statistiques"
                             currentRoute == "tools" -> "Outils"
                             currentRoute?.startsWith("tools/") == true ->
@@ -159,6 +164,11 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     } else null
                     if (draftToShare != null) {
                         val context = LocalContext.current
+                        IconButton(onClick = {
+                            navController.navigate("draftEdit/${draftToShare.id}")
+                        }) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Modifier le brouillon")
+                        }
                         IconButton(onClick = {
                             shareText(
                                 context,
@@ -257,6 +267,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     vm,
                     onOpen = { navController.navigate("recipe/$it") },
                     onOpenDraft = { navController.navigate("draft/$it") },
+                    onNewDraft = { navController.navigate("draftEdit/new") },
                 )
             }
             composable("recipe/{id}") { entry ->
@@ -266,6 +277,19 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
             composable("draft/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 DraftDetailScreen(vm, id)
+            }
+            composable("draftEdit/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null
+                DraftEditScreen(vm, id) { saved ->
+                    if (id == null) {
+                        // Création : remplace l'éditeur par la fiche du nouveau brouillon
+                        navController.navigate("draft/${saved.id}") {
+                            popUpTo("recipes")
+                        }
+                    } else {
+                        navController.navigateUp()
+                    }
+                }
             }
             composable("inventory") { InventoryScreen(vm) }
             composable("brews") { BrewsScreen(vm) { navController.navigate("brew/$it") } }

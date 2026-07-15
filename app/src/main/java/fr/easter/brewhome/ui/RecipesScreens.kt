@@ -7,11 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +55,12 @@ private fun stockColor(status: StockCheck.Status): Color = when (status) {
 }
 
 @Composable
-fun RecipesScreen(vm: BrewViewModel, onOpen: (Int) -> Unit, onOpenDraft: (Int) -> Unit) {
+fun RecipesScreen(
+    vm: BrewViewModel,
+    onOpen: (Int) -> Unit,
+    onOpenDraft: (Int) -> Unit,
+    onNewDraft: () -> Unit,
+) {
     val state by vm.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var showDrafts by rememberSaveable { mutableStateOf(false) }
@@ -76,7 +83,7 @@ fun RecipesScreen(vm: BrewViewModel, onOpen: (Int) -> Unit, onOpenDraft: (Int) -
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                 ) { Text("Brouillons (${state.drafts.size})") }
             }
-            if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft)
+            if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft, onNewDraft)
             else RecipesList(state.recipes, state, query, { query = it }, onOpen)
         }
     }
@@ -348,27 +355,42 @@ private fun DraftsList(
     query: String,
     onQuery: (String) -> Unit,
     onOpen: (Int) -> Unit,
+    onNew: () -> Unit,
 ) {
-    if (drafts.isEmpty()) {
-        EmptyHint("Aucun brouillon.")
-        return
-    }
-    val filtered = drafts.filter { d ->
-        query.isBlank() || listOfNotNull(d.title, d.style, d.eventLabel)
-            .any { it.contains(query, ignoreCase = true) }
-    }
-    SearchField(query, onQuery, "Rechercher un brouillon…")
-    if (filtered.isEmpty()) {
-        EmptyHint("Aucun résultat pour « $query ».")
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(filtered, key = { it.id }) { draft ->
-                DraftCard(draft, onOpen)
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            if (drafts.isEmpty()) {
+                EmptyHint("Aucun brouillon. Crée le premier avec le bouton +.")
+            } else {
+                val filtered = drafts.filter { d ->
+                    query.isBlank() || listOfNotNull(d.title, d.style, d.eventLabel)
+                        .any { it.contains(query, ignoreCase = true) }
+                }
+                SearchField(query, onQuery, "Rechercher un brouillon…")
+                if (filtered.isEmpty()) {
+                    EmptyHint("Aucun résultat pour « $query ».")
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(filtered, key = { it.id }) { draft ->
+                            DraftCard(draft, onOpen)
+                        }
+                    }
+                }
             }
+        }
+        FloatingActionButton(
+            onClick = onNew,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = "Nouveau brouillon")
         }
     }
 }
