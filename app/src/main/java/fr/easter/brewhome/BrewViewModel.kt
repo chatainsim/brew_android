@@ -1,6 +1,7 @@
 package fr.easter.brewhome
 
 import android.app.Application
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import fr.easter.brewhome.data.ApiClient
@@ -25,9 +26,11 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 data class UiState(
     val loading: Boolean = false,
@@ -71,6 +74,20 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setDynamicColor(enabled) }
     }
 
+    /** VPN WireGuard automatique quand le serveur est injoignable. */
+    val wgAuto: StateFlow<Boolean> = settings.wgAuto
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val wgTunnel: StateFlow<String> = settings.wgTunnel
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    fun setWgAuto(enabled: Boolean) {
+        viewModelScope.launch { settings.setWgAuto(enabled) }
+    }
+
+    fun setWgTunnel(name: String) {
+        viewModelScope.launch { settings.setWgTunnel(name) }
+    }
+
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
 
@@ -92,24 +109,60 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private suspend fun loadAll() {
+        val api = api()
+        val beers = api.getBeers()
+        val recipes = api.getRecipes()
+        val inventory = api.getInventory()
+        val brews = api.getBrews()
+        val drafts = runCatching { api.getDrafts() }.getOrDefault(emptyList())
+        _state.value = UiState(
+            beers = beers, recipes = recipes,
+            inventory = inventory, brews = brews, drafts = drafts, loaded = true,
+        )
+    }
+
+    private suspend fun serverReachable(timeoutMs: Long): Boolean =
+        runCatching { withTimeout(timeoutMs) { api().getAppSettings() } }.isSuccess
+
+    /**
+     * Monte le tunnel WireGuard via l'API « remote control » de l'app
+     * officielle, puis attend (max ~8 s) que le serveur réponde.
+     * Nécessite côté WireGuard : Réglages → « Autoriser le contrôle à distance »,
+     * et la permission CONTROL_TUNNELS accordée à BrewHome.
+     */
+    private suspend fun tryWireGuard(): Boolean {
+        val tunnel = settings.wgTunnel.first().trim()
+        if (tunnel.isEmpty()) return false
+        val intent = Intent("com.wireguard.android.action.SET_TUNNEL_UP")
+            .setPackage("com.wireguard.android")
+            .putExtra("tunnel", tunnel)
+        runCatching { getApplication<Application>().sendBroadcast(intent) }
+        repeat(16) {
+            delay(500)
+            if (serverReachable(1500)) return true
+        }
+        return false
+    }
+
     fun refreshAll() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             try {
-                val api = api()
-                val beers = api.getBeers()
-                val recipes = api.getRecipes()
-                val inventory = api.getInventory()
-                val brews = api.getBrews()
-                val drafts = runCatching { api.getDrafts() }.getOrDefault(emptyList())
-                _state.value = UiState(
-                    beers = beers, recipes = recipes,
-                    inventory = inventory, brews = brews, drafts = drafts, loaded = true,
-                )
-            } catch (e: Exception) {
+                loadAll()
+            } catch (first: Exception) {
+                val retryAfterVpn = settings.wgAuto.first() && tryWireGuard()
+                if (retryAfterVpn) {
+                    try {
+                        loadAll()
+                        return@launch
+                    } catch (e: Exception) {
+                        // le message d'erreur d'origine reste le plus parlant
+                    }
+                }
                 _state.value = _state.value.copy(
                     loading = false,
-                    error = "Connexion impossible : ${e.message ?: e.javaClass.simpleName}",
+                    error = "Connexion impossible : ${first.message ?: first.javaClass.simpleName}",
                 )
             }
         }

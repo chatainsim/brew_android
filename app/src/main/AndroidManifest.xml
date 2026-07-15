@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Contrôle du tunnel WireGuard (API « remote control » de l'app officielle) -->
+    <uses-permission android:name="com.wireguard.android.permission.CONTROL_TUNNELS" />
+
+    <queries>
+        <package android:name="com.wireguard.android" />
+    </queries>
 
     <application
         android:label="BrewHome"

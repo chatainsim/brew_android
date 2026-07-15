@@ -1,7 +1,12 @@
 package fr.easter.brewhome.ui
 
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -13,8 +18,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
+
+private const val WG_PERMISSION = "com.wireguard.android.permission.CONTROL_TUNNELS"
 
 private val themeModes = listOf(
     "system" to "Auto",
@@ -31,6 +40,7 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -93,5 +103,57 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
                 )
             }
         }
+
+        Spacer(Modifier.height(8.dp))
+        Text("VPN WireGuard", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Si le serveur ne répond pas au lancement (hors du réseau local), " +
+                "l'app monte le tunnel WireGuard puis réessaie. Nécessite l'app " +
+                "WireGuard avec « Autoriser les applications de contrôle à " +
+                "distance » activé dans ses réglages avancés.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        val wgAuto by vm.wgAuto.collectAsState()
+        val wgTunnel by vm.wgTunnel.collectAsState()
+        var tunnel by remember(wgTunnel) { mutableStateOf(wgTunnel) }
+        val context = LocalContext.current
+        val permissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted -> vm.setWgAuto(granted) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "VPN automatique si serveur injoignable",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = wgAuto,
+                onCheckedChange = { on ->
+                    if (!on) {
+                        vm.setWgAuto(false)
+                    } else if (ContextCompat.checkSelfPermission(context, WG_PERMISSION) ==
+                        PackageManager.PERMISSION_GRANTED
+                    ) {
+                        vm.setWgAuto(true)
+                    } else {
+                        permissionLauncher.launch(WG_PERMISSION)
+                    }
+                },
+            )
+        }
+        OutlinedTextField(
+            value = tunnel,
+            onValueChange = {
+                tunnel = it
+                vm.setWgTunnel(it)
+            },
+            label = { Text("Nom du tunnel WireGuard") },
+            placeholder = { Text("maison") },
+            singleLine = true,
+            enabled = wgAuto,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
     }
 }

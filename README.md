@@ -47,6 +47,14 @@ L'app parle directement à l'API REST de BrewHome (port 5000 par défaut, HTTP e
 autorisé pour le réseau local). Renseigner par ex. `http://192.168.1.50:5000` dans les
 réglages.
 
+### VPN WireGuard automatique (hors du réseau local)
+
+Dans les réglages, activer « VPN automatique si serveur injoignable » et donner le nom
+du tunnel : si le serveur ne répond pas au lancement, l'app monte le tunnel via l'API
+de contrôle de l'app WireGuard officielle, attend qu'il soit établi, puis recharge.
+Prérequis côté WireGuard : Réglages → Avancé → « Autoriser les applications de contrôle
+à distance », et accorder la permission demandée par BrewHome à l'activation de l'option.
+
 ## Build
 
 Toolchain installé dans `~/android-toolchain/` (JDK 17 Temurin, SDK Android 34,
