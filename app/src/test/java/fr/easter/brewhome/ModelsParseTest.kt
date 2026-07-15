@@ -2,6 +2,8 @@ package fr.easter.brewhome
 
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
+import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.Recipe
 import kotlinx.serialization.json.Json
@@ -70,5 +72,36 @@ class ModelsParseTest {
         assertEquals("Brassin test", brews[0].name)
         assertEquals(1.052, brews[0].og!!, 1e-9)
         assertEquals("fermenting", brews[0].status)
+    }
+
+    @Test
+    fun parseBrewFermentation() {
+        // Forme des lignes renvoyées par GET /api/brews/{id}/fermentation :
+        // colonnes SQL complètes pour les mesures stockées, colonnes réduites
+        // (sans id/source/notes) pour les lectures live du densimètre.
+        val raw = """[
+            {"id": 1, "brew_id": 3, "recorded_at": "2026-05-01T08:00:00", "gravity": 1.052,
+             "temperature": 19.5, "battery": null, "angle": null, "source": "manual", "notes": "levure ajoutée"},
+            {"recorded_at": "2026-05-02T08:00:00", "gravity": 1.031, "temperature": 20.1,
+             "battery": 3.9, "angle": 45.2}
+        ]"""
+        val readings = json.decodeFromString<List<FermReading>>(raw)
+        assertEquals(2, readings.size)
+        assertEquals(1.052, readings[0].gravity!!, 1e-9)
+        assertEquals("manual", readings[0].source)
+        assertEquals("2026-05-02T08:00:00", readings[1].recordedAt)
+        assertEquals(20.1, readings[1].temperature!!, 1e-9)
+    }
+
+    @Test
+    fun parseBrewLog() {
+        val raw = """[
+            {"id": 7, "brew_id": 3, "ts": "2026-05-01 10:30", "step": "Empâtage", "note": "65 °C stable"},
+            {"id": 8, "brew_id": 3, "ts": "2026-05-01 12:00", "step": null, "note": "Début ébullition"}
+        ]"""
+        val log = json.decodeFromString<List<BrewLogEntry>>(raw)
+        assertEquals(2, log.size)
+        assertEquals("Empâtage", log[0].step)
+        assertEquals("Début ébullition", log[1].note)
     }
 }

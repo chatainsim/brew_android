@@ -85,14 +85,44 @@ data class Brew(
     val id: Int,
     @SerialName("recipe_id") val recipeId: Int? = null,
     val name: String,
+    @SerialName("batch_number") val batchNumber: Int? = null,
     @SerialName("brew_date") val brewDate: String? = null,
+    @SerialName("bottling_date") val bottlingDate: String? = null,
     @SerialName("volume_brewed") val volumeBrewed: Double? = null,
     val og: Double? = null,
     val fg: Double? = null,
     val abv: Double? = null,
     val status: String? = null,
     @SerialName("ferm_time") val fermTime: Int? = null,
+    @SerialName("fermenting_since") val fermentingSince: String? = null,
+    @SerialName("recipe_name") val recipeName: String? = null,
+    @SerialName("recipe_style") val recipeStyle: String? = null,
+    @SerialName("actual_efficiency") val actualEfficiency: Double? = null,
+    @SerialName("cost_snapshot") val costSnapshot: Double? = null,
+    @SerialName("cost_per_liter_snapshot") val costPerLiter: Double? = null,
+    @SerialName("cave_liters") val caveLiters: Double? = null,
+    @SerialName("fermentation_count") val fermentationCount: Int? = null,
+    @SerialName("log_count") val logCount: Int? = null,
     val notes: String? = null,
+)
+
+/** Mesure de fermentation (manuelle ou densimètre connecté). */
+@Serializable
+data class FermReading(
+    @SerialName("recorded_at") val recordedAt: String,
+    val gravity: Double? = null,
+    val temperature: Double? = null,
+    val source: String? = null,
+    val notes: String? = null,
+)
+
+/** Entrée du journal de brassage. */
+@Serializable
+data class BrewLogEntry(
+    val id: Int,
+    val ts: String,
+    val step: String? = null,
+    val note: String? = null,
 )
 
 @Serializable

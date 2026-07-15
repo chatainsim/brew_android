@@ -7,6 +7,8 @@ import fr.easter.brewhome.data.ApiClient
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
+import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
@@ -28,6 +30,14 @@ data class UiState(
     val inventory: List<InventoryItem> = emptyList(),
     val brews: List<Brew> = emptyList(),
     val loaded: Boolean = false,
+)
+
+/** Données complémentaires d'un brassin, chargées à l'ouverture de sa fiche. */
+data class BrewExtras(
+    val loading: Boolean = false,
+    val readings: List<FermReading> = emptyList(),
+    val log: List<BrewLogEntry> = emptyList(),
+    val error: String? = null,
 )
 
 class BrewViewModel(app: Application) : AndroidViewModel(app) {
@@ -124,6 +134,26 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 onDone()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(error = "Échec d'enregistrement de la dégustation : ${e.message}")
+            }
+        }
+    }
+
+    private val _brewExtras = MutableStateFlow<Map<Int, BrewExtras>>(emptyMap())
+    val brewExtras: StateFlow<Map<Int, BrewExtras>> = _brewExtras
+
+    fun loadBrewExtras(brewId: Int) {
+        if (_brewExtras.value[brewId]?.loading == true) return
+        viewModelScope.launch {
+            _brewExtras.value += brewId to BrewExtras(loading = true)
+            try {
+                val api = api()
+                val readings = api.getBrewFermentation(brewId)
+                val log = api.getBrewLog(brewId)
+                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log)
+            } catch (e: Exception) {
+                _brewExtras.value += brewId to BrewExtras(
+                    error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
+                )
             }
         }
     }

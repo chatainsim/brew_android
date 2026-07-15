@@ -8,13 +8,16 @@ depuis le téléphone.
 
 - **Cave** : liste des bières avec photo, ajustement rapide du stock (33 cl, 75 cl, fût)
   directement depuis la liste ; fiche détaillée avec notes de dégustation éditables
-  (note en étoiles + apparence, arôme, saveur, impression générale).
+  (note en étoiles + apparence, arôme, saveur, impression générale) ; bouton dans la
+  barre du haut pour ouvrir la page Cave de l'interface web dans le navigateur.
 - **Recettes** : liste et fiche détaillée (paramètres d'empâtage/ébullition/fermentation,
   ingrédients groupés par catégorie avec temps d'ajout des houblons, alpha, EBC, notes).
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités
   (pas adapté à l'unité : ±10 g, ±0,1 kg, ±1 pièce), saisie directe par appui sur la ligne,
   alerte visuelle de stock bas.
-- **Brassins** : suivi en lecture (statut coloré, date, volume, densités, ABV, notes).
+- **Brassins** : liste (statut coloré, date, volume, densités, ABV) et fiche détaillée :
+  lien vers la recette, atténuation, efficacité, coût, courbe de fermentation
+  (densité + température, mesures manuelles et densimètre connecté), journal de brassage.
 - **Outils** : calculateurs de brassage hors-ligne, identiques à ceux du serveur —
   ABV/atténuation, correction densimètre (température), correction réfractomètre
   (Novotný), température d'empâtage, répartition en bouteilles 33/75 cl, primage
@@ -79,7 +82,7 @@ app/src/main/java/fr/easter/brewhome/
     ├── BeersScreens.kt      # Cave : liste + détail + dialog dégustation
     ├── RecipesScreens.kt    # Recettes : liste + détail
     ├── InventoryScreen.kt   # Ingrédients + dialog quantité
-    ├── BrewsScreen.kt       # Brassins (lecture)
+    ├── BrewsScreen.kt       # Brassins : liste + fiche (fermentation, journal)
     ├── ToolsScreens.kt      # Calculateurs de brassage
     └── SettingsScreen.kt    # URL serveur
 ```

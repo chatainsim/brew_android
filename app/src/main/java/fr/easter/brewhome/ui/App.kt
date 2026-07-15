@@ -1,9 +1,12 @@
 package fr.easter.brewhome.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,6 +45,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.data.ApiClient
 
 data class Tab(val route: String, val label: String, val icon: ImageVector)
 
@@ -58,7 +63,7 @@ private fun tabOf(route: String?): String? = when {
     route == "beers" || route.startsWith("beer/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") -> "recipes"
     route == "inventory" -> "inventory"
-    route == "brews" -> "brews"
+    route == "brews" || route.startsWith("brew/") -> "brews"
     route == "tools" || route.startsWith("tools/") -> "tools"
     else -> null
 }
@@ -105,6 +110,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                             currentRoute == "settings" -> "Réglages"
                             currentRoute?.startsWith("recipe/") == true -> "Recette"
                             currentRoute?.startsWith("beer/") == true -> "Bière"
+                            currentRoute?.startsWith("brew/") == true -> "Brassin"
                             currentRoute == "tools" -> "Outils"
                             currentRoute?.startsWith("tools/") == true ->
                                 toolTitle(backStack?.arguments?.getString("id"))
@@ -124,6 +130,21 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     }
                 },
                 actions = {
+                    // Ouvre la page Cave de l'interface web dans le navigateur
+                    if (currentRoute == "beers" && !serverUrl.isNullOrBlank()) {
+                        val context = LocalContext.current
+                        IconButton(onClick = {
+                            val url = ApiClient.normalizeUrl(serverUrl!!) + "#cave"
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            }
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = "Ouvrir la cave en ligne",
+                            )
+                        }
+                    }
                     val dataScreen = currentTab != null && currentTab != "tools"
                     if (state.loading && dataScreen) {
                         CircularProgressIndicator(
@@ -182,7 +203,11 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                 RecipeDetailScreen(vm, id)
             }
             composable("inventory") { InventoryScreen(vm) }
-            composable("brews") { BrewsScreen(vm) }
+            composable("brews") { BrewsScreen(vm) { navController.navigate("brew/$it") } }
+            composable("brew/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull()
+                BrewDetailScreen(vm, id) { navController.navigate("recipe/$it") }
+            }
             composable("tools") { ToolsScreen { navController.navigate("tools/$it") } }
             composable("tools/{id}") { entry ->
                 ToolScreen(entry.arguments?.getString("id"))

@@ -36,6 +36,12 @@ interface BrewApi {
 
     @GET("api/brews")
     suspend fun getBrews(): List<Brew>
+
+    @GET("api/brews/{id}/fermentation")
+    suspend fun getBrewFermentation(@Path("id") id: Int): List<FermReading>
+
+    @GET("api/brews/{id}/log")
+    suspend fun getBrewLog(@Path("id") id: Int): List<BrewLogEntry>
 }
 
 object ApiClient {
