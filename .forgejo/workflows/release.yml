@@ -26,18 +26,19 @@ jobs:
 
           curl -sf -H "$AUTH" -o BrewHome.apk "$API/raw/BrewHome-debug.apk?ref=${GITHUB_SHA}"
 
-          REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/v$VERSION" \
+          # Tags sans préfixe « v », comme les releases créées à la main
+          REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/$VERSION" \
                    | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
 
           if [ -z "$REL_ID" ]; then
             REL_ID=$(curl -sf -X POST -H "$AUTH" -H 'Content-Type: application/json' \
-              -d "{\"tag_name\":\"v$VERSION\",\"name\":\"BrewHome Android $VERSION\",
+              -d "{\"tag_name\":\"$VERSION\",\"name\":\"BrewHome Android $VERSION\",
                    \"body\":\"APK de la version $VERSION (commit ${GITHUB_SHA})\",
                    \"target_commitish\":\"${GITHUB_SHA}\"}" \
               "$API/releases" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-            echo "Release v$VERSION créée (id $REL_ID)"
+            echo "Release $VERSION créée (id $REL_ID)"
           else
-            echo "Release v$VERSION existante (id $REL_ID) : remplacement de l'APK"
+            echo "Release $VERSION existante (id $REL_ID) : remplacement de l'APK"
             for AID in $(curl -s -H "$AUTH" "$API/releases/$REL_ID/assets" \
                 | python3 -c "import json,sys; [print(a['id']) for a in json.load(sys.stdin) if a['name'].endswith('.apk')]"); do
               curl -sf -X DELETE -H "$AUTH" "$API/releases/$REL_ID/assets/$AID"
