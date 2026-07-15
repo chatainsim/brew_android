@@ -1,7 +1,6 @@
 package fr.easter.brewhome
 
 import android.app.Application
-import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import fr.easter.brewhome.data.ApiClient
@@ -9,33 +8,27 @@ import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
+import fr.easter.brewhome.data.DraftsRepository
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
-import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.SettingsRepository
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
-import fr.easter.brewhome.data.BulkCheckPut
-import fr.easter.brewhome.data.StockPatch
+import fr.easter.brewhome.data.ShoppingRepository
 import fr.easter.brewhome.data.TastingPut
-import fr.easter.brewhome.data.Vitrine
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import fr.easter.brewhome.data.VpnController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 
 data class UiState(
     val loading: Boolean = false,
@@ -57,8 +50,20 @@ data class BrewExtras(
     val error: String? = null,
 )
 
+/**
+ * Façade UI : porte l'état des écrans et traduit les erreurs en messages.
+ * Les accès serveur vivent dans les dépôts de `data/` (BrewhomeRepository,
+ * DraftsRepository, ShoppingRepository, VpnController).
+ */
 class BrewViewModel(app: Application) : AndroidViewModel(app) {
     private val settings = SettingsRepository(app)
+    private val apiProvider: suspend () -> BrewApi = { ApiClient.api(settings.serverUrl.first()) }
+    private val repo = BrewhomeRepository(apiProvider)
+    private val draftsRepo = DraftsRepository(apiProvider)
+    private val shoppingRepo = ShoppingRepository(apiProvider)
+    private val vpn = VpnController(app, settings)
+
+    // ── Réglages ──────────────────────────────────────────────────────────
 
     /** null = pas encore lu depuis DataStore, "" = jamais configuré */
     val serverUrl: StateFlow<String?> = settings.serverUrl
@@ -94,18 +99,6 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setWgTunnel(name) }
     }
 
-    private val _state = MutableStateFlow(UiState())
-    val state: StateFlow<UiState> = _state
-
-    private suspend fun api(): BrewApi = ApiClient.api(settings.serverUrl.first())
-
-    /** Base URL normalisée pour construire les URLs d'images. */
-    fun photoUrl(path: String?): String? {
-        val base = serverUrl.value?.let { ApiClient.normalizeUrl(it) } ?: return null
-        if (path == null) return null
-        return base.trimEnd('/') + path
-    }
-
     fun saveServerUrl(url: String, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             settings.setServerUrl(ApiClient.normalizeUrl(url))
@@ -115,55 +108,29 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun loadAll() = coroutineScope {
-        val api = api()
-        // Tout en parallèle : le lancement ne coûte qu'un aller-retour réseau
-        val beers = async { api.getBeers() }
-        val recipes = async { api.getRecipes() }
-        val inventory = async { api.getInventory() }
-        val brews = async { api.getBrews() }
-        val drafts = async { runCatching { api.getDrafts() }.getOrDefault(emptyList()) }
-        val shopping = async { runCatching { api.getShoppingList() }.getOrDefault(emptyList()) }
-        _state.value = UiState(
-            beers = beers.await(), recipes = recipes.await(),
-            inventory = inventory.await(), brews = brews.await(),
-            drafts = drafts.await(), shopping = shopping.await(), loaded = true,
-        )
-    }
+    // ── Données principales ───────────────────────────────────────────────
 
-    private suspend fun serverReachable(timeoutMs: Long): Boolean =
-        runCatching { withTimeout(timeoutMs) { api().getAppSettings() } }.isSuccess
+    private val _state = MutableStateFlow(UiState())
+    val state: StateFlow<UiState> = _state
 
-    /**
-     * Monte le tunnel WireGuard via l'API « remote control » de l'app
-     * officielle, puis attend (max ~8 s) que le serveur réponde.
-     * Nécessite côté WireGuard : Réglages → « Autoriser le contrôle à distance »,
-     * et la permission CONTROL_TUNNELS accordée à BrewHome.
-     */
-    private suspend fun tryWireGuard(): Boolean {
-        val tunnel = settings.wgTunnel.first().trim()
-        if (tunnel.isEmpty()) return false
-        val intent = Intent("com.wireguard.android.action.SET_TUNNEL_UP")
-            .setPackage("com.wireguard.android")
-            .putExtra("tunnel", tunnel)
-        runCatching { getApplication<Application>().sendBroadcast(intent) }
-        repeat(16) {
-            delay(500)
-            if (serverReachable(1500)) return true
-        }
-        return false
+    /** Base URL normalisée pour construire les URLs d'images. */
+    fun photoUrl(path: String?): String? {
+        val base = serverUrl.value?.let { ApiClient.normalizeUrl(it) } ?: return null
+        if (path == null) return null
+        return base.trimEnd('/') + path
     }
 
     fun refreshAll() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             try {
-                loadAll()
+                applySnapshot()
             } catch (first: Exception) {
-                val retryAfterVpn = settings.wgAuto.first() && tryWireGuard()
+                // Serveur injoignable : tentative via le tunnel WireGuard
+                val retryAfterVpn = vpn.connectIfConfigured { repo.reachable(it) }
                 if (retryAfterVpn) {
                     try {
-                        loadAll()
+                        applySnapshot()
                         return@launch
                     } catch (e: Exception) {
                         // le message d'erreur d'origine reste le plus parlant
@@ -177,53 +144,46 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private suspend fun applySnapshot() {
+        val s = repo.snapshot()
+        _state.value = UiState(
+            beers = s.beers, recipes = s.recipes, inventory = s.inventory,
+            brews = s.brews, drafts = s.drafts, shopping = s.shopping, loaded = true,
+        )
+    }
+
     fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
-        viewModelScope.launch {
-            try {
-                val patch = StockPatch(
-                    stock33 = if (d33 != 0) maxOf(0, (beer.stock33 ?: 0) + d33) else null,
-                    stock75 = if (d75 != 0) maxOf(0, (beer.stock75 ?: 0) + d75) else null,
-                    kegLiters = if (dKeg != 0.0) maxOf(0.0, (beer.kegLiters ?: 0.0) + dKeg) else null,
-                )
-                val updated = api().patchBeerStock(beer.id, patch)
-                _state.value = _state.value.copy(
-                    beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
-                    error = null,
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec de mise à jour du stock : ${e.message}")
-            }
+        launchWithError("Échec de mise à jour du stock") {
+            val updated = repo.adjustBeerStock(beer, d33, d75, dKeg)
+            _state.value = _state.value.copy(
+                beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
+                error = null,
+            )
         }
     }
 
     fun setInventoryQty(item: InventoryItem, newQty: Double) {
-        viewModelScope.launch {
-            try {
-                val updated = api().patchInventoryQty(item.id, QtyPatch(maxOf(0.0, newQty)))
-                _state.value = _state.value.copy(
-                    inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
-                    error = null,
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec de mise à jour de la quantité : ${e.message}")
-            }
+        launchWithError("Échec de mise à jour de la quantité") {
+            val updated = repo.setInventoryQty(item.id, newQty)
+            _state.value = _state.value.copy(
+                inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
+                error = null,
+            )
         }
     }
 
     fun saveTasting(beerId: Int, tasting: TastingPut, onDone: () -> Unit = {}) {
-        viewModelScope.launch {
-            try {
-                val updated = api().putBeerTasting(beerId, tasting)
-                _state.value = _state.value.copy(
-                    beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
-                    error = null,
-                )
-                onDone()
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec d'enregistrement de la dégustation : ${e.message}")
-            }
+        launchWithError("Échec d'enregistrement de la dégustation") {
+            val updated = repo.saveTasting(beerId, tasting)
+            _state.value = _state.value.copy(
+                beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
+                error = null,
+            )
+            onDone()
         }
     }
+
+    // ── Fiche brassin ─────────────────────────────────────────────────────
 
     private val _brewExtras = MutableStateFlow<Map<Int, BrewExtras>>(emptyMap())
     val brewExtras: StateFlow<Map<Int, BrewExtras>> = _brewExtras
@@ -233,13 +193,8 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _brewExtras.value += brewId to BrewExtras(loading = true)
             try {
-                val api = api()
-                coroutineScope {
-                    val readings = async { api.getBrewFermentation(brewId) }
-                    val log = async { api.getBrewLog(brewId) }
-                    _brewExtras.value += brewId to
-                        BrewExtras(readings = readings.await(), log = log.await())
-                }
+                val (readings, log) = repo.brewExtras(brewId)
+                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log)
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
@@ -247,6 +202,21 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    // ── Statistiques ──────────────────────────────────────────────────────
+
+    private val _consumption = MutableStateFlow<Consumption?>(null)
+    val consumption: StateFlow<Consumption?> = _consumption
+
+    /** Charge les stats de consommation (écran Statistiques). */
+    fun loadConsumption() {
+        viewModelScope.launch {
+            runCatching { repo.consumption() }
+                .onSuccess { _consumption.value = it }
+        }
+    }
+
+    // ── Brouillons et catalogue ───────────────────────────────────────────
 
     private val _catalog = MutableStateFlow<List<CatalogItem>>(emptyList())
     val catalog: StateFlow<List<CatalogItem>> = _catalog
@@ -256,125 +226,93 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     fun loadCatalog() {
         if (catalogLoaded) return
         viewModelScope.launch {
-            runCatching { api().getCatalog() }.onSuccess {
+            runCatching { draftsRepo.catalog() }.onSuccess {
                 _catalog.value = it
                 catalogLoaded = true
             }
         }
     }
 
-    // ── Liste de courses ──────────────────────────────────────────────────
-
-    private suspend fun reloadShopping() {
-        runCatching { api().getShoppingList() }.onSuccess {
-            _state.value = _state.value.copy(shopping = it)
+    /** Crée (id == null) ou met à jour un brouillon. */
+    fun saveDraft(id: Int?, draft: DraftPut, onDone: (Draft) -> Unit = {}) {
+        launchWithError("Échec d'enregistrement du brouillon") {
+            val saved = draftsRepo.save(id, draft)
+            _state.value = _state.value.copy(
+                drafts = if (id == null) listOf(saved) + _state.value.drafts
+                    else _state.value.drafts.map { if (it.id == saved.id) saved else it },
+                error = null,
+            )
+            onDone(saved)
         }
     }
 
+    // ── Liste de courses ──────────────────────────────────────────────────
+
     fun toggleShoppingChecked(item: ShoppingItem) {
-        viewModelScope.launch {
+        launchWithError("Échec de la coche") {
             val newChecked = (item.checked ?: 0) == 0
-            try {
-                api().bulkCheckShopping(BulkCheckPut(listOf(item.id), newChecked))
-                _state.value = _state.value.copy(
-                    shopping = _state.value.shopping.map {
-                        if (it.id == item.id) it.copy(checked = if (newChecked) 1 else 0) else it
-                    },
-                    error = null,
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec de la coche : ${e.message}")
-            }
+            shoppingRepo.setChecked(item.id, newChecked)
+            _state.value = _state.value.copy(
+                shopping = _state.value.shopping.map {
+                    if (it.id == item.id) it.copy(checked = if (newChecked) 1 else 0) else it
+                },
+                error = null,
+            )
         }
     }
 
     fun addShoppingItem(post: ShoppingPost) {
-        viewModelScope.launch {
-            try {
-                api().createShoppingItem(post)
-                reloadShopping()
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec de l'ajout : ${e.message}")
-            }
+        launchWithError("Échec de l'ajout") {
+            shoppingRepo.add(post)
+            _state.value = _state.value.copy(shopping = shoppingRepo.list(), error = null)
         }
     }
 
     fun deleteShoppingItem(id: Int) {
-        viewModelScope.launch {
-            try {
-                api().deleteShoppingItem(id)
-                _state.value = _state.value.copy(
-                    shopping = _state.value.shopping.filterNot { it.id == id },
-                    error = null,
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec de la suppression : ${e.message}")
-            }
+        launchWithError("Échec de la suppression") {
+            shoppingRepo.delete(id)
+            _state.value = _state.value.copy(
+                shopping = _state.value.shopping.filterNot { it.id == id },
+                error = null,
+            )
         }
     }
 
     /** Transfère les articles cochés dans l'inventaire, puis recharge tout. */
     fun buyCheckedShopping() {
-        viewModelScope.launch {
-            try {
-                api().buyShoppingItems()
-                refreshAll()
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "Échec du transfert : ${e.message}")
-            }
+        launchWithError("Échec du transfert") {
+            shoppingRepo.buyChecked()
+            refreshAll()
         }
     }
 
-    /** Crée (id == null) ou met à jour un brouillon. */
-    fun saveDraft(id: Int?, draft: DraftPut, onDone: (Draft) -> Unit = {}) {
-        viewModelScope.launch {
-            try {
-                val saved = if (id == null) api().createDraft(draft)
-                    else api().updateDraft(id, draft)
-                _state.value = _state.value.copy(
-                    drafts = if (id == null) listOf(saved) + _state.value.drafts
-                        else _state.value.drafts.map { if (it.id == saved.id) saved else it },
-                    error = null,
-                )
-                onDone(saved)
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    error = "Échec d'enregistrement du brouillon : ${e.message}",
-                )
-            }
-        }
-    }
-
-    private val _consumption = MutableStateFlow<Consumption?>(null)
-    val consumption: StateFlow<Consumption?> = _consumption
-
-    /** Charge les stats de consommation (écran Statistiques). */
-    fun loadConsumption() {
-        viewModelScope.launch {
-            runCatching { api().getConsumption() }
-                .onSuccess { _consumption.value = it }
-        }
-    }
+    // ── Divers ────────────────────────────────────────────────────────────
 
     private var vitrineUrl: String? = null
 
     /**
      * Ouvre la cave en ligne : la vitrine GitHub Pages si elle est configurée
-     * sur le serveur (réglage `gh_vitrine_targets`), sinon la page Cave de
-     * l'interface web.
+     * sur le serveur, sinon la page Cave de l'interface web.
      */
     fun openCaveOnline(open: (String) -> Unit) {
         viewModelScope.launch {
-            val url = vitrineUrl ?: runCatching {
-                val targets = api().getAppSettings()["gh_vitrine_targets"]
-                    ?.jsonPrimitive?.contentOrNull
-                Vitrine.pagesUrl(targets)
-            }.getOrNull()?.also { vitrineUrl = it }
+            val url = vitrineUrl ?: repo.vitrineUrl()?.also { vitrineUrl = it }
             open(url ?: (ApiClient.normalizeUrl(serverUrl.value ?: "") + "#cave"))
         }
     }
 
     fun clearError() {
         _state.value = _state.value.copy(error = null)
+    }
+
+    /** Lance une action et route son échec vers la snackbar d'erreur. */
+    private fun launchWithError(prefix: String, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = "$prefix : ${e.message}")
+            }
+        }
     }
 }

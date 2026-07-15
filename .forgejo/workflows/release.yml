@@ -40,8 +40,9 @@ jobs:
           # ── Build + tests avec le toolchain local ──
           export JAVA_HOME="$HOME/android-toolchain/jdk-17.0.11+9"
           echo "sdk.dir=$HOME/android-toolchain/sdk" > local.properties
-          "$HOME/android-toolchain/gradle-8.7/bin/gradle" -q assembleDebug testDebugUnitTest
-          test -f app/build/outputs/apk/debug/app-debug.apk
+          # Release = build minifié R8 (signé avec la clé debug, comme avant)
+          "$HOME/android-toolchain/gradle-8.7/bin/gradle" -q assembleRelease testDebugUnitTest
+          test -f app/build/outputs/apk/release/app-release.apk
 
           # ── Release Gitea (tags sans préfixe « v », convention existante) ──
           REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/$VERSION" \
@@ -63,6 +64,6 @@ jobs:
           fi
 
           curl -sf -X POST -H "$AUTH" \
-            -F "attachment=@app/build/outputs/apk/debug/app-debug.apk" \
+            -F "attachment=@app/build/outputs/apk/release/app-release.apk" \
             "$API/releases/$REL_ID/assets?name=BrewHome-$VERSION.apk" >/dev/null
           echo "APK attaché : BrewHome-$VERSION.apk"

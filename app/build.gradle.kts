@@ -13,13 +13,19 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 13
-        versionName = "1.11"
+        versionCode = 14
+        versionName = "1.12"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 : code et ressources minifiés (APK ~2× plus léger)
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }
