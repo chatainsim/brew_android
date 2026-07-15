@@ -45,7 +45,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import fr.easter.brewhome.BrewViewModel
-import fr.easter.brewhome.data.ApiClient
 
 data class Tab(val route: String, val label: String, val icon: ImageVector)
 
@@ -130,18 +129,19 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
                     }
                 },
                 actions = {
-                    // Ouvre la page Cave de l'interface web dans le navigateur
+                    // Ouvre la vitrine GitHub Pages (ou à défaut la page Cave du site)
                     if (currentRoute == "beers" && !serverUrl.isNullOrBlank()) {
                         val context = LocalContext.current
                         IconButton(onClick = {
-                            val url = ApiClient.normalizeUrl(serverUrl!!) + "#cave"
-                            runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            vm.openCaveOnline { url ->
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                }
                             }
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = "Ouvrir la cave en ligne",
+                                contentDescription = "Ouvrir la vitrine de la cave",
                             )
                         }
                     }

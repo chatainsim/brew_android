@@ -9,7 +9,8 @@ depuis le téléphone.
 - **Cave** : liste des bières avec photo, ajustement rapide du stock (33 cl, 75 cl, fût)
   directement depuis la liste ; fiche détaillée avec notes de dégustation éditables
   (note en étoiles + apparence, arôme, saveur, impression générale) ; bouton dans la
-  barre du haut pour ouvrir la page Cave de l'interface web dans le navigateur.
+  barre du haut pour ouvrir la vitrine GitHub Pages de la cave dans le navigateur
+  (repo lu dans les réglages GitHub du serveur ; à défaut, page Cave du site).
 - **Recettes** : liste et fiche détaillée (paramètres d'empâtage/ébullition/fermentation,
   ingrédients groupés par catégorie avec temps d'ajout des houblons, alpha, EBC, notes).
 - **Ingrédients** : inventaire groupé par catégorie, ajustement rapide des quantités

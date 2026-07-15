@@ -15,6 +15,9 @@ import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.SettingsRepository
 import fr.easter.brewhome.data.StockPatch
 import fr.easter.brewhome.data.TastingPut
+import fr.easter.brewhome.data.Vitrine
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -155,6 +158,24 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                     error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
                 )
             }
+        }
+    }
+
+    private var vitrineUrl: String? = null
+
+    /**
+     * Ouvre la cave en ligne : la vitrine GitHub Pages si elle est configurée
+     * sur le serveur (réglage `gh_vitrine_targets`), sinon la page Cave de
+     * l'interface web.
+     */
+    fun openCaveOnline(open: (String) -> Unit) {
+        viewModelScope.launch {
+            val url = vitrineUrl ?: runCatching {
+                val targets = api().getAppSettings()["gh_vitrine_targets"]
+                    ?.jsonPrimitive?.contentOrNull
+                Vitrine.pagesUrl(targets)
+            }.getOrNull()?.also { vitrineUrl = it }
+            open(url ?: (ApiClient.normalizeUrl(serverUrl.value ?: "") + "#cave"))
         }
     }
 

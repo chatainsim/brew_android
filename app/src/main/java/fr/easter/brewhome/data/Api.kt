@@ -42,6 +42,9 @@ interface BrewApi {
 
     @GET("api/brews/{id}/log")
     suspend fun getBrewLog(@Path("id") id: Int): List<BrewLogEntry>
+
+    @GET("api/app-settings")
+    suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
 }
 
 object ApiClient {
