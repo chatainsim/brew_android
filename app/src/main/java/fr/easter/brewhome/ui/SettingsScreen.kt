@@ -1,5 +1,6 @@
 package fr.easter.brewhome.ui
 
+import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -7,8 +8,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
@@ -68,6 +71,26 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
                     onClick = { vm.setThemeMode(mode) },
                     shape = SegmentedButtonDefaults.itemShape(index = i, count = themeModes.size),
                 ) { Text(label) }
+            }
+        }
+
+        // Couleurs dynamiques Material You (Android 12+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val dynamicColor by vm.dynamicColor.collectAsState()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Couleurs du téléphone", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Material You : palette dérivée de ton fond d'écran " +
+                            "au lieu de l'ambre BrewHome.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                Switch(
+                    checked = dynamicColor,
+                    onCheckedChange = { vm.setDynamicColor(it) },
+                )
             }
         }
     }

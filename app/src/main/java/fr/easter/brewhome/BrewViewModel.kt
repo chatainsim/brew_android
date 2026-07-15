@@ -63,6 +63,14 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setThemeMode(mode) }
     }
 
+    /** Couleurs dynamiques Material You (Android 12+). */
+    val dynamicColor: StateFlow<Boolean> = settings.dynamicColor
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { settings.setDynamicColor(enabled) }
+    }
+
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state
 

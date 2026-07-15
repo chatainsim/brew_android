@@ -37,7 +37,9 @@ depuis le téléphone.
   écran d'erreur avec « Réessayer », clavier numérique sur les champs de quantité,
   flèche de retour sur les fiches, onglets avec état préservé.
 - **Réglages** : URL du serveur configurable (stockée dans DataStore), affichée au premier
-  lancement si non configurée ; thème clair / sombre / automatique (suit le système).
+  lancement si non configurée ; thème clair / sombre / automatique (suit le système) ;
+  couleurs dynamiques Material You (Android 12+) ou palette ambre BrewHome
+  (palette tonale Material 3 complète).
 
 ## Connexion au serveur
 

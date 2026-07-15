@@ -21,6 +21,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val vm: BrewViewModel = viewModel()
             val mode by vm.themeMode.collectAsState()
+            val dynamic by vm.dynamicColor.collectAsState()
             val dark = isDarkTheme(mode)
             // Icônes des barres système lisibles quand le thème est forcé
             LaunchedEffect(dark) {
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
                         else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
                 )
             }
-            BrewHomeTheme(darkTheme = dark) {
+            BrewHomeTheme(darkTheme = dark, dynamicColor = dynamic) {
                 BrewHomeApp(vm)
             }
         }
