@@ -1,0 +1,49 @@
+# Crée (ou met à jour) une release Gitea avec l'APK commité à chaque push sur main.
+# Une release par versionName (app/build.gradle.kts) : re-pousser sans changer la
+# version remplace l'APK de la release existante.
+# S'exécute sur le runner « wsl-simon » (mode host, machine WSL de Simon).
+name: Release APK
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: host
+    steps:
+      - name: Publier l'APK en release
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          API="${GITHUB_SERVER_URL}/api/v1/repos/${GITHUB_REPOSITORY}"
+          AUTH="Authorization: token ${TOKEN}"
+
+          VERSION=$(curl -sf -H "$AUTH" "$API/raw/app/build.gradle.kts?ref=${GITHUB_SHA}" \
+                    | grep -oP 'versionName = "\K[^"]+')
+          echo "Version : $VERSION"
+
+          curl -sf -H "$AUTH" -o BrewHome.apk "$API/raw/BrewHome-debug.apk?ref=${GITHUB_SHA}"
+
+          REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/v$VERSION" \
+                   | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
+
+          if [ -z "$REL_ID" ]; then
+            REL_ID=$(curl -sf -X POST -H "$AUTH" -H 'Content-Type: application/json' \
+              -d "{\"tag_name\":\"v$VERSION\",\"name\":\"BrewHome Android $VERSION\",
+                   \"body\":\"APK de la version $VERSION (commit ${GITHUB_SHA})\",
+                   \"target_commitish\":\"${GITHUB_SHA}\"}" \
+              "$API/releases" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+            echo "Release v$VERSION créée (id $REL_ID)"
+          else
+            echo "Release v$VERSION existante (id $REL_ID) : remplacement de l'APK"
+            for AID in $(curl -s -H "$AUTH" "$API/releases/$REL_ID/assets" \
+                | python3 -c "import json,sys; [print(a['id']) for a in json.load(sys.stdin) if a['name'].endswith('.apk')]"); do
+              curl -sf -X DELETE -H "$AUTH" "$API/releases/$REL_ID/assets/$AID"
+            done
+          fi
+
+          curl -sf -X POST -H "$AUTH" -F "attachment=@BrewHome.apk" \
+            "$API/releases/$REL_ID/assets?name=BrewHome-$VERSION.apk" >/dev/null
+          echo "APK attaché : BrewHome-$VERSION.apk"
