@@ -1,10 +1,14 @@
 package fr.easter.brewhome
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.annotation.StringRes
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.ApiClient
+import fr.easter.brewhome.data.AppSettings
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
@@ -26,6 +30,7 @@ import fr.easter.brewhome.data.Snapshot
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.data.TastingPut
 import fr.easter.brewhome.data.VpnController
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -63,15 +68,21 @@ data class BrewExtras(
  * Façade UI : porte l'état des écrans et traduit les erreurs en messages.
  * Les accès serveur vivent dans les dépôts de `data/` (BrewhomeRepository,
  * DraftsRepository, ShoppingRepository, VpnController).
+ *
+ * Les dépendances sont injectées pour permettre les tests JVM (voir [Factory]
+ * pour le câblage réel : DataStore, WireGuard, cache disque, ressources).
  */
-class BrewViewModel(app: Application) : AndroidViewModel(app) {
-    private val settings = SettingsRepository(app)
-    private val apiProvider: suspend () -> BrewApi = { ApiClient.api(settings.serverUrl.first()) }
+class BrewViewModel(
+    private val settings: AppSettings,
+    apiProvider: suspend () -> BrewApi,
+    private val vpn: VpnController,
+    private val cache: SnapshotCache,
+    private val strings: (Int) -> String,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+) : ViewModel() {
     private val repo = BrewhomeRepository(apiProvider)
     private val draftsRepo = DraftsRepository(apiProvider)
     private val shoppingRepo = ShoppingRepository(apiProvider)
-    private val vpn = VpnController(app, settings)
-    private val cache = SnapshotCache(app.filesDir)
 
     // ── Réglages ──────────────────────────────────────────────────────────
 
@@ -113,7 +124,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             settings.setServerUrl(ApiClient.normalizeUrl(url))
             // Les données en cache viennent peut-être d'un autre serveur
-            withContext(Dispatchers.IO) { cache.clear() }
+            withContext(io) { cache.clear() }
             _state.value = UiState()
             refreshAll()
             onDone()
@@ -138,7 +149,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
             // Premier lancement : afficher tout de suite le dernier instantané
             // connu pendant que le rafraîchissement continue en arrière-plan.
             if (!_state.value.loaded) {
-                withContext(Dispatchers.IO) { cache.load() }?.let { c ->
+                withContext(io) { cache.load() }?.let { c ->
                     _state.value = uiStateOf(c.snapshot).copy(loading = true, dataAt = c.savedAt)
                 }
             }
@@ -159,7 +170,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                     loading = false,
                     // les données du cache restent affichées, avec le bandeau hors ligne
                     offline = _state.value.loaded,
-                    error = "Connexion impossible : ${first.message ?: first.javaClass.simpleName}",
+                    error = errorMessage(R.string.error_connect, first),
                 )
             }
         }
@@ -168,7 +179,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun applySnapshot() {
         val s = repo.snapshot()
         _state.value = uiStateOf(s).copy(dataAt = System.currentTimeMillis())
-        withContext(Dispatchers.IO) { cache.save(s) }
+        withContext(io) { cache.save(s) }
     }
 
     private fun uiStateOf(s: Snapshot) = UiState(
@@ -177,7 +188,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     )
 
     fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
-        launchWithError("Échec de mise à jour du stock") {
+        launchWithError(R.string.error_stock_update) {
             val updated = repo.adjustBeerStock(beer, d33, d75, dKeg)
             _state.value = _state.value.copy(
                 beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
@@ -187,7 +198,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setInventoryQty(item: InventoryItem, newQty: Double) {
-        launchWithError("Échec de mise à jour de la quantité") {
+        launchWithError(R.string.error_qty_update) {
             val updated = repo.setInventoryQty(item.id, newQty)
             _state.value = _state.value.copy(
                 inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
@@ -197,7 +208,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveTasting(beerId: Int, tasting: TastingPut, onDone: () -> Unit = {}) {
-        launchWithError("Échec d'enregistrement de la dégustation") {
+        launchWithError(R.string.error_tasting_save) {
             val updated = repo.saveTasting(beerId, tasting)
             _state.value = _state.value.copy(
                 beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
@@ -221,7 +232,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 _brewExtras.value += brewId to BrewExtras(readings = readings, log = log)
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
-                    error = "Chargement impossible : ${e.message ?: e.javaClass.simpleName}",
+                    error = errorMessage(R.string.error_brew_load, e),
                 )
             }
         }
@@ -259,7 +270,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Crée (id == null) ou met à jour un brouillon. */
     fun saveDraft(id: Int?, draft: DraftPut, onDone: (Draft) -> Unit = {}) {
-        launchWithError("Échec d'enregistrement du brouillon") {
+        launchWithError(R.string.error_draft_save) {
             val saved = draftsRepo.save(id, draft)
             _state.value = _state.value.copy(
                 drafts = if (id == null) listOf(saved) + _state.value.drafts
@@ -273,7 +284,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     // ── Liste de courses ──────────────────────────────────────────────────
 
     fun toggleShoppingChecked(item: ShoppingItem) {
-        launchWithError("Échec de la coche") {
+        launchWithError(R.string.error_shopping_check) {
             val newChecked = (item.checked ?: 0) == 0
             shoppingRepo.setChecked(item.id, newChecked)
             _state.value = _state.value.copy(
@@ -287,23 +298,29 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ajoute d'un coup les ingrédients manquants d'une recette aux courses. */
     fun addNeedsToShopping(needs: List<StockCheck.Need>) {
-        launchWithError("Échec de l'ajout aux courses") {
-            needs.forEach {
-                shoppingRepo.add(ShoppingPost(it.name, it.category, it.quantity, it.unit))
+        launchWithError(R.string.error_shopping_add) {
+            try {
+                needs.forEach {
+                    shoppingRepo.add(ShoppingPost(it.name, it.category, it.quantity, it.unit))
+                }
+            } finally {
+                // Même en cas d'échec partiel, refléter ce que le serveur a accepté
+                runCatching { shoppingRepo.list() }
+                    .onSuccess { _state.value = _state.value.copy(shopping = it) }
             }
-            _state.value = _state.value.copy(shopping = shoppingRepo.list(), error = null)
+            _state.value = _state.value.copy(error = null)
         }
     }
 
     fun addShoppingItem(post: ShoppingPost) {
-        launchWithError("Échec de l'ajout") {
+        launchWithError(R.string.error_shopping_add) {
             shoppingRepo.add(post)
             _state.value = _state.value.copy(shopping = shoppingRepo.list(), error = null)
         }
     }
 
     fun deleteShoppingItem(id: Int) {
-        launchWithError("Échec de la suppression") {
+        launchWithError(R.string.error_shopping_delete) {
             shoppingRepo.delete(id)
             _state.value = _state.value.copy(
                 shopping = _state.value.shopping.filterNot { it.id == id },
@@ -314,7 +331,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Transfère les articles cochés dans l'inventaire, puis recharge tout. */
     fun buyCheckedShopping() {
-        launchWithError("Échec du transfert") {
+        launchWithError(R.string.error_shopping_buy) {
             shoppingRepo.buyChecked()
             refreshAll()
         }
@@ -340,12 +357,33 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Lance une action et route son échec vers la snackbar d'erreur. */
-    private fun launchWithError(prefix: String, block: suspend () -> Unit) {
+    private fun launchWithError(@StringRes prefixRes: Int, block: suspend () -> Unit) {
         viewModelScope.launch {
             try {
                 block()
             } catch (e: Exception) {
-                _state.value = _state.value.copy(error = "$prefix : ${e.message}")
+                _state.value = _state.value.copy(error = errorMessage(prefixRes, e))
+            }
+        }
+    }
+
+    /** « Préfixe : détail », avec le nom de l'exception quand elle n'a pas de message. */
+    private fun errorMessage(@StringRes prefixRes: Int, e: Exception): String =
+        "${strings(prefixRes)} : ${e.message ?: e.javaClass.simpleName}"
+
+    companion object {
+        /** Câblage réel : DataStore, broadcast WireGuard, cache disque, ressources. */
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = checkNotNull(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
+                val settings = SettingsRepository(app)
+                BrewViewModel(
+                    settings = settings,
+                    apiProvider = { ApiClient.api(settings.serverUrl.first()) },
+                    vpn = VpnController(settings, VpnController.broadcaster(app)),
+                    cache = SnapshotCache(app.filesDir),
+                    strings = app::getString,
+                )
             }
         }
     }

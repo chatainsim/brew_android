@@ -15,36 +15,51 @@ private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
 private val KEY_WG_AUTO = booleanPreferencesKey("wg_auto")
 private val KEY_WG_TUNNEL = stringPreferencesKey("wg_tunnel")
 
-class SettingsRepository(private val context: Context) {
-    val serverUrl: Flow<String> = context.dataStore.data.map { it[KEY_SERVER_URL] ?: "" }
+/** Réglages de l'app, abstraits pour pouvoir tester le ViewModel sans DataStore. */
+interface AppSettings {
+    val serverUrl: Flow<String>
 
     /** "system" (défaut) | "light" | "dark" */
-    val themeMode: Flow<String> = context.dataStore.data.map { it[KEY_THEME_MODE] ?: "system" }
+    val themeMode: Flow<String>
 
-    suspend fun setServerUrl(url: String) {
+    /** Couleurs dynamiques Material You (Android 12+), désactivé par défaut. */
+    val dynamicColor: Flow<Boolean>
+
+    /** Monter automatiquement le tunnel WireGuard si le serveur est injoignable. */
+    val wgAuto: Flow<Boolean>
+    val wgTunnel: Flow<String>
+
+    suspend fun setServerUrl(url: String)
+    suspend fun setThemeMode(mode: String)
+    suspend fun setDynamicColor(enabled: Boolean)
+    suspend fun setWgAuto(enabled: Boolean)
+    suspend fun setWgTunnel(name: String)
+}
+
+class SettingsRepository(private val context: Context) : AppSettings {
+    override val serverUrl: Flow<String> = context.dataStore.data.map { it[KEY_SERVER_URL] ?: "" }
+    override val themeMode: Flow<String> = context.dataStore.data.map { it[KEY_THEME_MODE] ?: "system" }
+    override val dynamicColor: Flow<Boolean> = context.dataStore.data.map { it[KEY_DYNAMIC_COLOR] ?: false }
+    override val wgAuto: Flow<Boolean> = context.dataStore.data.map { it[KEY_WG_AUTO] ?: false }
+    override val wgTunnel: Flow<String> = context.dataStore.data.map { it[KEY_WG_TUNNEL] ?: "" }
+
+    override suspend fun setServerUrl(url: String) {
         context.dataStore.edit { it[KEY_SERVER_URL] = url }
     }
 
-    suspend fun setThemeMode(mode: String) {
+    override suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { it[KEY_THEME_MODE] = mode }
     }
 
-    /** Couleurs dynamiques Material You (Android 12+), désactivé par défaut. */
-    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { it[KEY_DYNAMIC_COLOR] ?: false }
-
-    suspend fun setDynamicColor(enabled: Boolean) {
+    override suspend fun setDynamicColor(enabled: Boolean) {
         context.dataStore.edit { it[KEY_DYNAMIC_COLOR] = enabled }
     }
 
-    /** Monter automatiquement le tunnel WireGuard si le serveur est injoignable. */
-    val wgAuto: Flow<Boolean> = context.dataStore.data.map { it[KEY_WG_AUTO] ?: false }
-    val wgTunnel: Flow<String> = context.dataStore.data.map { it[KEY_WG_TUNNEL] ?: "" }
-
-    suspend fun setWgAuto(enabled: Boolean) {
+    override suspend fun setWgAuto(enabled: Boolean) {
         context.dataStore.edit { it[KEY_WG_AUTO] = enabled }
     }
 
-    suspend fun setWgTunnel(name: String) {
+    override suspend fun setWgTunnel(name: String) {
         context.dataStore.edit { it[KEY_WG_TUNNEL] = name }
     }
 }

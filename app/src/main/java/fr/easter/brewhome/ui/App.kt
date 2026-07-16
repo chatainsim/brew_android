@@ -78,7 +78,7 @@ private fun tabOf(route: String?): String? = when {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BrewHomeApp(vm: BrewViewModel = viewModel()) {
+fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) {
     val serverUrl by vm.serverUrl.collectAsState()
     val state by vm.state.collectAsState()
     val navController: NavHostController = rememberNavController()

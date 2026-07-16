@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val vm: BrewViewModel = viewModel()
+            val vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)
             val mode by vm.themeMode.collectAsState()
             val dynamic by vm.dynamicColor.collectAsState()
             val dark = isDarkTheme(mode)

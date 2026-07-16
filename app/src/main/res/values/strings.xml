@@ -41,6 +41,18 @@
     <string name="offline_banner">Hors ligne — dernières données connues</string>
     <string name="offline_banner_dated">Hors ligne — données du %1$s</string>
 
+    <!-- Erreurs (préfixes de la snackbar, complétés par le détail technique) -->
+    <string name="error_connect">Connexion impossible</string>
+    <string name="error_brew_load">Chargement impossible</string>
+    <string name="error_stock_update">Échec de mise à jour du stock</string>
+    <string name="error_qty_update">Échec de mise à jour de la quantité</string>
+    <string name="error_tasting_save">Échec d\'enregistrement de la dégustation</string>
+    <string name="error_draft_save">Échec d\'enregistrement du brouillon</string>
+    <string name="error_shopping_check">Échec de la coche</string>
+    <string name="error_shopping_add">Échec de l\'ajout aux courses</string>
+    <string name="error_shopping_delete">Échec de la suppression</string>
+    <string name="error_shopping_buy">Échec du transfert</string>
+
     <!-- Réglages -->
     <string name="settings_server_title">Serveur BrewHome</string>
     <string name="settings_server_help">Adresse du serveur sur ton réseau local (ou via VPN). Exemple : http://192.168.1.50:5000</string>

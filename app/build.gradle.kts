@@ -13,8 +13,8 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 16
-        versionName = "1.13"
+        versionCode = 17
+        versionName = "1.13.1"
     }
 
     buildTypes {
@@ -61,4 +61,5 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

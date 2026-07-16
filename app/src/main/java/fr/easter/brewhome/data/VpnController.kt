@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.first
  * accordée à BrewHome (demandée à l'activation de l'option).
  */
 class VpnController(
-    private val context: Context,
-    private val settings: SettingsRepository,
+    private val settings: AppSettings,
+    private val sendTunnelUp: (tunnel: String) -> Unit,
 ) {
     /**
      * Si l'option est activée et un tunnel configuré : envoie SET_TUNNEL_UP
@@ -23,10 +23,7 @@ class VpnController(
         if (!settings.wgAuto.first()) return false
         val tunnel = settings.wgTunnel.first().trim()
         if (tunnel.isEmpty()) return false
-        val intent = Intent(ACTION_SET_TUNNEL_UP)
-            .setPackage(WIREGUARD_PACKAGE)
-            .putExtra("tunnel", tunnel)
-        runCatching { context.sendBroadcast(intent) }
+        sendTunnelUp(tunnel)
         repeat(16) {
             delay(500)
             if (reachable(1500)) return true
@@ -37,5 +34,13 @@ class VpnController(
     companion object {
         const val WIREGUARD_PACKAGE = "com.wireguard.android"
         const val ACTION_SET_TUNNEL_UP = "com.wireguard.android.action.SET_TUNNEL_UP"
+
+        /** Émetteur réel : broadcast vers l'app WireGuard officielle. */
+        fun broadcaster(context: Context): (String) -> Unit = { tunnel ->
+            val intent = Intent(ACTION_SET_TUNNEL_UP)
+                .setPackage(WIREGUARD_PACKAGE)
+                .putExtra("tunnel", tunnel)
+            runCatching { context.sendBroadcast(intent) }
+        }
     }
 }
