@@ -38,6 +38,8 @@
     <string name="save">Enregistrer</string>
     <string name="cancel">Annuler</string>
     <string name="notes">Notes</string>
+    <string name="offline_banner">Hors ligne — dernières données connues</string>
+    <string name="offline_banner_dated">Hors ligne — données du %1$s</string>
 
     <!-- Réglages -->
     <string name="settings_server_title">Serveur BrewHome</string>
@@ -114,6 +116,8 @@
     <string name="stock_line_low">manque %1$s (dispo %2$s)</string>
     <string name="stock_line_missing">pas en stock</string>
     <string name="stock_line_mismatch">en stock dans une autre unité</string>
+    <string name="stock_add_missing">Ajouter les manquants aux courses (%1$d)</string>
+    <string name="stock_all_listed">Les manquants sont déjà dans la liste de courses.</string>
 
     <!-- Brouillons -->
     <string name="drafts_empty">Aucun brouillon. Crée le premier avec le bouton +.</string>
@@ -196,7 +200,10 @@
     <string name="stat_on_shopping">Sur la liste de courses</string>
     <string name="stat_loading_consumption">Chargement de la consommation…</string>
     <string name="stat_consumption_12m">Consommation (12 derniers mois)</string>
+    <string name="stat_consumption_year">Consommation %1$s</string>
     <string name="stat_consumption_total">Consommation totale</string>
+    <string name="stat_totals_year">Totaux %1$s</string>
+    <string name="stat_year_all">Toutes les années</string>
     <string name="stat_from_keg">Au fût</string>
     <string name="stat_top_beers">Bières les plus consommées</string>
 

@@ -2,14 +2,18 @@ package fr.easter.brewhome.ui
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Close
@@ -95,13 +99,49 @@ fun RefreshableContent(vm: BrewViewModel, content: @Composable () -> Unit) {
         !state.loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-        else -> PullToRefreshBox(
-            isRefreshing = state.loading,
-            onRefresh = { vm.refreshAll() },
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            content()
+        else -> Column(Modifier.fillMaxSize()) {
+            if (state.offline) OfflineBanner(state.dataAt)
+            PullToRefreshBox(
+                isRefreshing = state.loading,
+                onRefresh = { vm.refreshAll() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                content()
+            }
         }
+    }
+}
+
+/** Bandeau affiché quand le serveur est injoignable : données du cache disque. */
+@Composable
+private fun OfflineBanner(dataAt: Long?) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.CloudOff,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        val date = dataAt?.let {
+            java.time.Instant.ofEpochMilli(it)
+                .atZone(java.time.ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm"))
+        }
+        Text(
+            if (date != null) stringResource(R.string.offline_banner_dated, date)
+            else stringResource(R.string.offline_banner),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
     }
 }
 

@@ -3,10 +3,12 @@ package fr.easter.brewhome.data
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /** Instantané complet des données du serveur, chargé en parallèle. */
+@Serializable
 data class Snapshot(
     val beers: List<Beer>,
     val recipes: List<Recipe>,

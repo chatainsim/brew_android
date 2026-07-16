@@ -74,6 +74,38 @@ class StockCheckTest {
     }
 
     @Test
+    fun `articles a ajouter aux courses`() {
+        val res = StockCheck.check(
+            listOf(
+                ing("Pilsner", 4.5, "kg"),                 // insuffisant : manque 2,5 kg
+                ing("Munich", 1.0, "kg"),                  // manquant
+                ing("Citra", 30.0, "g", "houblon"),        // manquant, reste en grammes
+                ing("Cascade", 30.0, "g", "houblon"),      // en stock → exclu
+                ing("US-05", 11.5, "g", "levure"),         // unité ≠ → exclu (à vérifier à la main)
+            ),
+            listOf(
+                inv("Pilsner", 2.0, "kg"),
+                inv("Cascade", 100.0, "g", "houblon"),
+                inv("US-05", 3.0, "sachet", "levure"),
+            ),
+        )
+        val needs = StockCheck.needs(res)
+        assertEquals(
+            listOf(
+                StockCheck.Need("Pilsner", "malt", 2.5, "kg"),
+                StockCheck.Need("Munich", "malt", 1.0, "kg"),
+                StockCheck.Need("Citra", "houblon", 30.0, "g"),
+            ),
+            needs,
+        )
+        // Les noms déjà sur la liste de courses sont exclus
+        assertEquals(
+            listOf("Munich", "Citra"),
+            StockCheck.needs(res, setOf("pilsner")).map { it.name },
+        )
+    }
+
+    @Test
     fun formatBase() {
         assertEquals("1,5 kg", StockCheck.formatBase(1500.0, "g"))
         assertEquals("500 g", StockCheck.formatBase(500.0, "g"))

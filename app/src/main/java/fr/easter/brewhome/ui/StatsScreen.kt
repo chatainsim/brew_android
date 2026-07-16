@@ -1,17 +1,22 @@
 package fr.easter.brewhome.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,8 +37,13 @@ fun StatsScreen(vm: BrewViewModel) {
     LaunchedEffect(Unit) { vm.loadConsumption() }
 
     // Comme le site : brassins terminés, non archivés, avec date
-    val done = state.brews.filter {
+    val allDone = state.brews.filter {
         (it.archived ?: 0) == 0 && it.status == "completed" && it.brewDate != null
+    }
+    val years = allDone.mapNotNull { it.brewDate?.take(4) }.distinct().sortedDescending()
+    var year by rememberSaveable { mutableStateOf<String?>(null) }
+    val done = year.let { y ->
+        if (y == null) allDone else allDone.filter { it.brewDate!!.startsWith(y) }
     }
 
     Column(
@@ -43,6 +53,26 @@ fun StatsScreen(vm: BrewViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // ── Filtre par année ──
+        if (years.size > 1) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = year == null,
+                    onClick = { year = null },
+                    label = { Text(stringResource(R.string.stat_year_all)) },
+                )
+                years.forEach { y ->
+                    FilterChip(
+                        selected = year == y,
+                        onClick = { year = y },
+                        label = { Text(y) },
+                    )
+                }
+            }
+        }
         // ── Grands chiffres ──
         val totalVol = done.sumOf { it.volumeBrewed ?: 0.0 }
         val abvs = done.mapNotNull { it.abv }
@@ -105,11 +135,11 @@ fun StatsScreen(vm: BrewViewModel) {
             }
         }
 
-        // ── Volume par année ──
-        val byYear = done.groupBy { it.brewDate!!.take(4) }
+        // ── Volume par année (redondant quand une seule année est affichée) ──
+        val byYear = allDone.groupBy { it.brewDate!!.take(4) }
             .mapValues { (_, brews) -> brews.sumOf { it.volumeBrewed ?: 0.0 } }
             .toSortedMap(compareByDescending { it })
-        if (byYear.isNotEmpty()) {
+        if (year == null && byYear.isNotEmpty()) {
             SectionTitle(stringResource(R.string.stat_volume_by_year))
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
@@ -209,9 +239,15 @@ fun StatsScreen(vm: BrewViewModel) {
                 color = MaterialTheme.colorScheme.outline,
             )
         } else {
-            val months = cons.byMonth.takeLast(12)
+            val consMonths = year.let { y ->
+                if (y == null) cons.byMonth else cons.byMonth.filter { it.period.startsWith(y) }
+            }
+            val months = if (year == null) consMonths.takeLast(12) else consMonths
             if (months.isNotEmpty()) {
-                SectionTitle(stringResource(R.string.stat_consumption_12m))
+                SectionTitle(
+                    year?.let { stringResource(R.string.stat_consumption_year, it) }
+                        ?: stringResource(R.string.stat_consumption_12m),
+                )
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
                         fun liters(m: fr.easter.brewhome.data.ConsumptionMonth) =
@@ -224,12 +260,15 @@ fun StatsScreen(vm: BrewViewModel) {
                     }
                 }
             }
-            // Totaux toutes périodes, par format
-            val t33 = cons.byMonth.sumOf { it.total33 ?: 0 }
-            val t75 = cons.byMonth.sumOf { it.total75 ?: 0 }
-            val tKeg = cons.byMonth.sumOf { it.totalKeg ?: 0.0 }
+            // Totaux par format (toutes périodes, ou l'année filtrée)
+            val t33 = consMonths.sumOf { it.total33 ?: 0 }
+            val t75 = consMonths.sumOf { it.total75 ?: 0 }
+            val tKeg = consMonths.sumOf { it.totalKeg ?: 0.0 }
             if (t33 + t75 > 0 || tKeg > 0) {
-                SectionTitle(stringResource(R.string.stat_consumption_total))
+                SectionTitle(
+                    year?.let { stringResource(R.string.stat_totals_year, it) }
+                        ?: stringResource(R.string.stat_consumption_total),
+                )
                 InfoCard {
                     InfoLine(stringResource(R.string.stat_bottles_33), t33.takeIf { it > 0 }?.let { "$it" })
                     InfoLine(stringResource(R.string.stat_bottles_75), t75.takeIf { it > 0 }?.let { "$it" })
@@ -241,8 +280,9 @@ fun StatsScreen(vm: BrewViewModel) {
                 }
             }
 
+            // Top bières : données toutes périodes uniquement, pas filtrables par année
             val topBeers = cons.byBeer.filter { (it.totalLiters ?: 0.0) > 0 }.take(5)
-            if (topBeers.isNotEmpty()) {
+            if (year == null && topBeers.isNotEmpty()) {
                 SectionTitle(stringResource(R.string.stat_top_beers))
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {

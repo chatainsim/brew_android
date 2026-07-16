@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AssistChip
@@ -21,6 +22,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +43,7 @@ import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredient
+import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.parsedIngredients
 
 // Couleurs des états de stock (mêmes teintes que le site)
@@ -231,7 +234,9 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
         if (recipe.rating != null) StarRating(recipe.rating)
 
-        if (stock != null) StockBanner(stock)
+        if (stock != null) {
+            StockBanner(stock, state.shopping) { vm.addNeedsToShopping(it) }
+        }
 
         InfoCard {
             InfoLine(stringResource(R.string.label_volume), recipe.volume?.let { "${fmtQty(it)} L" })
@@ -272,21 +277,48 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
 }
 
 @Composable
-private fun StockBanner(stock: StockCheck.Result) {
+private fun StockBanner(
+    stock: StockCheck.Result,
+    shopping: List<ShoppingItem>,
+    onAddToShopping: (List<StockCheck.Need>) -> Unit,
+) {
+    val needs = remember(stock, shopping) {
+        StockCheck.needs(stock, shopping.map { it.name.trim().lowercase() }.toSet())
+    }
     Card(Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            StockBadge(stock)
-            Spacer(Modifier.width(10.dp))
-            if (stock.allOk) {
-                Text(stringResource(R.string.stock_banner_ok_recipe), color = StockOk, fontWeight = FontWeight.SemiBold)
-            } else {
-                val parts = listOfNotNull(
-                    stock.nOk.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_ok, it) },
-                    stock.nLow.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_low, it) },
-                    stock.nMissing.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_missing, it) },
-                    stock.nMismatch.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_mismatch, it) },
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StockBadge(stock)
+                Spacer(Modifier.width(10.dp))
+                if (stock.allOk) {
+                    Text(stringResource(R.string.stock_banner_ok_recipe), color = StockOk, fontWeight = FontWeight.SemiBold)
+                } else {
+                    val parts = listOfNotNull(
+                        stock.nOk.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_ok, it) },
+                        stock.nLow.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_low, it) },
+                        stock.nMissing.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_missing, it) },
+                        stock.nMismatch.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_mismatch, it) },
+                    )
+                    Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (needs.isNotEmpty()) {
+                TextButton(onClick = { onAddToShopping(needs) }) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.stock_add_missing, needs.size))
+                }
+            } else if (stock.nMissing + stock.nLow > 0) {
+                Text(
+                    stringResource(R.string.stock_all_listed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
-                Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

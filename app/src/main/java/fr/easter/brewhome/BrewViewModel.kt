@@ -3,6 +3,7 @@ package fr.easter.brewhome
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.ApiClient
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
@@ -21,14 +22,18 @@ import fr.easter.brewhome.data.SettingsRepository
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
 import fr.easter.brewhome.data.ShoppingRepository
+import fr.easter.brewhome.data.Snapshot
+import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.data.TastingPut
 import fr.easter.brewhome.data.VpnController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class UiState(
     val loading: Boolean = false,
@@ -40,6 +45,10 @@ data class UiState(
     val drafts: List<Draft> = emptyList(),
     val shopping: List<ShoppingItem> = emptyList(),
     val loaded: Boolean = false,
+    /** Serveur injoignable : les données affichées viennent du cache disque. */
+    val offline: Boolean = false,
+    /** Date (epoch ms) des données affichées, pour le bandeau hors ligne. */
+    val dataAt: Long? = null,
 )
 
 /** Données complémentaires d'un brassin, chargées à l'ouverture de sa fiche. */
@@ -62,6 +71,7 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     private val draftsRepo = DraftsRepository(apiProvider)
     private val shoppingRepo = ShoppingRepository(apiProvider)
     private val vpn = VpnController(app, settings)
+    private val cache = SnapshotCache(app.filesDir)
 
     // ── Réglages ──────────────────────────────────────────────────────────
 
@@ -102,6 +112,8 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     fun saveServerUrl(url: String, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             settings.setServerUrl(ApiClient.normalizeUrl(url))
+            // Les données en cache viennent peut-être d'un autre serveur
+            withContext(Dispatchers.IO) { cache.clear() }
             _state.value = UiState()
             refreshAll()
             onDone()
@@ -123,6 +135,13 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshAll() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
+            // Premier lancement : afficher tout de suite le dernier instantané
+            // connu pendant que le rafraîchissement continue en arrière-plan.
+            if (!_state.value.loaded) {
+                withContext(Dispatchers.IO) { cache.load() }?.let { c ->
+                    _state.value = uiStateOf(c.snapshot).copy(loading = true, dataAt = c.savedAt)
+                }
+            }
             try {
                 applySnapshot()
             } catch (first: Exception) {
@@ -138,6 +157,8 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 _state.value = _state.value.copy(
                     loading = false,
+                    // les données du cache restent affichées, avec le bandeau hors ligne
+                    offline = _state.value.loaded,
                     error = "Connexion impossible : ${first.message ?: first.javaClass.simpleName}",
                 )
             }
@@ -146,11 +167,14 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun applySnapshot() {
         val s = repo.snapshot()
-        _state.value = UiState(
-            beers = s.beers, recipes = s.recipes, inventory = s.inventory,
-            brews = s.brews, drafts = s.drafts, shopping = s.shopping, loaded = true,
-        )
+        _state.value = uiStateOf(s).copy(dataAt = System.currentTimeMillis())
+        withContext(Dispatchers.IO) { cache.save(s) }
     }
+
+    private fun uiStateOf(s: Snapshot) = UiState(
+        beers = s.beers, recipes = s.recipes, inventory = s.inventory,
+        brews = s.brews, drafts = s.drafts, shopping = s.shopping, loaded = true,
+    )
 
     fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
         launchWithError("Échec de mise à jour du stock") {
@@ -258,6 +282,16 @@ class BrewViewModel(app: Application) : AndroidViewModel(app) {
                 },
                 error = null,
             )
+        }
+    }
+
+    /** Ajoute d'un coup les ingrédients manquants d'une recette aux courses. */
+    fun addNeedsToShopping(needs: List<StockCheck.Need>) {
+        launchWithError("Échec de l'ajout aux courses") {
+            needs.forEach {
+                shoppingRepo.add(ShoppingPost(it.name, it.category, it.quantity, it.unit))
+            }
+            _state.value = _state.value.copy(shopping = shoppingRepo.list(), error = null)
         }
     }
 

@@ -70,6 +70,29 @@ object StockCheck {
         return Result(lines)
     }
 
+    /** Article à acheter pour compléter une recette. */
+    data class Need(val name: String, val category: String, val quantity: Double, val unit: String)
+
+    private fun fromBase(v: Double, base: String): Pair<Double, String> = when {
+        base == "g" && v >= 1000 -> v / 1000 to "kg"
+        base == "ml" && v >= 1000 -> v / 1000 to "L"
+        else -> v to base
+    }
+
+    /**
+     * Articles à ajouter à la liste de courses : ingrédients manquants et
+     * compléments de stock bas, hors noms déjà présents dans la liste
+     * (`alreadyListed` : noms en minuscules).
+     */
+    fun needs(result: Result, alreadyListed: Set<String> = emptySet()): List<Need> =
+        result.lines
+            .filter { it.status == Status.MISSING || it.status == Status.LOW }
+            .filterNot { it.name.trim().lowercase() in alreadyListed }
+            .map { line ->
+                val (q, u) = fromBase(line.needed - line.available, line.base)
+                Need(line.name, line.category, q, u)
+            }
+
     /** "1500 g" → "1,5 kg", "500 ml" → "500 ml", etc. */
     fun formatBase(v: Double, base: String): String {
         fun num(x: Double): String =
