@@ -3,7 +3,7 @@
 # Une release par versionName ; re-pousser sans changer la version remplace l'APK.
 #
 # S'exécute sur le runner « wsl-simon » (mode host) : il utilise le toolchain
-# Android de la machine (~/android-toolchain : JDK 17, SDK, Gradle 8.7) et le
+# Android de la machine (~/android-toolchain : JDK 17, SDK, Gradle 8.14.3) et le
 # cache Gradle de l'utilisateur, donc pas de téléchargement à chaque build.
 name: Release APK
 
@@ -41,7 +41,7 @@ jobs:
           export JAVA_HOME="$HOME/android-toolchain/jdk-17.0.11+9"
           echo "sdk.dir=$HOME/android-toolchain/sdk" > local.properties
           # Release = build minifié R8 (signé avec la clé debug, comme avant)
-          "$HOME/android-toolchain/gradle-8.7/bin/gradle" -q assembleRelease testDebugUnitTest
+          "$HOME/android-toolchain/gradle-8.14.3/bin/gradle" -q assembleRelease testDebugUnitTest
           test -f app/build/outputs/apk/release/app-release.apk
 
           # ── Release Gitea (tags sans préfixe « v », convention existante) ──
