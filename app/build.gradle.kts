@@ -13,8 +13,8 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.13.1"
+        versionCode = 18
+        versionName = "1.14"
     }
 
     buildTypes {

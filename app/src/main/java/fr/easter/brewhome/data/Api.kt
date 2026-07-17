@@ -45,6 +45,9 @@ interface BrewApi {
     @GET("api/brews/{id}/log")
     suspend fun getBrewLog(@Path("id") id: Int): List<BrewLogEntry>
 
+    @GET("api/brews/{id}/photos")
+    suspend fun getBrewPhotos(@Path("id") id: Int): List<BrewPhoto>
+
     @GET("api/app-settings")
     suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
 
@@ -62,7 +65,11 @@ interface BrewApi {
 
     /** Transfère les articles cochés dans l'inventaire (soft-delete via bought_at). */
     @POST("api/shopping-list/buy")
-    suspend fun buyShoppingItems(): kotlinx.serialization.json.JsonObject
+    suspend fun buyShoppingItems(): BuyResult
+
+    /** Annule un transfert récent en lui repassant le reçu de /buy. */
+    @POST("api/shopping-list/undo-buy")
+    suspend fun undoBuyShopping(@Body body: UndoBuyPost): kotlinx.serialization.json.JsonObject
 
     @DELETE("api/shopping-list/{id}")
     suspend fun deleteShoppingItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject

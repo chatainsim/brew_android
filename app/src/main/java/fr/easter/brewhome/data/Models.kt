@@ -106,7 +106,18 @@ data class Brew(
     @SerialName("cave_liters") val caveLiters: Double? = null,
     @SerialName("fermentation_count") val fermentationCount: Int? = null,
     @SerialName("log_count") val logCount: Int? = null,
+    @SerialName("photo_count") val photoCount: Int? = null,
     val notes: String? = null,
+)
+
+/** Photo d'un brassin ; `thumb` est un chemin relatif servi par le serveur. */
+@Serializable
+data class BrewPhoto(
+    val id: Int,
+    val step: String? = null,
+    val caption: String? = null,
+    val thumb: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
 )
 
 /** Mesure de fermentation (manuelle ou densimètre connecté). */
@@ -139,10 +150,36 @@ data class ShoppingPost(
     val quantity: Double = 1.0,
     val unit: String = "g",
     val notes: String? = null,
+    @SerialName("inventory_item_id") val inventoryItemId: Int? = null,
 )
 
 @Serializable
 data class BulkCheckPut(val ids: List<Int>, val checked: Boolean)
+
+/**
+ * Reçu du transfert courses → stock (POST /buy). Le serveur le renvoie pour
+ * permettre l'annulation : il suffit de le repasser tel quel à /undo-buy.
+ */
+@Serializable
+data class BuyResult(
+    val count: Int = 0,
+    @SerialName("bought_ids") val boughtIds: List<Int> = emptyList(),
+    @SerialName("inv_changes") val invChanges: List<InvChange> = emptyList(),
+)
+
+/** Changement d'inventaire causé par un transfert (delta dans l'unité du stock). */
+@Serializable
+data class InvChange(
+    val id: Int,
+    val delta: Double = 0.0,
+    @SerialName("was_created") val wasCreated: Boolean = false,
+)
+
+@Serializable
+data class UndoBuyPost(
+    @SerialName("bought_ids") val boughtIds: List<Int>,
+    @SerialName("inv_changes") val invChanges: List<InvChange>,
+)
 
 /** Entrée du catalogue d'ingrédients (référentiel pour l'autocomplétion). */
 @Serializable

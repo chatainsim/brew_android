@@ -17,7 +17,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -137,13 +139,21 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit) {
 
 @Composable
 private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
+    val haptics = LocalHapticFeedback.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.width(44.dp),
         )
-        IconButton(onClick = { onAdjust(-1) }, enabled = count > 0, modifier = Modifier.size(32.dp)) {
+        IconButton(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAdjust(-1)
+            },
+            enabled = count > 0,
+            modifier = Modifier.size(32.dp),
+        ) {
             Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_remove_one, label))
         }
         Text(
@@ -154,7 +164,13 @@ private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
             color = if (count == 0) MaterialTheme.colorScheme.outline
                     else MaterialTheme.colorScheme.onSurface,
         )
-        IconButton(onClick = { onAdjust(1) }, modifier = Modifier.size(32.dp)) {
+        IconButton(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAdjust(1)
+            },
+            modifier = Modifier.size(32.dp),
+        ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_one, label))
         }
     }
@@ -162,9 +178,17 @@ private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
 
 @Composable
 private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
+    val haptics = LocalHapticFeedback.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(R.string.keg), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
-        IconButton(onClick = { onAdjust(-0.5) }, enabled = liters > 0, modifier = Modifier.size(32.dp)) {
+        IconButton(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAdjust(-0.5)
+            },
+            enabled = liters > 0,
+            modifier = Modifier.size(32.dp),
+        ) {
             Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_keg_remove))
         }
         Text(
@@ -173,7 +197,13 @@ private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.widthIn(min = 28.dp),
         )
-        IconButton(onClick = { onAdjust(0.5) }, modifier = Modifier.size(32.dp)) {
+        IconButton(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onAdjust(0.5)
+            },
+            modifier = Modifier.size(32.dp),
+        ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_keg_add))
         }
     }

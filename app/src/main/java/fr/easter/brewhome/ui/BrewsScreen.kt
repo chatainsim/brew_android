@@ -4,8 +4,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -21,21 +23,29 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.BrewCalc
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.FermReading
 
 @Composable
@@ -108,6 +118,7 @@ private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit) {
             val extras = listOfNotNull(
                 brew.fermentationCount?.takeIf { it > 0 }?.let { stringResource(R.string.n_readings, it) },
                 brew.logCount?.takeIf { it > 0 }?.let { stringResource(R.string.n_log_entries, it) },
+                brew.photoCount?.takeIf { it > 0 }?.let { stringResource(R.string.n_photos, it) },
             ).joinToString(" · ")
             if (extras.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
@@ -131,6 +142,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     }
     LaunchedEffect(brew.id) { vm.loadBrewExtras(brew.id) }
     val extras = vm.brewExtras.collectAsState().value[brew.id]
+    var viewing by remember { mutableStateOf<BrewPhoto?>(null) }
 
     Column(
         Modifier
@@ -217,6 +229,14 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                 color = MaterialTheme.colorScheme.error,
             )
             else -> {
+                if (extras.photos.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.photos_section, extras.photos.size),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    PhotosRow(vm, extras.photos) { viewing = it }
+                }
                 if (extras.readings.isNotEmpty()) {
                     Text(
                         stringResource(R.string.ferm_section, extras.readings.size),
@@ -241,6 +261,71 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             Text(brew.notes, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(Modifier.height(24.dp))
+    }
+
+    viewing?.let { photo -> PhotoViewer(vm, photo) { viewing = null } }
+}
+
+/** /api/brew-photos/{uid}_t.jpg → chemin de la photo plein format {uid}.jpg */
+private fun fullPhotoPath(thumb: String?): String? =
+    thumb?.replace(Regex("_t\\.jpg$"), ".jpg")
+
+@Composable
+private fun PhotosRow(vm: BrewViewModel, photos: List<BrewPhoto>, onOpen: (BrewPhoto) -> Unit) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(photos, key = { it.id }) { photo ->
+            Column(Modifier.width(110.dp)) {
+                AsyncImage(
+                    model = vm.photoUrl(photo.thumb),
+                    contentDescription = photo.caption ?: photo.step,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onOpen(photo) },
+                )
+                val label = photo.caption ?: photo.step
+                if (!label.isNullOrBlank()) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Photo plein format dans une boîte de dialogue, fermée d'un tap. */
+@Composable
+private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onDismiss),
+        ) {
+            AsyncImage(
+                model = vm.photoUrl(fullPhotoPath(photo.thumb)),
+                contentDescription = photo.caption ?: photo.step,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            val label = listOfNotNull(photo.step, photo.caption).joinToString(" · ")
+            if (label.isNotBlank()) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                )
+            }
+        }
     }
 }
 

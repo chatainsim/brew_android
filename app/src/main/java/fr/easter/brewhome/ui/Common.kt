@@ -53,6 +53,11 @@ fun shareText(context: Context, text: String, subject: String? = null) {
     runCatching { context.startActivity(Intent.createChooser(intent, null)) }
 }
 
+/** Epoch ms → « 16/07 à 22:40 » dans le fuseau du téléphone. */
+fun fmtInstant(epochMs: Long): String = java.time.Instant.ofEpochMilli(epochMs)
+    .atZone(java.time.ZoneId.systemDefault())
+    .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm"))
+
 fun fmtQty(q: Double?): String {
     if (q == null) return "–"
     return if (q % 1.0 == 0.0) q.toInt().toString()
@@ -131,11 +136,7 @@ private fun OfflineBanner(dataAt: Long?) {
             modifier = Modifier.size(16.dp),
         )
         Spacer(Modifier.width(8.dp))
-        val date = dataAt?.let {
-            java.time.Instant.ofEpochMilli(it)
-                .atZone(java.time.ZoneId.systemDefault())
-                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm"))
-        }
+        val date = dataAt?.let { fmtInstant(it) }
         Text(
             if (date != null) stringResource(R.string.offline_banner_dated, date)
             else stringResource(R.string.offline_banner),

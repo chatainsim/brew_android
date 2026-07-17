@@ -1,11 +1,13 @@
 package fr.easter.brewhome.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -17,6 +19,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,11 +42,11 @@ private fun stepFor(unit: String): Double = when (unit.lowercase()) {
 }
 
 @Composable
-fun InventoryScreen(vm: BrewViewModel) {
+fun InventoryScreen(vm: BrewViewModel, initialShopping: Boolean = false) {
     val state by vm.state.collectAsState()
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
-    var showShopping by rememberSaveable { mutableStateOf(false) }
+    var showShopping by rememberSaveable { mutableStateOf(initialShopping) }
 
     RefreshableContent(vm) {
         Column(Modifier.fillMaxSize()) {
@@ -171,7 +176,7 @@ private fun ShoppingContent(vm: BrewViewModel) {
                         ShoppingRow(
                             item = item,
                             onToggle = { vm.toggleShoppingChecked(item) },
-                            onDelete = { vm.deleteShoppingItem(item.id) },
+                            onDelete = { vm.deleteShoppingItem(item) },
                         )
                     }
                 }
@@ -198,44 +203,99 @@ private fun ShoppingContent(vm: BrewViewModel) {
     }
 }
 
+/** Ligne de courses : glisser à droite pour cocher, à gauche pour supprimer. */
 @Composable
 private fun ShoppingRow(item: ShoppingItem, onToggle: () -> Unit, onDelete: () -> Unit) {
     val checked = (item.checked ?: 0) == 1
-    Card(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(checked = checked, onCheckedChange = { onToggle() })
-            Column(Modifier.weight(1f)) {
-                Text(
-                    item.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (checked) TextDecoration.LineThrough else null,
-                    color = if (checked) MaterialTheme.colorScheme.outline
-                        else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val details = listOfNotNull(
-                    "${fmtQty(item.quantity)} ${item.unit}",
-                    categoryLabel(item.category),
-                    item.notes?.takeIf { it.isNotBlank() },
-                ).joinToString(" · ")
-                Text(
-                    details,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+    val haptics = LocalHapticFeedback.current
+    // Les lambdas capturées par l'état de balayage doivent suivre l'article
+    // (son état coché change sous le même id)
+    val currentToggle by rememberUpdatedState(onToggle)
+    val currentDelete by rememberUpdatedState(onDelete)
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.ToggleOn)
+                    currentToggle()
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    currentDelete()
+                }
+                SwipeToDismissBoxValue.Settled -> {}
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.cd_delete_item),
-                    tint = MaterialTheme.colorScheme.error,
+            // Toujours revenir en place : la liste se met à jour via l'état
+            // serveur, et « Annuler » peut faire réapparaître l'article
+            false
+        },
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = { SwipeBackground(dismissState.dismissDirection) },
+    ) {
+        Card(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.padding(start = 4.dp, end = 12.dp, top = 2.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(
+                    checked = checked,
+                    onCheckedChange = {
+                        haptics.performHapticFeedback(
+                            if (checked) HapticFeedbackType.ToggleOff else HapticFeedbackType.ToggleOn,
+                        )
+                        onToggle()
+                    },
                 )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        item.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = if (checked) TextDecoration.LineThrough else null,
+                        color = if (checked) MaterialTheme.colorScheme.outline
+                            else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val details = listOfNotNull(
+                        "${fmtQty(item.quantity)} ${item.unit}",
+                        categoryLabel(item.category),
+                        item.notes?.takeIf { it.isNotBlank() },
+                    ).joinToString(" · ")
+                    Text(
+                        details,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
             }
         }
+    }
+}
+
+/** Fond révélé pendant le balayage : coche à droite, corbeille à gauche. */
+@Composable
+private fun SwipeBackground(direction: SwipeToDismissBoxValue) {
+    if (direction == SwipeToDismissBoxValue.Settled) return
+    val toCheck = direction == SwipeToDismissBoxValue.StartToEnd
+    Box(
+        Modifier
+            .fillMaxSize()
+            .clip(CardDefaults.shape)
+            .background(
+                if (toCheck) MaterialTheme.colorScheme.tertiaryContainer
+                else MaterialTheme.colorScheme.errorContainer,
+            )
+            .padding(horizontal = 20.dp),
+        contentAlignment = if (toCheck) Alignment.CenterStart else Alignment.CenterEnd,
+    ) {
+        Icon(
+            if (toCheck) Icons.Filled.Check else Icons.Filled.Delete,
+            contentDescription = if (toCheck) null else stringResource(R.string.cd_delete_item),
+            tint = if (toCheck) MaterialTheme.colorScheme.onTertiaryContainer
+                else MaterialTheme.colorScheme.onErrorContainer,
+        )
     }
 }
 
@@ -387,8 +447,12 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                 }
             }
             val step = stepFor(item.unit)
+            val haptics = LocalHapticFeedback.current
             IconButton(
-                onClick = { onAdjust(-step) },
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    onAdjust(-step)
+                },
                 enabled = item.quantity > 0,
                 modifier = Modifier.size(34.dp),
             ) {
@@ -401,7 +465,13 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                 color = if (low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.widthIn(min = 60.dp),
             )
-            IconButton(onClick = { onAdjust(step) }, modifier = Modifier.size(34.dp)) {
+            IconButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    onAdjust(step)
+                },
+                modifier = Modifier.size(34.dp),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_increase))
             }
         }

@@ -13,6 +13,7 @@ import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
@@ -61,7 +62,20 @@ data class BrewExtras(
     val loading: Boolean = false,
     val readings: List<FermReading> = emptyList(),
     val log: List<BrewLogEntry> = emptyList(),
+    val photos: List<BrewPhoto> = emptyList(),
     val error: String? = null,
+)
+
+/**
+ * Action annulable affichée en snackbar avec un bouton « Annuler ».
+ * Comparée par identité : chaque publication remplace la précédente.
+ */
+class UndoNotice(
+    val message: String,
+    /** Snackbar longue (transfert des courses : plus lourd de conséquences). */
+    val long: Boolean = false,
+    internal val key: String? = null,
+    internal val undo: suspend () -> Unit,
 )
 
 /**
@@ -189,33 +203,66 @@ class BrewViewModel(
 
     fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
         launchWithError(R.string.error_stock_update) {
-            val updated = repo.adjustBeerStock(beer, d33, d75, dKeg)
-            _state.value = _state.value.copy(
-                beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
-                error = null,
-            )
+            replaceBeer(repo.adjustBeerStock(beer, d33, d75, dKeg))
+            val field = if (d33 != 0) "33" else if (d75 != 0) "75" else "keg"
+            pushUndo(key = "beer-${beer.id}-$field", message = strings(R.string.undo_stock_updated)) {
+                replaceBeer(repo.restoreBeerStock(beer, d33 != 0, d75 != 0, dKeg != 0.0))
+            }
         }
     }
 
     fun setInventoryQty(item: InventoryItem, newQty: Double) {
         launchWithError(R.string.error_qty_update) {
-            val updated = repo.setInventoryQty(item.id, newQty)
-            _state.value = _state.value.copy(
-                inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
-                error = null,
-            )
+            replaceInventory(repo.setInventoryQty(item.id, newQty))
+            pushUndo(key = "inv-${item.id}", message = strings(R.string.undo_qty_updated)) {
+                replaceInventory(repo.setInventoryQty(item.id, item.quantity))
+            }
         }
+    }
+
+    private fun replaceBeer(updated: Beer) {
+        _state.value = _state.value.copy(
+            beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
+            error = null,
+        )
+    }
+
+    private fun replaceInventory(updated: InventoryItem) {
+        _state.value = _state.value.copy(
+            inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
+            error = null,
+        )
     }
 
     fun saveTasting(beerId: Int, tasting: TastingPut, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_tasting_save) {
-            val updated = repo.saveTasting(beerId, tasting)
-            _state.value = _state.value.copy(
-                beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
-                error = null,
-            )
+            replaceBeer(repo.saveTasting(beerId, tasting))
             onDone()
         }
+    }
+
+    // ── Annulation ────────────────────────────────────────────────────────
+
+    private val _undo = MutableStateFlow<UndoNotice?>(null)
+    val undo: StateFlow<UndoNotice?> = _undo
+
+    /**
+     * Publie une action annulable. Une rafale de ± sur la même valeur (même
+     * [key]) garde l'annulation de la première pression : « Annuler » défait
+     * alors toute la rafale, pas seulement le dernier cran.
+     */
+    private fun pushUndo(key: String?, message: String, long: Boolean = false, undo: suspend () -> Unit) {
+        val burstUndo = key?.let { k -> _undo.value?.takeIf { it.key == k }?.undo }
+        _undo.value = UndoNotice(message, long, key, burstUndo ?: undo)
+    }
+
+    fun performUndo(notice: UndoNotice) {
+        if (_undo.value === notice) _undo.value = null
+        launchWithError(R.string.error_undo) { notice.undo() }
+    }
+
+    fun dismissUndo(notice: UndoNotice) {
+        if (_undo.value === notice) _undo.value = null
     }
 
     // ── Fiche brassin ─────────────────────────────────────────────────────
@@ -228,8 +275,8 @@ class BrewViewModel(
         viewModelScope.launch {
             _brewExtras.value += brewId to BrewExtras(loading = true)
             try {
-                val (readings, log) = repo.brewExtras(brewId)
-                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log)
+                val (readings, log, photos) = repo.brewExtras(brewId)
+                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log, photos = photos)
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = errorMessage(R.string.error_brew_load, e),
@@ -319,21 +366,35 @@ class BrewViewModel(
         }
     }
 
-    fun deleteShoppingItem(id: Int) {
+    fun deleteShoppingItem(item: ShoppingItem) {
         launchWithError(R.string.error_shopping_delete) {
-            shoppingRepo.delete(id)
+            shoppingRepo.delete(item.id)
             _state.value = _state.value.copy(
-                shopping = _state.value.shopping.filterNot { it.id == id },
+                shopping = _state.value.shopping.filterNot { it.id == item.id },
                 error = null,
             )
+            pushUndo(key = null, message = strings(R.string.undo_item_deleted)) {
+                // Re-création : l'article revient avec un nouvel id
+                val restored = shoppingRepo.add(
+                    ShoppingPost(item.name, item.category, item.quantity, item.unit, item.notes, item.inventoryItemId),
+                )
+                if ((item.checked ?: 0) == 1) shoppingRepo.setChecked(restored.id, true)
+                _state.value = _state.value.copy(shopping = shoppingRepo.list())
+            }
         }
     }
 
     /** Transfère les articles cochés dans l'inventaire, puis recharge tout. */
     fun buyCheckedShopping() {
         launchWithError(R.string.error_shopping_buy) {
-            shoppingRepo.buyChecked()
+            val receipt = shoppingRepo.buyChecked()
             refreshAll()
+            if (receipt.count > 0) {
+                pushUndo(key = null, message = strings(R.string.undo_bought), long = true) {
+                    shoppingRepo.undoBuy(receipt)
+                    refreshAll()
+                }
+            }
         }
     }
 

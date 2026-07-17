@@ -68,6 +68,15 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         ) {
             Text(stringResource(R.string.settings_save_connect))
         }
+        // Fraîcheur des données affichées (cache ou dernier rafraîchissement)
+        val dataAt = vm.state.collectAsState().value.dataAt
+        if (dataAt != null) {
+            Text(
+                stringResource(R.string.settings_last_sync, fmtInstant(dataAt)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
 
         Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleLarge)

@@ -6,7 +6,9 @@ import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BulkCheckPut
+import fr.easter.brewhome.data.BuyResult
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.Draft
@@ -21,6 +23,7 @@ import fr.easter.brewhome.data.Snapshot
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.data.StockPatch
 import fr.easter.brewhome.data.TastingPut
+import fr.easter.brewhome.data.UndoBuyPost
 import fr.easter.brewhome.data.VpnController
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -110,17 +113,62 @@ class BrewViewModelTest {
             return item
         }
 
+        override suspend fun patchBeerStock(id: Int, body: StockPatch): Beer {
+            gate()
+            val updated = beers.first { it.id == id }.let {
+                it.copy(
+                    stock33 = body.stock33 ?: it.stock33,
+                    stock75 = body.stock75 ?: it.stock75,
+                    kegLiters = body.kegLiters ?: it.kegLiters,
+                )
+            }
+            beers = beers.map { if (it.id == id) updated else it }
+            return updated
+        }
+
+        override suspend fun deleteShoppingItem(id: Int): JsonObject {
+            gate()
+            shopping.removeAll { it.id == id }
+            return JsonObject(emptyMap())
+        }
+
+        override suspend fun bulkCheckShopping(body: BulkCheckPut): JsonObject {
+            gate()
+            shopping.replaceAll {
+                if (it.id in body.ids) it.copy(checked = if (body.checked) 1 else 0) else it
+            }
+            return JsonObject(emptyMap())
+        }
+
+        /** Transfert : les cochés partent dans [bought], le reçu permet de les restaurer. */
+        private val bought = mutableListOf<ShoppingItem>()
+        val undoBuyBodies = mutableListOf<UndoBuyPost>()
+
+        override suspend fun buyShoppingItems(): BuyResult {
+            gate()
+            val checked = shopping.filter { (it.checked ?: 0) == 1 }
+            shopping.removeAll(checked)
+            bought += checked
+            return BuyResult(count = checked.size, boughtIds = checked.map { it.id })
+        }
+
+        override suspend fun undoBuyShopping(body: UndoBuyPost): JsonObject {
+            gate()
+            undoBuyBodies += body
+            val restored = bought.filter { it.id in body.boughtIds }
+            bought.removeAll(restored)
+            shopping += restored.map { it.copy(checked = 0) }
+            return JsonObject(emptyMap())
+        }
+
         // Non exercés par ces tests
-        override suspend fun patchBeerStock(id: Int, body: StockPatch): Beer = throw NotImplementedError()
         override suspend fun putBeerTasting(id: Int, body: TastingPut): Beer = throw NotImplementedError()
         override suspend fun getRecipe(id: Int): Recipe = throw NotImplementedError()
         override suspend fun patchInventoryQty(id: Int, body: QtyPatch): InventoryItem = throw NotImplementedError()
         override suspend fun getBrewFermentation(id: Int): List<FermReading> = throw NotImplementedError()
         override suspend fun getBrewLog(id: Int): List<BrewLogEntry> = throw NotImplementedError()
+        override suspend fun getBrewPhotos(id: Int): List<BrewPhoto> = throw NotImplementedError()
         override suspend fun getCatalog(): List<CatalogItem> = throw NotImplementedError()
-        override suspend fun bulkCheckShopping(body: BulkCheckPut): JsonObject = throw NotImplementedError()
-        override suspend fun buyShoppingItems(): JsonObject = throw NotImplementedError()
-        override suspend fun deleteShoppingItem(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
@@ -263,5 +311,61 @@ class BrewViewModelTest {
         val s = vm.state.value
         assertEquals(listOf("Citra"), s.shopping.map { it.name })
         assertNull(s.error)
+    }
+
+    // ── Annulation ────────────────────────────────────────────────────────
+
+    @Test
+    fun `rafale de plus sur le stock - annuler retablit la valeur de depart`() = runTest {
+        api.beers = listOf(Beer(id = 1, name = "Ambrée", stock33 = 4))
+        val vm = vm()
+        vm.refreshAll()
+        advanceUntilIdle()
+        val beer = { vm.state.value.beers.single() }
+
+        vm.adjustBeerStock(beer(), d33 = 1)
+        advanceUntilIdle()
+        vm.adjustBeerStock(beer(), d33 = 1)
+        advanceUntilIdle()
+        assertEquals(6, beer().stock33)
+
+        // La rafale partage la même clé : une seule annulation défait les deux crans
+        vm.performUndo(vm.undo.value!!)
+        advanceUntilIdle()
+        assertEquals(4, beer().stock33)
+        assertNull(vm.undo.value)
+    }
+
+    @Test
+    fun `suppression d'un article de courses - annuler le recree`() = runTest {
+        api.shopping += ShoppingItem(id = 1, name = "Citra", category = "houblon")
+        val vm = vm()
+        vm.refreshAll()
+        advanceUntilIdle()
+
+        vm.deleteShoppingItem(vm.state.value.shopping.single())
+        advanceUntilIdle()
+        assertTrue(vm.state.value.shopping.isEmpty())
+
+        vm.performUndo(vm.undo.value!!)
+        advanceUntilIdle()
+        assertEquals(listOf("Citra"), vm.state.value.shopping.map { it.name })
+    }
+
+    @Test
+    fun `transfert des achats - annuler repasse le recu a undo-buy`() = runTest {
+        api.shopping += ShoppingItem(id = 1, name = "Pilsner", category = "malt", checked = 1)
+        val vm = vm()
+
+        vm.buyCheckedShopping()
+        advanceUntilIdle()
+        assertTrue(vm.state.value.shopping.isEmpty())
+
+        val notice = vm.undo.value!!
+        assertTrue(notice.long)
+        vm.performUndo(notice)
+        advanceUntilIdle()
+        assertEquals(listOf(1), api.undoBuyBodies.single().boughtIds)
+        assertEquals(listOf("Pilsner"), vm.state.value.shopping.map { it.name })
     }
 }

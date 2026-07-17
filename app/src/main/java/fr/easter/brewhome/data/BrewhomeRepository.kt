@@ -36,12 +36,14 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         )
     }
 
-    suspend fun brewExtras(brewId: Int): Pair<List<FermReading>, List<BrewLogEntry>> =
+    suspend fun brewExtras(brewId: Int): Triple<List<FermReading>, List<BrewLogEntry>, List<BrewPhoto>> =
         coroutineScope {
             val api = api()
             val readings = async { api.getBrewFermentation(brewId) }
             val log = async { api.getBrewLog(brewId) }
-            readings.await() to log.await()
+            // Endpoint plus récent : fiche sans photos si le serveur ne l'a pas
+            val photos = async { runCatching { api.getBrewPhotos(brewId) }.getOrDefault(emptyList()) }
+            Triple(readings.await(), log.await(), photos.await())
         }
 
     suspend fun adjustBeerStock(beer: Beer, d33: Int, d75: Int, dKeg: Double): Beer {
@@ -52,6 +54,17 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         )
         return api().patchBeerStock(beer.id, patch)
     }
+
+    /** Remet le stock d'une bière à ses valeurs d'avant ajustement (annulation). */
+    suspend fun restoreBeerStock(beer: Beer, r33: Boolean, r75: Boolean, rKeg: Boolean): Beer =
+        api().patchBeerStock(
+            beer.id,
+            StockPatch(
+                stock33 = if (r33) beer.stock33 ?: 0 else null,
+                stock75 = if (r75) beer.stock75 ?: 0 else null,
+                kegLiters = if (rKeg) beer.kegLiters ?: 0.0 else null,
+            ),
+        )
 
     suspend fun setInventoryQty(itemId: Int, qty: Double): InventoryItem =
         api().patchInventoryQty(itemId, QtyPatch(maxOf(0.0, qty)))
@@ -97,8 +110,11 @@ class ShoppingRepository(private val api: suspend () -> BrewApi) {
         api().deleteShoppingItem(id)
     }
 
-    /** Transfère les articles cochés dans l'inventaire (POST /buy). */
-    suspend fun buyChecked() {
-        api().buyShoppingItems()
+    /** Transfère les articles cochés dans l'inventaire ; le reçu permet d'annuler. */
+    suspend fun buyChecked(): BuyResult = api().buyShoppingItems()
+
+    /** Annule un transfert récent : rétablit la liste et l'inventaire. */
+    suspend fun undoBuy(receipt: BuyResult) {
+        api().undoBuyShopping(UndoBuyPost(receipt.boughtIds, receipt.invChanges))
     }
 }

@@ -18,6 +18,7 @@
     <string name="title_draft_new">Nouveau brouillon</string>
     <string name="title_draft_edit">Modifier le brouillon</string>
     <string name="title_stats">Statistiques</string>
+    <string name="title_shopping">Courses</string>
 
     <!-- Actions de la barre du haut -->
     <string name="cd_back">Retour</string>
@@ -52,6 +53,19 @@
     <string name="error_shopping_add">Échec de l\'ajout aux courses</string>
     <string name="error_shopping_delete">Échec de la suppression</string>
     <string name="error_shopping_buy">Échec du transfert</string>
+    <string name="error_undo">Échec de l\'annulation</string>
+
+    <!-- Annulation (snackbar avec bouton « Annuler ») -->
+    <string name="undo">Annuler</string>
+    <string name="undo_stock_updated">Stock mis à jour</string>
+    <string name="undo_qty_updated">Quantité mise à jour</string>
+    <string name="undo_item_deleted">Article supprimé</string>
+    <string name="undo_bought">Achats transférés dans le stock</string>
+
+    <!-- Raccourcis d'app (appui long sur l'icône) -->
+    <string name="shortcut_shopping">Courses</string>
+    <string name="shortcut_inventory">Stock</string>
+    <string name="shortcut_stats">Stats</string>
 
     <!-- Réglages -->
     <string name="settings_server_title">Serveur BrewHome</string>
@@ -59,6 +73,7 @@
     <string name="settings_server_url_label">URL du serveur</string>
     <string name="settings_server_placeholder">http://192.168.1.50:5000</string>
     <string name="settings_save_connect">Enregistrer et se connecter</string>
+    <string name="settings_last_sync">Données synchronisées le %1$s</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>
@@ -165,6 +180,8 @@
     <string name="brewed_on">Brassé le %1$s</string>
     <string name="n_readings">%1$d mesures</string>
     <string name="n_log_entries">%1$d notes de journal</string>
+    <string name="n_photos">%1$d photos</string>
+    <string name="photos_section">Photos (%1$d)</string>
     <string name="see_recipe">Voir la recette</string>
     <string name="label_brew_date">Brassé le</string>
     <string name="label_bottling_date">Embouteillé le</string>

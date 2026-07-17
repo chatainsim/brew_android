@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raccourcis d'app : appui long sur l'icône du lanceur. Le premier de la
+     liste est affiché le plus près de l'icône. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shopping"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_shopping"
+        android:shortcutShortLabel="@string/shortcut_shopping">
+        <intent
+            android:action="fr.easter.brewhome.SHORTCUT_SHOPPING"
+            android:targetPackage="fr.easter.brewhome"
+            android:targetClass="fr.easter.brewhome.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="inventory"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_inventory"
+        android:shortcutShortLabel="@string/shortcut_inventory">
+        <intent
+            android:action="fr.easter.brewhome.SHORTCUT_INVENTORY"
+            android:targetPackage="fr.easter.brewhome"
+            android:targetClass="fr.easter.brewhome.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="stats"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_stats"
+        android:shortcutShortLabel="@string/shortcut_stats">
+        <intent
+            android:action="fr.easter.brewhome.SHORTCUT_STATS"
+            android:targetPackage="fr.easter.brewhome"
+            android:targetClass="fr.easter.brewhome.MainActivity" />
+    </shortcut>
+</shortcuts>

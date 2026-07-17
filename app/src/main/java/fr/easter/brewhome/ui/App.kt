@@ -25,8 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -70,7 +72,7 @@ private fun tabOf(route: String?): String? = when {
     route == "beers" || route.startsWith("beer/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
-    route == "inventory" -> "inventory"
+    route == "inventory" || route == "shopping" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
     route == "tools" || route.startsWith("tools/") || route == "stats" -> "tools"
     else -> null
@@ -78,7 +80,12 @@ private fun tabOf(route: String?): String? = when {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) {
+fun BrewHomeApp(
+    vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory),
+    /** Route demandée par un raccourci d'app (appui long sur l'icône). */
+    shortcutRoute: String? = null,
+    onShortcutHandled: () -> Unit = {},
+) {
     val serverUrl by vm.serverUrl.collectAsState()
     val state by vm.state.collectAsState()
     val navController: NavHostController = rememberNavController()
@@ -91,6 +98,16 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) 
         if (!serverUrl.isNullOrBlank() && !state.loaded && !state.loading) vm.refreshAll()
     }
 
+    LaunchedEffect(shortcutRoute, serverUrl) {
+        if (shortcutRoute != null && !serverUrl.isNullOrBlank()) {
+            navController.navigate(shortcutRoute) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+            onShortcutHandled()
+        }
+    }
+
     // Avant le premier chargement, l'erreur reste affichée dans l'écran
     // « Réessayer » ; ensuite elle passe en snackbar.
     LaunchedEffect(state.error, state.loaded) {
@@ -99,6 +116,20 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) 
             snackbar.showSnackbar(err)
             vm.clearError()
         }
+    }
+
+    // Actions annulables : snackbar avec bouton « Annuler »
+    val undoNotice by vm.undo.collectAsState()
+    val undoLabel = stringResource(R.string.undo)
+    LaunchedEffect(undoNotice) {
+        val notice = undoNotice ?: return@LaunchedEffect
+        val result = snackbar.showSnackbar(
+            message = notice.message,
+            actionLabel = undoLabel,
+            duration = if (notice.long) SnackbarDuration.Long else SnackbarDuration.Short,
+        )
+        if (result == SnackbarResult.ActionPerformed) vm.performUndo(notice)
+        else vm.dismissUndo(notice)
     }
 
     val backStack by navController.currentBackStackEntryAsState()
@@ -125,6 +156,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) 
                                     stringResource(R.string.title_draft_new)
                                 else stringResource(R.string.title_draft_edit)
                             currentRoute == "stats" -> stringResource(R.string.title_stats)
+                            currentRoute == "shopping" -> stringResource(R.string.title_shopping)
                             currentRoute == "tools" -> stringResource(R.string.tab_tools)
                             currentRoute?.startsWith("tools/") == true ->
                                 toolTitle(backStack?.arguments?.getString("id"))
@@ -309,6 +341,7 @@ fun BrewHomeApp(vm: BrewViewModel = viewModel(factory = BrewViewModel.Factory)) 
                 }
             }
             composable("inventory") { InventoryScreen(vm) }
+            composable("shopping") { InventoryScreen(vm, initialShopping = true) }
             composable("brews") { BrewsScreen(vm) { navController.navigate("brew/$it") } }
             composable("brew/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
