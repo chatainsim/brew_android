@@ -1,17 +1,21 @@
 package fr.easter.brewhome.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -33,8 +37,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -244,6 +250,7 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         else StockCheck.check(recipe.ingredients, state.inventory)
     }
     val stockByName = stock?.lines?.associateBy { it.name.trim().lowercase() } ?: emptyMap()
+    var showStockDetail by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -261,7 +268,11 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         if (recipe.rating != null) StarRating(recipe.rating)
 
         if (stock != null) {
-            StockBanner(stock, state.shopping) { vm.addNeedsToShopping(it) }
+            StockBanner(
+                stock, state.shopping,
+                onClick = { showStockDetail = true },
+                onAddToShopping = { vm.addNeedsToShopping(it) },
+            )
         }
 
         // ── Estimations OG/FG/ABV/IBU/EBC + eau + coût, comme le site ──
@@ -342,24 +353,88 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         }
         Spacer(Modifier.height(24.dp))
     }
+
+    if (showStockDetail && stock != null) {
+        StockDetailDialog(stock) { showStockDetail = false }
+    }
+}
+
+/** Détail du stock : chaque ingrédient avec ce qu'on a et ce qu'il manque. */
+@Composable
+private fun StockDetailDialog(stock: StockCheck.Result, onDismiss: () -> Unit) {
+    // Manquants et bas d'abord, puis le reste
+    val order = listOf(
+        StockCheck.Status.MISSING, StockCheck.Status.LOW,
+        StockCheck.Status.UNIT_MISMATCH, StockCheck.Status.OK,
+    )
+    val lines = stock.lines.sortedBy { order.indexOf(it.status) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.stock_detail_title)) },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                lines.forEach { line ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(9.dp)
+                                .clip(CircleShape)
+                                .background(stockColor(line.status)),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(line.name, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                stringResource(
+                                    R.string.stock_detail_need,
+                                    StockCheck.formatBase(line.needed, line.base),
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                        Text(
+                            stockLineLabel(line),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = stockColor(line.status),
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.widthIn(max = 150.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+        },
+    )
 }
 
 @Composable
 private fun StockBanner(
     stock: StockCheck.Result,
     shopping: List<ShoppingItem>,
+    onClick: () -> Unit,
     onAddToShopping: (List<StockCheck.Need>) -> Unit,
 ) {
     val needs = remember(stock, shopping) {
         StockCheck.needs(stock, shopping.map { it.name.trim().lowercase() }.toSet())
     }
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StockBadge(stock)
                 Spacer(Modifier.width(10.dp))
                 if (stock.allOk) {
-                    Text(stringResource(R.string.stock_banner_ok_recipe), color = StockOk, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.stock_banner_ok_recipe),
+                        color = StockOk,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f),
+                    )
                 } else {
                     val parts = listOfNotNull(
                         stock.nOk.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_ok, it) },
@@ -367,8 +442,17 @@ private fun StockBanner(
                         stock.nMissing.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_missing, it) },
                         stock.nMismatch.takeIf { it > 0 }?.let { stringResource(R.string.stock_n_mismatch, it) },
                     )
-                    Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        parts.joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.stock_detail_title),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
             }
             if (needs.isNotEmpty()) {
                 TextButton(onClick = { onAddToShopping(needs) }) {
@@ -406,6 +490,22 @@ fun additionLabel(type: String): String = when (type) {
     else -> type
 }
 
+/** Texte de disponibilité d'un ingrédient (« manque 200 g (dispo 1 kg) »…). */
+@Composable
+private fun stockLineLabel(stock: StockCheck.Line): String = when (stock.status) {
+    StockCheck.Status.OK -> stringResource(
+        R.string.stock_line_ok,
+        StockCheck.formatBase(stock.available, stock.base),
+    )
+    StockCheck.Status.LOW -> stringResource(
+        R.string.stock_line_low,
+        StockCheck.formatBase(stock.needed - stock.available, stock.base),
+        StockCheck.formatBase(stock.available, stock.base),
+    )
+    StockCheck.Status.MISSING -> stringResource(R.string.stock_line_missing)
+    StockCheck.Status.UNIT_MISMATCH -> stringResource(R.string.stock_line_mismatch)
+}
+
 @Composable
 private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?, gristPct: Double? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -434,21 +534,8 @@ private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?, grist
                 )
             }
             if (stock != null) {
-                val label = when (stock.status) {
-                    StockCheck.Status.OK -> stringResource(
-                        R.string.stock_line_ok,
-                        StockCheck.formatBase(stock.available, stock.base),
-                    )
-                    StockCheck.Status.LOW -> stringResource(
-                        R.string.stock_line_low,
-                        StockCheck.formatBase(stock.needed - stock.available, stock.base),
-                        StockCheck.formatBase(stock.available, stock.base),
-                    )
-                    StockCheck.Status.MISSING -> stringResource(R.string.stock_line_missing)
-                    StockCheck.Status.UNIT_MISMATCH -> stringResource(R.string.stock_line_mismatch)
-                }
                 Text(
-                    label,
+                    stockLineLabel(stock),
                     style = MaterialTheme.typography.bodySmall,
                     color = stockColor(stock.status),
                 )

@@ -211,6 +211,8 @@
     <string name="stock_line_low">manque %1$s (dispo %2$s)</string>
     <string name="stock_line_missing">pas en stock</string>
     <string name="stock_line_mismatch">en stock dans une autre unité</string>
+    <string name="stock_detail_title">État du stock</string>
+    <string name="stock_detail_need">Besoin : %1$s</string>
     <string name="stock_add_missing">Ajouter les manquants aux courses (%1$d)</string>
     <string name="stock_all_listed">Les manquants sont déjà dans la liste de courses.</string>
 
