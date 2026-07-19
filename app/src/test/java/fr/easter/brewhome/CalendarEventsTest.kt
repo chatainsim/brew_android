@@ -20,7 +20,7 @@ class CalendarEventsTest {
         recipes: Map<Int, Recipe> = emptyMap(),
         beers: List<Beer> = emptyList(),
         customEvents: List<CustomEvent> = emptyList(),
-    ) = CalendarEvents.agenda(today, brews, recipes, beers, emptyList(), customEvents)
+    ) = CalendarEvents.agenda(today, today.plusDays(180), brews, recipes, beers, emptyList(), customEvents)
 
     @Test
     fun `nthDow calcule le n-ieme jour de semaine en convention JS`() {

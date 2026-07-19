@@ -45,14 +45,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 // Mêmes unités proposées que l'éditeur de brouillons du site
-private val unitsByCategory = mapOf(
+internal val unitsByCategory = mapOf(
     "malt" to listOf("kg", "g"),
     "houblon" to listOf("g", "kg"),
     "levure" to listOf("sachet", "g", "kg"),
     "autre" to listOf("g", "kg", "mL", "L", "pièce", "sachet"),
 )
 
-private val draftCategories = listOf("malt", "houblon", "levure", "autre")
+internal val draftCategories = listOf("malt", "houblon", "levure", "autre")
 private val statusChoices = listOf("idea", "in_progress", "ready")
 
 private data class EditIng(
@@ -62,7 +62,7 @@ private data class EditIng(
     val unit: String,
 )
 
-private fun numToField(v: Double): String =
+internal fun numToField(v: Double): String =
     if (v % 1.0 == 0.0) v.toInt().toString() else v.toString()
 
 /**
@@ -311,7 +311,7 @@ private fun IngredientEditor(
  * ouvert pendant la saisie.
  */
 @Composable
-private fun NameFieldWithSuggestions(
+internal fun NameFieldWithSuggestions(
     value: String,
     suggestions: (String) -> List<String>,
     onChange: (String) -> Unit,
@@ -349,7 +349,7 @@ private fun NameFieldWithSuggestions(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SmallDropdown(
+internal fun SmallDropdown(
     value: String,
     options: List<String>,
     optionLabel: (String) -> String,

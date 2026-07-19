@@ -88,6 +88,25 @@ interface BrewApi {
 
     @GET("api/custom_events")
     suspend fun getCustomEvents(): List<CustomEvent>
+
+    @POST("api/custom_events")
+    suspend fun createCustomEvent(@Body body: CustomEventPost): CustomEvent
+
+    @DELETE("api/custom_events/{id}")
+    suspend fun deleteCustomEvent(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
+    /** Recette brute : sert de base au PUT fusionné (le PUT écrase toutes les colonnes). */
+    @GET("api/recipes/{id}")
+    suspend fun getRecipeRaw(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
+    @POST("api/recipes")
+    suspend fun createRecipe(@Body body: RecipePost): Recipe
+
+    @PUT("api/recipes/{id}")
+    suspend fun updateRecipe(
+        @Path("id") id: Int,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject
 }
 
 object ApiClient {

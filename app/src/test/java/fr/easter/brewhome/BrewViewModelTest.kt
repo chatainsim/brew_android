@@ -12,12 +12,14 @@ import fr.easter.brewhome.data.BuyResult
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CustomEvent
+import fr.easter.brewhome.data.CustomEventPost
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
+import fr.easter.brewhome.data.RecipePost
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
 import fr.easter.brewhome.data.Snapshot
@@ -174,6 +176,11 @@ class BrewViewModelTest {
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
         override suspend fun getCustomEvents(): List<CustomEvent> = throw NotImplementedError()
+        override suspend fun createCustomEvent(body: CustomEventPost): CustomEvent = throw NotImplementedError()
+        override suspend fun deleteCustomEvent(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun getRecipeRaw(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun createRecipe(body: RecipePost): Recipe = throw NotImplementedError()
+        override suspend fun updateRecipe(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
     }
 
     private val api = FakeApi()

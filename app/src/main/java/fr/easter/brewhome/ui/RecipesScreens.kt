@@ -63,6 +63,7 @@ fun RecipesScreen(
     onOpen: (Int) -> Unit,
     onOpenDraft: (Int) -> Unit,
     onNewDraft: () -> Unit,
+    onNewRecipe: () -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
@@ -87,7 +88,7 @@ fun RecipesScreen(
                 ) { Text(stringResource(R.string.drafts_seg, state.drafts.size)) }
             }
             if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft, onNewDraft)
-            else RecipesList(state.recipes, state, query, { query = it }, onOpen)
+            else RecipesList(state.recipes, state, query, { query = it }, onOpen, onNewRecipe)
         }
     }
 }
@@ -99,27 +100,42 @@ private fun RecipesList(
     query: String,
     onQuery: (String) -> Unit,
     onOpen: (Int) -> Unit,
+    onNew: () -> Unit,
 ) {
-    if (recipes.isEmpty()) {
-        EmptyHint(stringResource(R.string.recipes_empty))
-        return
-    }
-    val filtered = recipes.filter { recipe ->
-        query.isBlank() || listOfNotNull(recipe.name, recipe.style)
-            .any { it.contains(query, ignoreCase = true) }
-    }
-    SearchField(query, onQuery, stringResource(R.string.recipes_search))
-    if (filtered.isEmpty()) {
-        EmptyHint(stringResource(R.string.no_results, query))
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(filtered, key = { it.id }) { recipe ->
-                RecipeCard(recipe, state.inventory, onOpen, Modifier.animateItem())
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            if (recipes.isEmpty()) {
+                EmptyHint(stringResource(R.string.recipes_empty))
+            } else {
+                val filtered = recipes.filter { recipe ->
+                    query.isBlank() || listOfNotNull(recipe.name, recipe.style)
+                        .any { it.contains(query, ignoreCase = true) }
+                }
+                SearchField(query, onQuery, stringResource(R.string.recipes_search))
+                if (filtered.isEmpty()) {
+                    EmptyHint(stringResource(R.string.no_results, query))
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp,
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(filtered, key = { it.id }) { recipe ->
+                            RecipeCard(recipe, state.inventory, onOpen, Modifier.animateItem())
+                        }
+                    }
+                }
             }
+        }
+        FloatingActionButton(
+            onClick = onNew,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.title_recipe_new))
         }
     }
 }

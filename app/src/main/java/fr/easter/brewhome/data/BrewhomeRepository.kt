@@ -76,6 +76,40 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun customEvents(): List<CustomEvent> = api().getCustomEvents()
 
+    suspend fun addCustomEvent(post: CustomEventPost): CustomEvent = api().createCustomEvent(post)
+
+    suspend fun deleteCustomEvent(id: Int) {
+        api().deleteCustomEvent(id)
+    }
+
+    suspend fun recipes(): List<Recipe> = api().getRecipes()
+
+    suspend fun createRecipe(post: RecipePost): Recipe = api().createRecipe(post)
+
+    /**
+     * Mise à jour d'une recette : le PUT du serveur écrase toutes les colonnes,
+     * donc on repart du JSON brut de la recette et on n'y remplace que les
+     * champs édités par l'app — mash_ratio, efficacité, historique d'eau…
+     * restent intacts.
+     */
+    suspend fun updateRecipe(id: Int, edited: RecipePost) {
+        val api = api()
+        val raw = api.getRecipeRaw(id)
+        val editedJson = mergeJson.encodeToJsonElement(RecipePost.serializer(), edited)
+            as kotlinx.serialization.json.JsonObject
+        val body = kotlinx.serialization.json.buildJsonObject {
+            raw.forEach { (k, v) -> put(k, v) }
+            editedJson.forEach { (k, v) -> put(k, v) }
+        }
+        api.updateRecipe(id, body)
+    }
+
+    private companion object {
+        // explicitNulls : un champ vidé (style, notes…) doit écraser la valeur
+        // du JSON brut par null, pas être omis
+        val mergeJson = kotlinx.serialization.json.Json { explicitNulls = true }
+    }
+
     /** Le serveur répond-il ? (utilisé au lancement et par le VPN auto) */
     suspend fun reachable(timeoutMs: Long): Boolean =
         runCatching { withTimeout(timeoutMs) { api().getAppSettings() } }.isSuccess

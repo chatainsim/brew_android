@@ -28,6 +28,12 @@ object CalendarEvents {
         val emoji: String,
         /** Couleur hex "#rrggbb" si l'événement en porte une (perso / mondial). */
         val colorHex: String? = null,
+        val notes: String? = null,
+        /** id de l'événement personnalisé (pour la suppression). */
+        val customId: Int? = null,
+        /** id du brassin / brouillon lié (pour ouvrir sa fiche). */
+        val brewId: Int? = null,
+        val draftId: Int? = null,
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -95,35 +101,32 @@ object CalendarEvents {
     }
 
     /**
-     * Tous les événements de [today, today+horizonDays], triés par date.
+     * Tous les événements de [from, to], triés par date.
      * @param defaultReminderDays rappel « penser à brasser » par défaut (J-45 sur le site)
      */
     fun agenda(
-        today: LocalDate,
+        from: LocalDate,
+        to: LocalDate,
         brews: List<Brew>,
         recipes: Map<Int, Recipe>,
         beers: List<Beer>,
         drafts: List<Draft>,
         customEvents: List<CustomEvent>,
-        horizonDays: Long = 180,
         defaultReminderDays: Int = 45,
     ): List<Event> {
-        val horizon = today.plusDays(horizonDays)
         val out = mutableListOf<Event>()
-        fun add(date: LocalDate?, type: Type, label: String, emoji: String, colorHex: String? = null) {
-            if (date != null && date >= today && date <= horizon) {
-                out += Event(date, type, label, emoji, colorHex)
-            }
+        fun add(ev: Event?) {
+            if (ev != null && ev.date >= from && ev.date <= to) out += ev
         }
 
         // Brassins : brassage, embouteillage, fin de fermentation, dry hops
         brews.filter { (it.archived ?: 0) == 0 }.forEach { b ->
             val brewDate = parseDate(b.brewDate)
-            add(brewDate, Type.BREW, b.name, "🍺")
-            add(parseDate(b.bottlingDate), Type.BOTTLE, b.name, "🍾")
+            brewDate?.let { add(Event(it, Type.BREW, b.name, "🍺", brewId = b.id)) }
+            parseDate(b.bottlingDate)?.let { add(Event(it, Type.BOTTLE, b.name, "🍾", brewId = b.id)) }
             val fermDays = b.fermTime
             if (brewDate != null && fermDays != null) {
-                add(brewDate.plusDays(fermDays.toLong()), Type.FERM_END, b.name, "🌡️")
+                add(Event(brewDate.plusDays(fermDays.toLong()), Type.FERM_END, b.name, "🌡️", brewId = b.id))
             }
             if (fermDays != null && b.recipeId != null &&
                 (b.status == "fermenting" || b.status == "completed")
@@ -139,10 +142,10 @@ object CalendarEvents {
                         val offset = fermDays - days
                         if (offset >= 0) {
                             val what = hops.joinToString(", ") { "${fmtNum(it.quantity)} ${it.unit} ${it.name}" }
-                            add(
+                            add(Event(
                                 fermStart.plusDays(offset.toLong()), Type.DRYHOP,
-                                "${b.name} — Dry Hop (J$offset) : $what", "🌿",
-                            )
+                                "${b.name} — Dry Hop (J$offset) : $what", "🌿", brewId = b.id,
+                            ))
                         }
                     }
                 }
@@ -154,29 +157,32 @@ object CalendarEvents {
             (it.refermentation ?: 0) == 1 && it.bottlingDate != null && it.refermentationDays != null
         }.forEach { b ->
             parseDate(b.bottlingDate)?.let {
-                add(it.plusDays(b.refermentationDays!!.toLong()), Type.REFERM, b.name, "🔄")
+                add(Event(it.plusDays(b.refermentationDays!!.toLong()), Type.REFERM, b.name, "🔄"))
             }
         }
 
         // Brouillons avec date cible
         drafts.forEach { d ->
-            add(parseDate(d.targetDate), Type.DRAFT, d.title, "📖")
+            parseDate(d.targetDate)?.let { add(Event(it, Type.DRAFT, d.title, "📖", draftId = d.id)) }
         }
 
         // Événements personnalisés (récurrences) + rappels « penser à brasser »
         customEvents.forEach { ev ->
-            expand(ev, today.year).forEach { date ->
-                add(date, Type.CUSTOM, ev.title, ev.emoji ?: "📅", ev.color)
+            expand(ev, from.year).forEach { date ->
+                add(Event(
+                    date, Type.CUSTOM, ev.title, ev.emoji ?: "📅", ev.color,
+                    notes = ev.notes, customId = ev.id,
+                ))
                 if ((ev.brewReminder ?: 0) == 1) {
                     val days = ev.brewReminderDays ?: defaultReminderDays
-                    add(date.minusDays(days.toLong()), Type.REMIND, ev.title, "🔔")
+                    add(Event(date.minusDays(days.toLong()), Type.REMIND, ev.title, "🔔", customId = ev.id))
                 }
             }
         }
 
         // Journées mondiales de la bière
-        listOf(today.year, today.year + 1).forEach { y ->
-            worldBeerDays(y).forEach { add(it.date, Type.WORLD, it.label, it.emoji, it.colorHex) }
+        (from.year..to.year).forEach { y ->
+            worldBeerDays(y).forEach { add(it) }
         }
 
         return out.sortedBy { it.date }

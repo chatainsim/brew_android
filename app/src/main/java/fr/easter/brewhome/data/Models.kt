@@ -49,6 +49,45 @@ data class RecipeIngredient(
     val notes: String? = null,
     @SerialName("stock_qty") val stockQty: Double? = null,
     @SerialName("stock_unit") val stockUnit: String? = null,
+    @SerialName("inventory_item_id") val inventoryItemId: Int? = null,
+    @SerialName("other_type") val otherType: String? = null,
+    @SerialName("other_time") val otherTime: Double? = null,
+)
+
+/**
+ * Corps de POST/PUT /api/recipes. Comme les brouillons, le PUT écrase toutes
+ * les colonnes : le dépôt fusionne ces champs dans le JSON brut du serveur
+ * pour préserver ceux que l'app n'édite pas (mash_ratio, efficacité…).
+ */
+@Serializable
+data class RecipePost(
+    val name: String,
+    val style: String? = null,
+    val volume: Double? = null,
+    @SerialName("mash_temp") val mashTemp: Double? = null,
+    @SerialName("mash_time") val mashTime: Double? = null,
+    @SerialName("boil_time") val boilTime: Double? = null,
+    @SerialName("ferm_temp") val fermTemp: Double? = null,
+    @SerialName("ferm_time") val fermTime: Double? = null,
+    val notes: String? = null,
+    val ingredients: List<RecipeIngredientPut> = emptyList(),
+)
+
+@Serializable
+data class RecipeIngredientPut(
+    val name: String,
+    val category: String,
+    val quantity: Double? = null,
+    val unit: String = "g",
+    @SerialName("hop_time") val hopTime: Int? = null,
+    @SerialName("hop_type") val hopType: String? = null,
+    @SerialName("hop_days") val hopDays: Int? = null,
+    val ebc: Double? = null,
+    val alpha: Double? = null,
+    val notes: String? = null,
+    @SerialName("inventory_item_id") val inventoryItemId: Int? = null,
+    @SerialName("other_type") val otherType: String? = null,
+    @SerialName("other_time") val otherTime: Double? = null,
 )
 
 @Serializable
@@ -266,6 +305,19 @@ data class CustomEvent(
     val style: String? = null,
     @SerialName("recipe_id") val recipeId: Int? = null,
     @SerialName("draft_id") val draftId: Int? = null,
+)
+
+/** Corps de POST /api/custom_events (le serveur remplit les défauts). */
+@Serializable
+data class CustomEventPost(
+    val title: String,
+    val emoji: String = "📅",
+    @SerialName("event_date") val eventDate: String,
+    val color: String = "#f59e0b",
+    val notes: String? = null,
+    @SerialName("brew_reminder") val brewReminder: Boolean = false,
+    @SerialName("brew_reminder_days") val brewReminderDays: Int? = null,
+    val recurrence: String? = null,
 )
 
 @Serializable

@@ -18,6 +18,8 @@ import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CustomEvent
+import fr.easter.brewhome.data.CustomEventPost
+import fr.easter.brewhome.data.RecipePost
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.DraftsRepository
@@ -308,6 +310,47 @@ class BrewViewModel(
     fun loadCustomEvents() {
         viewModelScope.launch {
             _customEvents.value = runCatching { repo.customEvents() }.getOrDefault(emptyList())
+        }
+    }
+
+    fun addCustomEvent(post: CustomEventPost, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_event_save) {
+            repo.addCustomEvent(post)
+            _customEvents.value = repo.customEvents()
+            onDone()
+        }
+    }
+
+    fun deleteCustomEvent(event: CustomEvent) {
+        launchWithError(R.string.error_event_delete) {
+            repo.deleteCustomEvent(event.id)
+            _customEvents.value = repo.customEvents()
+            pushUndo(key = null, message = strings(R.string.undo_event_deleted)) {
+                repo.addCustomEvent(
+                    CustomEventPost(
+                        title = event.title,
+                        emoji = event.emoji ?: "📅",
+                        eventDate = event.eventDate ?: "",
+                        color = event.color ?: "#f59e0b",
+                        notes = event.notes,
+                        brewReminder = (event.brewReminder ?: 0) == 1,
+                        brewReminderDays = event.brewReminderDays,
+                        recurrence = event.recurrence,
+                    ),
+                )
+                _customEvents.value = repo.customEvents()
+            }
+        }
+    }
+
+    // ── Recettes ──────────────────────────────────────────────────────────
+
+    fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_recipe_save) {
+            if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)
+            // Recharge la liste : le serveur calcule des champs (batch_no, stock…)
+            _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
+            onDone()
         }
     }
 

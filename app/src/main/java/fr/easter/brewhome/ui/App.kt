@@ -75,7 +75,7 @@ val tabs = listOf(
 private fun tabOf(route: String?): String? = when {
     route == null -> null
     route == "beers" || route.startsWith("beer/") -> "beers"
-    route == "recipes" || route.startsWith("recipe/") ||
+    route == "recipes" || route.startsWith("recipe/") || route.startsWith("recipeEdit/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
@@ -154,6 +154,10 @@ fun BrewHomeApp(
                         when {
                             currentRoute == "settings" -> stringResource(R.string.title_settings)
                             currentRoute?.startsWith("recipe/") == true -> stringResource(R.string.title_recipe)
+                            currentRoute?.startsWith("recipeEdit/") == true ->
+                                if (backStack?.arguments?.getString("id") == "new")
+                                    stringResource(R.string.title_recipe_new)
+                                else stringResource(R.string.title_recipe_edit)
                             currentRoute?.startsWith("beer/") == true -> stringResource(R.string.title_beer)
                             currentRoute?.startsWith("brew/") == true -> stringResource(R.string.title_brew)
                             currentRoute?.startsWith("draft/") == true -> stringResource(R.string.title_draft)
@@ -194,6 +198,14 @@ fun BrewHomeApp(
                     if (recipeToShare != null) {
                         val context = LocalContext.current
                         val subject = stringResource(R.string.share_subject_recipe, recipeToShare.name)
+                        IconButton(onClick = {
+                            navController.navigate("recipeEdit/${recipeToShare.id}")
+                        }) {
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = stringResource(R.string.cd_edit_recipe),
+                            )
+                        }
                         IconButton(onClick = {
                             shareText(context, ShareText.recipe(recipeToShare), subject)
                         }) {
@@ -340,11 +352,16 @@ fun BrewHomeApp(
                     onOpen = { navController.navigate("recipe/$it") },
                     onOpenDraft = { navController.navigate("draft/$it") },
                     onNewDraft = { navController.navigate("draftEdit/new") },
+                    onNewRecipe = { navController.navigate("recipeEdit/new") },
                 )
             }
             composable("recipe/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 RecipeDetailScreen(vm, id)
+            }
+            composable("recipeEdit/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null
+                RecipeEditScreen(vm, id) { navController.navigateUp() }
             }
             composable("draft/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
@@ -377,7 +394,13 @@ fun BrewHomeApp(
                     onOpen = { navController.navigate("tools/$it") },
                 )
             }
-            composable("calendar") { CalendarScreen(vm) }
+            composable("calendar") {
+                CalendarScreen(
+                    vm,
+                    onOpenBrew = { navController.navigate("brew/$it") },
+                    onOpenDraft = { navController.navigate("draft/$it") },
+                )
+            }
             composable("tools/{id}") { entry ->
                 ToolScreen(entry.arguments?.getString("id"))
             }
