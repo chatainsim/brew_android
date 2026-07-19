@@ -70,6 +70,9 @@ data class RecipePost(
     @SerialName("ferm_temp") val fermTemp: Double? = null,
     @SerialName("ferm_time") val fermTime: Double? = null,
     val notes: String? = null,
+    /** Renseignés à la création depuis un brouillon ; jamais écrasés en PUT si null. */
+    @SerialName("brew_date") val brewDate: String? = null,
+    @SerialName("draft_id") val draftId: Int? = null,
     val ingredients: List<RecipeIngredientPut> = emptyList(),
 )
 

@@ -125,7 +125,13 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
             as kotlinx.serialization.json.JsonObject
         val body = kotlinx.serialization.json.buildJsonObject {
             raw.forEach { (k, v) -> put(k, v) }
-            editedJson.forEach { (k, v) -> put(k, v) }
+            editedJson.forEach { (k, v) ->
+                // brew_date/draft_id ne sont posés qu'à la création depuis un
+                // brouillon : null ici = « garder la valeur existante »
+                val keepRaw = v is kotlinx.serialization.json.JsonNull &&
+                    (k == "brew_date" || k == "draft_id")
+                if (!keepRaw) put(k, v)
+            }
         }
         api.updateRecipe(id, body)
     }

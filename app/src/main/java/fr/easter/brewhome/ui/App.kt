@@ -76,6 +76,7 @@ private fun tabOf(route: String?): String? = when {
     route == null -> null
     route == "beers" || route.startsWith("beer/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") || route.startsWith("recipeEdit/") ||
+        route.startsWith("recipeFromDraft/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
@@ -158,6 +159,8 @@ fun BrewHomeApp(
                                 if (backStack?.arguments?.getString("id") == "new")
                                     stringResource(R.string.title_recipe_new)
                                 else stringResource(R.string.title_recipe_edit)
+                            currentRoute?.startsWith("recipeFromDraft/") == true ->
+                                stringResource(R.string.title_recipe_new)
                             currentRoute?.startsWith("beer/") == true -> stringResource(R.string.title_beer)
                             currentRoute?.startsWith("brew/") == true -> stringResource(R.string.title_brew)
                             currentRoute?.startsWith("draft/") == true -> stringResource(R.string.title_draft)
@@ -363,9 +366,16 @@ fun BrewHomeApp(
                 val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null
                 RecipeEditScreen(vm, id) { navController.navigateUp() }
             }
+            composable("recipeFromDraft/{draftId}") { entry ->
+                val draftId = entry.arguments?.getString("draftId")?.toIntOrNull()
+                RecipeEditScreen(vm, recipeId = null, fromDraftId = draftId) {
+                    // Après le transfert : retour à la liste des recettes
+                    navController.navigate("recipes") { popUpTo("recipes") { inclusive = true } }
+                }
+            }
             composable("draft/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
-                DraftDetailScreen(vm, id)
+                DraftDetailScreen(vm, id) { navController.navigate("recipeFromDraft/$it") }
             }
             composable("draftEdit/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null

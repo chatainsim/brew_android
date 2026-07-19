@@ -27,9 +27,11 @@ import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.RecipeEstimator
+import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredientPut
 import fr.easter.brewhome.data.RecipePost
+import fr.easter.brewhome.data.parsedIngredients
 
 // Types d'ajout du houblon, mêmes valeurs que le site
 private val hopTypes = listOf("ebullition", "whirlpool", "dryhop")
@@ -61,26 +63,45 @@ private data class EditRecipeIng(
     val otherTime: Double? = null,
 )
 
-/** Éditeur de recette : recipeId == null → création. */
+/**
+ * Éditeur de recette : recipeId == null → création. [fromDraftId] pré-remplit
+ * la nouvelle recette depuis un brouillon (transfert, comme sur le site).
+ */
 @Composable
-fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
+fun RecipeEditScreen(
+    vm: BrewViewModel,
+    recipeId: Int?,
+    fromDraftId: Int? = null,
+    onSaved: () -> Unit,
+) {
     val state by vm.state.collectAsState()
     val existing = recipeId?.let { id -> state.recipes.find { it.id == id } }
     if (recipeId != null && existing == null) {
         EmptyHint(stringResource(R.string.recipe_not_found))
         return
     }
+    val fromDraft = remember(fromDraftId) {
+        fromDraftId?.let { id -> state.drafts.find { it.id == id } }
+    }
 
-    var name by rememberSaveable { mutableStateOf(existing?.name ?: "") }
-    var style by rememberSaveable { mutableStateOf(existing?.style ?: "") }
-    var volume by rememberSaveable { mutableStateOf(existing?.volume?.let(::numToField) ?: "20") }
+    var name by rememberSaveable { mutableStateOf(existing?.name ?: fromDraft?.title ?: "") }
+    var style by rememberSaveable { mutableStateOf(existing?.style ?: fromDraft?.style ?: "") }
+    var volume by rememberSaveable {
+        mutableStateOf((existing?.volume ?: fromDraft?.volume)?.let(::numToField) ?: "20")
+    }
     var mashTemp by rememberSaveable { mutableStateOf(existing?.mashTemp?.let(::numToField) ?: "66") }
     var mashTime by rememberSaveable { mutableStateOf(existing?.mashTime?.toString() ?: "60") }
     var boilTime by rememberSaveable { mutableStateOf(existing?.boilTime?.toString() ?: "60") }
     var fermTemp by rememberSaveable { mutableStateOf(existing?.fermTemp?.let(::numToField) ?: "20") }
     var fermTime by rememberSaveable { mutableStateOf(existing?.fermTime?.toString() ?: "14") }
-    var notes by rememberSaveable { mutableStateOf(existing?.notes ?: "") }
-    val ings = remember { mutableStateListOf<EditRecipeIng>().apply { seedFrom(existing) } }
+    var notes by rememberSaveable {
+        mutableStateOf(existing?.notes ?: fromDraft?.let(::draftNotes) ?: "")
+    }
+    val ings = remember {
+        mutableStateListOf<EditRecipeIng>().apply {
+            if (existing != null) seedFrom(existing) else seedFromDraft(fromDraft)
+        }
+    }
     var saving by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -209,6 +230,8 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
                 saving = true
                 vm.saveRecipe(recipeId, buildPost(
                     name, style, volume, mashTemp, mashTime, boilTime, fermTemp, fermTime, notes, ings,
+                    draftId = fromDraftId,
+                    brewDate = fromDraft?.targetDate,
                 )) { onSaved() }
                 saving = false
             },
@@ -221,6 +244,33 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
             )
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Notes de la recette créée depuis un brouillon : ligne « objectif » + notes. */
+private fun draftNotes(draft: Draft): String {
+    val eventLine = if (!draft.eventLabel.isNullOrBlank() && !draft.targetDate.isNullOrBlank()) {
+        val date = runCatching {
+            java.time.LocalDate.parse(draft.targetDate)
+                .format(java.time.format.DateTimeFormatter.ofPattern("d MMMM yyyy", java.util.Locale.FRANCE))
+        }.getOrDefault(draft.targetDate)
+        "📅 Objectif : ${draft.eventLabel} — $date"
+    } else null
+    return listOfNotNull(eventLine, draft.notes?.trim()?.ifBlank { null })
+        .joinToString("\n\n")
+}
+
+/** Ingrédients du brouillon → lignes d'édition (houblons en ébullition par défaut). */
+private fun MutableList<EditRecipeIng>.seedFromDraft(draft: Draft?) {
+    draft?.parsedIngredients()?.filter { it.name.isNotBlank() }?.forEach {
+        val cat = it.category.lowercase().takeIf { c -> c in draftCategories } ?: "autre"
+        add(EditRecipeIng(
+            name = it.name,
+            category = cat,
+            quantity = it.quantity?.let(::numToField) ?: "",
+            unit = it.unit ?: unitsByCategory.getValue(cat).first(),
+            otherType = if (cat == "autre") "ebullition" else null,
+        ))
     }
 }
 
@@ -256,6 +306,8 @@ private fun buildPost(
     fermTime: String,
     notes: String,
     ings: List<EditRecipeIng>,
+    draftId: Int? = null,
+    brewDate: String? = null,
 ): RecipePost {
     fun num(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
     return RecipePost(
@@ -268,6 +320,8 @@ private fun buildPost(
         fermTemp = num(fermTemp),
         fermTime = num(fermTime),
         notes = notes.trim().ifBlank { null },
+        brewDate = brewDate,
+        draftId = draftId,
         ingredients = ings.filter { it.name.isNotBlank() }.map { ing ->
             val isHop = ing.category == "houblon"
             RecipeIngredientPut(

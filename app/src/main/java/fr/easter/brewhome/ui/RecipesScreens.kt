@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
@@ -16,6 +17,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -563,7 +565,7 @@ private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit, modifier: Modifier = 
 }
 
 @Composable
-fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
+fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Unit = {}) {
     val state by vm.state.collectAsState()
     val draft = state.drafts.find { it.id == draftId }
     if (draft == null) {
@@ -583,6 +585,19 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
             StatusChip(draftStatusLabel(draft.status), container, content)
         }
         draft.style?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
+
+        // Transfert en recette, comme sur le site : éditeur pré-rempli
+        OutlinedButton(
+            onClick = { onToRecipe(draft.id) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Outlined.MenuBook,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(stringResource(R.string.draft_to_recipe), Modifier.padding(start = 8.dp))
+        }
 
         InfoCard {
             InfoLine(stringResource(R.string.label_volume), draft.volume?.let { "${fmtQty(it)} L" })
