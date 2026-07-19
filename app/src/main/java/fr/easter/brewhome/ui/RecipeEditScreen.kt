@@ -36,6 +36,13 @@ import fr.easter.brewhome.data.parsedIngredients
 // Types d'ajout du houblon, mêmes valeurs que le site
 private val hopTypes = listOf("ebullition", "whirlpool", "dryhop")
 
+// Moments d'ajout d'un ingrédient « autre » (sucre, miel, épices…)
+private val otherTypes =
+    listOf("empatage", "ebullition", "whirlpool", "flameout", "fermentation", "packaging")
+
+/** Ces moments demandent une durée (minutes restantes d'ébullition). */
+private fun needsMinutes(type: String) = type == "ebullition" || type == "whirlpool"
+
 @Composable
 private fun hopTypeLabel(type: String): String = stringResource(
     when (type) {
@@ -54,13 +61,13 @@ private data class EditRecipeIng(
     val hopTime: String = "",
     val hopType: String = "ebullition",
     val hopDays: String = "",
+    val otherType: String = "ebullition",
+    val otherTime: String = "",
     // Conservés tels quels pour ne pas les perdre au PUT
     val ebc: Double? = null,
     val alpha: Double? = null,
     val notes: String? = null,
     val inventoryItemId: Int? = null,
-    val otherType: String? = null,
-    val otherTime: Double? = null,
 )
 
 /**
@@ -269,7 +276,6 @@ private fun MutableList<EditRecipeIng>.seedFromDraft(draft: Draft?) {
             category = cat,
             quantity = it.quantity?.let(::numToField) ?: "",
             unit = it.unit ?: unitsByCategory.getValue(cat).first(),
-            otherType = if (cat == "autre") "ebullition" else null,
         ))
     }
 }
@@ -285,12 +291,12 @@ private fun MutableList<EditRecipeIng>.seedFrom(existing: Recipe?) {
             hopTime = it.hopTime?.toString() ?: "",
             hopType = it.hopType ?: "ebullition",
             hopDays = it.hopDays?.toString() ?: "",
+            otherType = it.otherType ?: "ebullition",
+            otherTime = it.otherTime?.let(::numToField) ?: "",
             ebc = it.ebc,
             alpha = it.alpha,
             notes = it.notes,
             inventoryItemId = it.inventoryItemId,
-            otherType = it.otherType,
-            otherTime = it.otherTime,
         ))
     }
 }
@@ -324,6 +330,7 @@ private fun buildPost(
         draftId = draftId,
         ingredients = ings.filter { it.name.isNotBlank() }.map { ing ->
             val isHop = ing.category == "houblon"
+            val isOther = ing.category == "autre"
             RecipeIngredientPut(
                 name = ing.name.trim(),
                 category = ing.category,
@@ -336,8 +343,8 @@ private fun buildPost(
                 alpha = ing.alpha,
                 notes = ing.notes,
                 inventoryItemId = ing.inventoryItemId,
-                otherType = ing.otherType,
-                otherTime = ing.otherTime,
+                otherType = if (isOther) ing.otherType else null,
+                otherTime = if (isOther && needsMinutes(ing.otherType)) num(ing.otherTime) else null,
             )
         },
     )
@@ -423,6 +430,31 @@ private fun RecipeIngredientEditor(
                         keyboardType = KeyboardType.Number,
                         modifier = Modifier.weight(1f),
                     )
+                }
+            }
+        }
+        if (ing.category == "autre") {
+            // Moment d'ajout + minutes restantes (pour ébullition / whirlpool)
+            val otherLabels = otherTypes.associateWith { additionLabel(it) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallDropdown(
+                    value = otherLabels[ing.otherType] ?: ing.otherType,
+                    options = otherTypes,
+                    optionLabel = { otherLabels.getValue(it) },
+                    onSelect = { onChange(ing.copy(otherType = it)) },
+                    modifier = Modifier.weight(1.4f),
+                )
+                if (needsMinutes(ing.otherType)) {
+                    SoftField(
+                        value = ing.otherTime,
+                        onChange = { onChange(ing.copy(otherTime = it)) },
+                        placeholder = stringResource(R.string.hop_minutes),
+                        label = stringResource(R.string.hop_minutes),
+                        keyboardType = KeyboardType.Number,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
                 }
             }
         }
