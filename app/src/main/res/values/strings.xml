@@ -214,6 +214,16 @@
     <string name="stat_avg_og">Densité initiale moyenne</string>
     <string name="stat_volume_by_year">Volume brassé par année</string>
     <string name="stat_top_styles">Styles les plus brassés</string>
+    <string name="stat_eff_by_brew">Efficacité par brassin</string>
+    <string name="stat_cpl_by_brew">Coût au litre par brassin</string>
+    <string name="stat_abv_by_year">ABV moyen par année</string>
+    <string name="stat_cost_by_year">Dépenses par année</string>
+    <string name="stat_season">Saisonnalité des brassins</string>
+    <string name="stat_top_malts">Top malts brassés</string>
+    <string name="stat_top_hops">Top houblons brassés</string>
+    <string name="stat_top_yeasts">Top levures utilisées</string>
+    <string name="stat_rating_by_type">Notes moyennes par style</string>
+    <string name="stat_n_brews_short">%1$d×</string>
     <string name="stat_cave">Cave actuelle</string>
     <string name="stat_bottles_33">Bouteilles 33 cl</string>
     <string name="stat_bottles_75">Bouteilles 75 cl</string>

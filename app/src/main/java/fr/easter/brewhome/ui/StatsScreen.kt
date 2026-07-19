@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.calc.BrewStats
+import fr.easter.brewhome.calc.StockCheck
 
 /** Statistiques de brasserie — même esprit que la page Stats du site. */
 @Composable
@@ -150,6 +152,41 @@ fun StatsScreen(vm: BrewViewModel) {
             }
         }
 
+        // ── Par brassin : efficacité et coût au litre (10 plus récents) ──
+        val chrono = done.sortedBy { it.brewDate }
+        fun brewLabel(b: fr.easter.brewhome.data.Brew) =
+            b.batchNumber?.let { "#$it" } ?: b.name
+        val effBrews = chrono.filter { it.actualEfficiency != null }.takeLast(10)
+        if (effBrews.size >= 2) {
+            SectionTitle(stringResource(R.string.stat_eff_by_brew))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    effBrews.forEach { b ->
+                        val eff = b.actualEfficiency!!
+                        BarRow(brewLabel(b), "${fmtQty(kotlin.math.round(eff))} %", (eff / 100).toFloat())
+                    }
+                }
+            }
+        }
+        val cplBrews = chrono.filter { (it.costPerLiter ?: 0.0) > 0 }.takeLast(10)
+        if (cplBrews.size >= 2) {
+            SectionTitle(stringResource(R.string.stat_cpl_by_brew))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    val max = cplBrews.maxOf { it.costPerLiter!! }
+                    cplBrews.forEach { b ->
+                        val c = b.costPerLiter!!
+                        BarRow(
+                            brewLabel(b),
+                            "${fmtQty(kotlin.math.round(c * 100) / 100)} €",
+                            (c / max).toFloat(),
+                            MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                }
+            }
+        }
+
         // ── Volume par année (redondant quand une seule année est affichée) ──
         val byYear = allDone.groupBy { it.brewDate!!.take(4) }
             .mapValues { (_, brews) -> brews.sumOf { it.volumeBrewed ?: 0.0 } }
@@ -161,6 +198,45 @@ fun StatsScreen(vm: BrewViewModel) {
                     val max = byYear.values.max().takeIf { it > 0 } ?: 1.0
                     byYear.forEach { (year, vol) ->
                         BarRow(year, "${fmtQty(vol)} L", (vol / max).toFloat())
+                    }
+                }
+            }
+        }
+
+        // ── Tendances par année (masquées quand une année est filtrée) ──
+        if (year == null) {
+            val abvYears = BrewStats.avgByYear(allDone) { it.abv }
+            if (abvYears.size >= 2) {
+                SectionTitle(stringResource(R.string.stat_abv_by_year))
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        val max = abvYears.maxOf { it.second }
+                        abvYears.forEach { (y, v) ->
+                            BarRow(
+                                y,
+                                "${fmtQty(kotlin.math.round(v * 10) / 10)} %",
+                                (v / max).toFloat(),
+                                MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                    }
+                }
+            }
+            val costYears = BrewStats.sumByYear(allDone) { it.costSnapshot }
+                .filter { it.second > 0 }
+            if (costYears.size >= 2) {
+                SectionTitle(stringResource(R.string.stat_cost_by_year))
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        val max = costYears.maxOf { it.second }
+                        costYears.forEach { (y, v) ->
+                            BarRow(
+                                y,
+                                "${fmtQty(kotlin.math.round(v))} €",
+                                (v / max).toFloat(),
+                                MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
                     }
                 }
             }
@@ -178,6 +254,66 @@ fun StatsScreen(vm: BrewViewModel) {
                     val max = styles.first().value.toDouble()
                     styles.forEach { (style, n) ->
                         BarRow(style, "$n", (n / max).toFloat(), MaterialTheme.colorScheme.tertiary)
+                    }
+                }
+            }
+        }
+
+        // ── Saisonnalité : brassins par mois calendaire ──
+        val byMonth = BrewStats.byMonth(done)
+        if (byMonth.sum() > 0) {
+            SectionTitle(stringResource(R.string.stat_season))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    val max = byMonth.max().takeIf { it > 0 } ?: 1
+                    byMonth.forEachIndexed { i, n ->
+                        val label = java.time.Month.of(i + 1)
+                            .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.FRANCE)
+                        BarRow(label, "$n", n.toFloat() / max)
+                    }
+                }
+            }
+        }
+
+        // ── Top ingrédients, via les recettes des brassins ──
+        val topMalts = BrewStats.topByWeight(done, recipeById, "malt")
+        if (topMalts.isNotEmpty()) {
+            SectionTitle(stringResource(R.string.stat_top_malts))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    val max = topMalts.first().second
+                    topMalts.forEach { (name, g) ->
+                        BarRow(name, StockCheck.formatBase(g, "g"), (g / max).toFloat())
+                    }
+                }
+            }
+        }
+        val topHops = BrewStats.topByWeight(done, recipeById, "houblon")
+        if (topHops.isNotEmpty()) {
+            SectionTitle(stringResource(R.string.stat_top_hops))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    val max = topHops.first().second
+                    topHops.forEach { (name, g) ->
+                        BarRow(
+                            name, StockCheck.formatBase(g, "g"), (g / max).toFloat(),
+                            MaterialTheme.colorScheme.tertiary,
+                        )
+                    }
+                }
+            }
+        }
+        val topYeasts = BrewStats.topYeasts(done, recipeById)
+        if (topYeasts.isNotEmpty()) {
+            SectionTitle(stringResource(R.string.stat_top_yeasts))
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    val max = topYeasts.first().second
+                    topYeasts.forEach { (name, n) ->
+                        BarRow(
+                            name, stringResource(R.string.stat_n_brews_short, n),
+                            n.toFloat() / max, MaterialTheme.colorScheme.secondary,
+                        )
                     }
                 }
             }
@@ -220,6 +356,23 @@ fun StatsScreen(vm: BrewViewModel) {
                                 modifier = Modifier.weight(1f),
                             )
                             StarRating(beer.tasteRating)
+                        }
+                    }
+                }
+            }
+            // Notes moyennes par style de bière
+            val byType = BrewStats.ratingByType(beers)
+            if (byType.size >= 2) {
+                SectionTitle(stringResource(R.string.stat_rating_by_type))
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        byType.take(6).forEach { (type, avg, n) ->
+                            BarRow(
+                                type,
+                                "${fmtQty(kotlin.math.round(avg * 10) / 10)}/5 ($n)",
+                                (avg / 5).toFloat(),
+                                MaterialTheme.colorScheme.secondary,
+                            )
                         }
                     }
                 }
