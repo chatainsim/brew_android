@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -62,16 +63,16 @@ fun BrewsScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
             modifier = Modifier.fillMaxSize(),
         ) {
             items(state.brews, key = { it.id }) { brew ->
-                BrewCard(brew, onOpen)
+                BrewCard(brew, onOpen, Modifier.animateItem())
             }
         }
     }
 }
 
 @Composable
-private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit) {
+private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(brew.id) },
     ) {
@@ -85,15 +86,8 @@ private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                val statusColor = brewStatusColor(brew.status)
-                AssistChip(
-                    onClick = { onOpen(brew.id) },
-                    label = { Text(brewStatusLabel(brew.status), color = statusColor) },
-                    border = AssistChipDefaults.assistChipBorder(
-                        enabled = true,
-                        borderColor = statusColor,
-                    ),
-                )
+                val (container, content) = brewStatusColors(brew.status)
+                StatusChip(brewStatusLabel(brew.status), container, content)
             }
             val line1 = listOfNotNull(
                 brew.brewDate?.let { stringResource(R.string.brewed_on, it) },
@@ -166,16 +160,12 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                 )
             }
         }
-        val statusColor = brewStatusColor(brew.status)
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AssistChip(
-                onClick = {},
-                label = { Text(brewStatusLabel(brew.status), color = statusColor) },
-                border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = statusColor),
-            )
+            val (container, content) = brewStatusColors(brew.status)
+            StatusChip(brewStatusLabel(brew.status), container, content)
             if (brew.recipeId != null) {
                 AssistChip(
                     onClick = { onOpenRecipe(brew.recipeId) },
@@ -399,7 +389,7 @@ private fun GravityChart(readings: List<FermReading>) {
             .fillMaxWidth()
             .height(120.dp),
     ) {
-        drawSeries(gravityPts, gravityColor)
+        drawSeries(gravityPts, gravityColor, fill = true)
         if (tempPts.size >= 2) drawSeries(tempPts, tempColor)
     }
     Spacer(Modifier.height(4.dp))
@@ -415,6 +405,7 @@ private fun GravityChart(readings: List<FermReading>) {
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSeries(
     points: List<Pair<Float, Double>>,
     color: Color,
+    fill: Boolean = false,
 ) {
     if (points.size < 2) return
     val min = points.minOf { it.second }
@@ -426,6 +417,22 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSeries(
         // marge de 4 % en haut/bas pour ne pas couper le trait
         val y = size.height * (0.04f + 0.92f * (1f - ((v - min) / range).toFloat()))
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    if (fill) {
+        // Aplat dégradé sous la courbe, qui s'estompe vers le bas
+        val area = Path().apply {
+            addPath(path)
+            lineTo(size.width * points.last().first, size.height)
+            lineTo(size.width * points.first().first, size.height)
+            close()
+        }
+        drawPath(
+            area,
+            brush = Brush.verticalGradient(
+                listOf(color.copy(alpha = 0.28f), color.copy(alpha = 0f)),
+                endY = size.height,
+            ),
+        )
     }
     drawPath(path, color = color, style = Stroke(width = 5f, cap = StrokeCap.Round))
 }

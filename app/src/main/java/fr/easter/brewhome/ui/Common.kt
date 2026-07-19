@@ -2,7 +2,19 @@ package fr.easter.brewhome.ui
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +26,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Close
@@ -28,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -35,9 +50,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
@@ -82,12 +102,92 @@ fun brewStatusLabel(status: String?): String = when (status) {
     else -> status ?: "?"
 }
 
+/** Couleurs (fond, texte) de la pastille de statut d'un brassin. */
 @Composable
-fun brewStatusColor(status: String?): Color = when (status) {
-    "planned" -> MaterialTheme.colorScheme.outline
-    "in_progress" -> MaterialTheme.colorScheme.primary
-    "fermenting" -> MaterialTheme.colorScheme.tertiary
-    else -> MaterialTheme.colorScheme.secondary
+fun brewStatusColors(status: String?): Pair<Color, Color> = MaterialTheme.colorScheme.let {
+    when (status) {
+        "planned" -> it.surfaceVariant to it.onSurfaceVariant
+        "in_progress" -> it.primaryContainer to it.onPrimaryContainer
+        "fermenting" -> it.tertiaryContainer to it.onTertiaryContainer
+        else -> it.secondaryContainer to it.onSecondaryContainer
+    }
+}
+
+/** Couleur d'accent d'une catégorie d'ingrédients (malt, houblon, levure…). */
+@Composable
+fun categoryColor(cat: String): Color = when (cat.lowercase()) {
+    "malt" -> MaterialTheme.colorScheme.primary
+    "houblon" -> MaterialTheme.colorScheme.tertiary
+    "levure" -> MaterialTheme.colorScheme.secondary
+    else -> MaterialTheme.colorScheme.outline
+}
+
+/** Petite pastille remplie et arrondie : statut d'un brassin ou d'un brouillon. */
+@Composable
+fun StatusChip(label: String, container: Color, content: Color, modifier: Modifier = Modifier) {
+    Surface(shape = RoundedCornerShape(8.dp), color = container, modifier = modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = content,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
+    }
+}
+
+// Nuancier SRM 1..40 (référence brassicole standard), du blond paille au noir.
+private val SrmColors = intArrayOf(
+    0xFFE699, 0xFFD878, 0xFFCA5A, 0xFFBF42, 0xFBB123, 0xF8A600, 0xF39C00, 0xEA8F00,
+    0xE58500, 0xDE7C00, 0xD77200, 0xCF6900, 0xCB6200, 0xC35900, 0xBB5100, 0xB54C00,
+    0xB04500, 0xA63E00, 0xA13700, 0x9B3200, 0x952D00, 0x8E2900, 0x882300, 0x821E00,
+    0x7B1A00, 0x771900, 0x701400, 0x6A0E00, 0x660D00, 0x5E0B00, 0x5A0A02, 0x560A05,
+    0x520907, 0x4C0505, 0x470606, 0x440607, 0x3F0708, 0x3B0607, 0x3A070B, 0x36080A,
+)
+
+/** Couleur réelle d'un malt / d'une bière d'après sa valeur EBC. */
+fun ebcColor(ebc: Double): Color {
+    val srm = (ebc / 1.97).toInt().coerceIn(1, SrmColors.size)
+    return Color(0xFF000000.toInt() or SrmColors[srm - 1])
+}
+
+/** Rond de couleur EBC : montre la teinte du malt d'un coup d'œil. */
+@Composable
+fun EbcDot(ebc: Double, size: Dp = 12.dp) {
+    Box(
+        Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(ebcColor(ebc))
+            .border(Dp.Hairline, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+    )
+}
+
+/**
+ * Nombre animé façon odomètre : la nouvelle valeur pousse l'ancienne vers le
+ * haut quand elle augmente, vers le bas quand elle diminue.
+ */
+@Composable
+fun AnimatedNumber(
+    value: Double,
+    format: (Double) -> String,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = null,
+) {
+    AnimatedContent(
+        targetState = value,
+        transitionSpec = {
+            val up = targetState > initialState
+            val enter = slideInVertically { h -> if (up) h else -h } + fadeIn()
+            val exit = slideOutVertically { h -> if (up) -h else h } + fadeOut()
+            (enter togetherWith exit).using(SizeTransform(clip = true))
+        },
+        label = "number",
+        modifier = modifier,
+    ) { v ->
+        Text(format(v), style = style, color = color, fontWeight = fontWeight)
+    }
 }
 
 /**
@@ -202,14 +302,23 @@ fun StarRating(rating: Int?, max: Int = 5, onSelect: ((Int) -> Unit)? = null) {
     Row {
         for (i in 1..max) {
             val filled = rating != null && i <= rating
+            // Rebond élastique quand une étoile s'allume ou s'éteint
+            val scale by animateFloatAsState(
+                targetValue = if (filled) 1f else 0.82f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                label = "starScale",
+            )
+            val tint by animateColorAsState(
+                if (filled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+                label = "starTint",
+            )
             Icon(
                 imageVector = if (filled) Icons.Filled.Star else Icons.Outlined.StarOutline,
                 contentDescription = stringResource(R.string.cd_stars, i),
-                tint = if (filled) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.outline,
-                modifier = if (onSelect != null)
-                    Modifier.clickable { onSelect(i) }
-                else Modifier,
+                tint = tint,
+                modifier = (if (onSelect != null) Modifier.clickable { onSelect(i) } else Modifier)
+                    .scale(scale),
             )
         }
     }

@@ -3,6 +3,11 @@ package fr.easter.brewhome.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -305,6 +310,15 @@ fun BrewHomeApp(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(padding),
+            // Fondu + léger glissement vertical entre les écrans
+            enterTransition = {
+                fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 20 }
+            },
+            exitTransition = { fadeOut(tween(120)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = {
+                fadeOut(tween(220)) + slideOutVertically(tween(220)) { it / 20 }
+            },
         ) {
             composable("beers") { BeersScreen(vm) { navController.navigate("beer/$it") } }
             composable("beer/{id}") { entry ->

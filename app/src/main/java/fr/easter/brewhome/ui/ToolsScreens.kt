@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -65,6 +65,17 @@ fun toolTitle(id: String?): String =
     toolDefs.find { it.id == id }?.let { stringResource(it.titleRes) }
         ?: stringResource(R.string.tab_tools)
 
+/** Couleurs (fond, texte) de la pastille d'icône, en alternance par position. */
+@Composable
+private fun toolAccent(index: Int): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> =
+    MaterialTheme.colorScheme.let {
+        when (index % 3) {
+            0 -> it.primaryContainer to it.onPrimaryContainer
+            1 -> it.tertiaryContainer to it.onTertiaryContainer
+            else -> it.secondaryContainer to it.onSecondaryContainer
+        }
+    }
+
 @Composable
 fun ToolsScreen(onOpenStats: () -> Unit, onOpen: (String) -> Unit) {
     LazyColumn(
@@ -77,19 +88,29 @@ fun ToolsScreen(onOpenStats: () -> Unit, onOpen: (String) -> Unit) {
                 stringResource(R.string.title_stats),
                 stringResource(R.string.tools_stats_sub),
                 Icons.Outlined.BarChart,
-                onOpenStats,
+                accent = toolAccent(0),
+                onClick = onOpenStats,
             )
         }
-        items(toolDefs, key = { it.id }) { tool ->
-            ToolCard(stringResource(tool.titleRes), stringResource(tool.subtitleRes), tool.icon) {
-                onOpen(tool.id)
-            }
+        itemsIndexed(toolDefs, key = { _, tool -> tool.id }) { i, tool ->
+            ToolCard(
+                stringResource(tool.titleRes),
+                stringResource(tool.subtitleRes),
+                tool.icon,
+                accent = toolAccent(i + 1),
+            ) { onOpen(tool.id) }
         }
     }
 }
 
 @Composable
-private fun ToolCard(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
+private fun ToolCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    accent: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>,
+    onClick: () -> Unit,
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,14 +119,14 @@ private fun ToolCard(title: String, subtitle: String, icon: ImageVector, onClick
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = accent.first,
                 modifier = Modifier.size(44.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = accent.second,
                     )
                 }
             }

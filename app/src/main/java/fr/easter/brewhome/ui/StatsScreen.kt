@@ -1,5 +1,8 @@
 package fr.easter.brewhome.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -7,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,11 +19,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,18 +83,27 @@ fun StatsScreen(vm: BrewViewModel) {
         val totalVol = done.sumOf { it.volumeBrewed ?: 0.0 }
         val abvs = done.mapNotNull { it.abv }
         val totalCost = done.sumOf { it.costSnapshot ?: 0.0 }
+        val cs = MaterialTheme.colorScheme
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("${done.size}", stringResource(R.string.stat_brews_done), Modifier.weight(1f))
-            StatCard("${fmtQty(totalVol)} L", stringResource(R.string.stat_liters_brewed), Modifier.weight(1f))
+            StatCard(
+                "${done.size}", stringResource(R.string.stat_brews_done),
+                cs.primaryContainer, cs.onPrimaryContainer, Modifier.weight(1f),
+            )
+            StatCard(
+                "${fmtQty(totalVol)} L", stringResource(R.string.stat_liters_brewed),
+                cs.tertiaryContainer, cs.onTertiaryContainer, Modifier.weight(1f),
+            )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(
                 if (abvs.isEmpty()) "—" else "${fmtQty(kotlin.math.round(abvs.average() * 10) / 10)} %",
-                stringResource(R.string.stat_avg_abv), Modifier.weight(1f),
+                stringResource(R.string.stat_avg_abv),
+                cs.secondaryContainer, cs.onSecondaryContainer, Modifier.weight(1f),
             )
             StatCard(
                 if (totalCost > 0) "${fmtQty(kotlin.math.round(totalCost))} €" else "—",
-                stringResource(R.string.stat_total_cost), Modifier.weight(1f),
+                stringResource(R.string.stat_total_cost),
+                cs.surfaceVariant, cs.onSurfaceVariant, Modifier.weight(1f),
             )
         }
         if (done.isEmpty()) {
@@ -309,8 +324,14 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(modifier) {
+private fun StatCard(
+    value: String,
+    label: String,
+    container: Color,
+    content: Color,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier, colors = CardDefaults.cardColors(containerColor = container)) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -321,12 +342,12 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
                 value,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
+                color = content,
             )
             Text(
                 label,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = content.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center,
             )
         }
@@ -335,6 +356,14 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
 
 @Composable
 private fun BarRow(label: String, value: String, fraction: Float, color: Color = MaterialTheme.colorScheme.primary) {
+    // Les barres poussent de zéro vers leur valeur à l'apparition
+    var appeared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { appeared = true }
+    val animated by animateFloatAsState(
+        targetValue = if (appeared) fraction.coerceIn(0.02f, 1f) else 0f,
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        label = "bar",
+    )
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(vertical = 3.dp),
@@ -356,9 +385,13 @@ private fun BarRow(label: String, value: String, fraction: Float, color: Color =
             Box(
                 Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(fraction.coerceIn(0.02f, 1f))
+                    .fillMaxWidth(animated)
                     .clip(RoundedCornerShape(7.dp))
-                    .background(color),
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(color.copy(alpha = 0.65f), color),
+                        ),
+                    ),
             )
         }
         Spacer(Modifier.width(8.dp))

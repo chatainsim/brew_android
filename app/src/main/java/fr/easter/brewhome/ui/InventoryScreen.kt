@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -118,18 +119,32 @@ private fun InventoryContent(
             ) {
                 orderedCats.forEach { cat ->
                     item(key = "header-$cat") {
-                        Text(
-                            categoryLabel(cat),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .animateItem()
+                                .padding(top = 8.dp, bottom = 2.dp),
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(categoryColor(cat)),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                categoryLabel(cat),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                     }
                     items(grouped.getValue(cat), key = { it.id }) { item ->
                         InventoryRow(
                             item = item,
                             onAdjust = { delta -> vm.setInventoryQty(item, item.quantity + delta) },
                             onClick = { onEdit(item) },
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
@@ -177,6 +192,7 @@ private fun ShoppingContent(vm: BrewViewModel) {
                             item = item,
                             onToggle = { vm.toggleShoppingChecked(item) },
                             onDelete = { vm.deleteShoppingItem(item) },
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
@@ -205,7 +221,12 @@ private fun ShoppingContent(vm: BrewViewModel) {
 
 /** Ligne de courses : glisser à droite pour cocher, à gauche pour supprimer. */
 @Composable
-private fun ShoppingRow(item: ShoppingItem, onToggle: () -> Unit, onDelete: () -> Unit) {
+private fun ShoppingRow(
+    item: ShoppingItem,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val checked = (item.checked ?: 0) == 1
     val haptics = LocalHapticFeedback.current
     // Les lambdas capturées par l'état de balayage doivent suivre l'article
@@ -233,6 +254,7 @@ private fun ShoppingRow(item: ShoppingItem, onToggle: () -> Unit, onDelete: () -
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = { SwipeBackground(dismissState.dismissDirection) },
+        modifier = modifier,
     ) {
         Card(Modifier.fillMaxWidth()) {
             Row(
@@ -407,10 +429,15 @@ private fun DialogDropdown(
 }
 
 @Composable
-private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClick: () -> Unit) {
+private fun InventoryRow(
+    item: InventoryItem,
+    onAdjust: (Double) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val low = item.minStock != null && item.quantity < item.minStock
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
@@ -425,6 +452,10 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(4.dp))
+                    }
+                    item.ebc?.let {
+                        EbcDot(it)
+                        Spacer(Modifier.width(6.dp))
                     }
                     Text(
                         item.name,
@@ -458,8 +489,9 @@ private fun InventoryRow(item: InventoryItem, onAdjust: (Double) -> Unit, onClic
             ) {
                 Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_decrease))
             }
-            Text(
-                "${fmtQty(item.quantity)} ${item.unit}",
+            AnimatedNumber(
+                value = item.quantity,
+                format = { "${fmtQty(it)} ${item.unit}" },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,

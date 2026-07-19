@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -120,7 +118,7 @@ private fun RecipesList(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(filtered, key = { it.id }) { recipe ->
-                RecipeCard(recipe, state.inventory, onOpen)
+                RecipeCard(recipe, state.inventory, onOpen, Modifier.animateItem())
             }
         }
     }
@@ -131,12 +129,13 @@ private fun RecipeCard(
     recipe: Recipe,
     inventory: List<fr.easter.brewhome.data.InventoryItem>,
     onOpen: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val stock = remember(recipe.ingredients, inventory) {
         if (recipe.ingredients.isEmpty()) null else StockCheck.check(recipe.ingredients, inventory)
     }
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(recipe.id) },
     ) {
@@ -327,6 +326,10 @@ private fun StockBanner(
 @Composable
 private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
+        ing.ebc?.let {
+            EbcDot(it)
+            Spacer(Modifier.width(8.dp))
+        }
         Column(Modifier.weight(1f)) {
             Text(ing.name, style = MaterialTheme.typography.bodyLarge)
             val details = listOfNotNull(
@@ -380,11 +383,14 @@ fun draftStatusLabel(status: String?): String = when (status) {
     else -> "Idée"
 }
 
+/** Couleurs (fond, texte) de la pastille de statut d'un brouillon. */
 @Composable
-fun draftStatusColor(status: String?): Color = when (status) {
-    "in_progress" -> MaterialTheme.colorScheme.primary
-    "ready" -> StockOk
-    else -> MaterialTheme.colorScheme.outline
+fun draftStatusColors(status: String?): Pair<Color, Color> = MaterialTheme.colorScheme.let {
+    when (status) {
+        "in_progress" -> it.primaryContainer to it.onPrimaryContainer
+        "ready" -> it.tertiaryContainer to it.onTertiaryContainer
+        else -> it.surfaceVariant to it.onSurfaceVariant
+    }
 }
 
 @Composable
@@ -416,7 +422,7 @@ private fun DraftsList(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(filtered, key = { it.id }) { draft ->
-                            DraftCard(draft, onOpen)
+                            DraftCard(draft, onOpen, Modifier.animateItem())
                         }
                     }
                 }
@@ -434,9 +440,9 @@ private fun DraftsList(
 }
 
 @Composable
-private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit) {
+private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(draft.id) },
     ) {
@@ -450,12 +456,8 @@ private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                val color = draftStatusColor(draft.status)
-                AssistChip(
-                    onClick = { onOpen(draft.id) },
-                    label = { Text(draftStatusLabel(draft.status), color = color) },
-                    border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = color),
-                )
+                val (container, content) = draftStatusColors(draft.status)
+                StatusChip(draftStatusLabel(draft.status), container, content)
             }
             val nIng = draft.parsedIngredients().size
             val subtitle = listOfNotNull(
@@ -492,12 +494,8 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?) {
     ) {
         Text(draft.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val color = draftStatusColor(draft.status)
-            AssistChip(
-                onClick = {},
-                label = { Text(draftStatusLabel(draft.status), color = color) },
-                border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = color),
-            )
+            val (container, content) = draftStatusColors(draft.status)
+            StatusChip(draftStatusLabel(draft.status), container, content)
         }
         draft.style?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
 

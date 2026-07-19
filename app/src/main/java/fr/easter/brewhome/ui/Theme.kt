@@ -44,6 +44,15 @@ private val LightColors = lightColorScheme(
     inverseSurface = Color(0xFF382F26),
     inverseOnSurface = Color(0xFFFEEEE0),
     scrim = Color(0xFF000000),
+    // Tons de surface : sans eux, cartes et barre de navigation retombent sur
+    // les gris neutres par défaut de Material au lieu des beiges ambrés.
+    surfaceBright = Color(0xFFFFF8F4),
+    surfaceDim = Color(0xFFE6D8CC),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFFFF1E6),
+    surfaceContainer = Color(0xFFFAEBDD),
+    surfaceContainerHigh = Color(0xFFF4E6D8),
+    surfaceContainerHighest = Color(0xFFEFE0D2),
 )
 
 private val DarkColors = darkColorScheme(
@@ -75,6 +84,13 @@ private val DarkColors = darkColorScheme(
     inverseSurface = Color(0xFFEFE0D5),
     inverseOnSurface = Color(0xFF382F26),
     scrim = Color(0xFF000000),
+    surfaceBright = Color(0xFF413729),
+    surfaceDim = Color(0xFF19120C),
+    surfaceContainerLowest = Color(0xFF140D07),
+    surfaceContainerLow = Color(0xFF221A11),
+    surfaceContainer = Color(0xFF261E15),
+    surfaceContainerHigh = Color(0xFF31281F),
+    surfaceContainerHighest = Color(0xFF3D3329),
 )
 
 /** true si le thème effectif doit être sombre pour ce mode ("system"|"light"|"dark"). */
