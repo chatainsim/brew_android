@@ -38,7 +38,7 @@ private val hopTypes = listOf("ebullition", "whirlpool", "dryhop")
 
 // Moments d'ajout d'un ingrédient « autre » (sucre, miel, épices…)
 private val otherTypes =
-    listOf("empatage", "ebullition", "whirlpool", "flameout", "fermentation", "packaging")
+    listOf("empatage", "sparge", "ebullition", "whirlpool", "flameout", "fermentation", "packaging")
 
 /** Ces moments demandent une durée (minutes restantes d'ébullition). */
 private fun needsMinutes(type: String) = type == "ebullition" || type == "whirlpool"
