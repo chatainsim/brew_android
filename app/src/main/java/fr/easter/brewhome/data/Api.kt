@@ -107,6 +107,9 @@ interface BrewApi {
         @Path("id") id: Int,
         @Body body: kotlinx.serialization.json.JsonObject,
     ): kotlinx.serialization.json.JsonObject
+
+    @GET("api/bjcp")
+    suspend fun getBjcpStyles(): List<BjcpStyle>
 }
 
 object ApiClient {

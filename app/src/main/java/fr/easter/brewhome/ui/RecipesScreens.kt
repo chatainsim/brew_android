@@ -22,6 +22,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.calc.RecipeEstimator
 import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.Recipe
@@ -228,6 +230,13 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         EmptyHint(stringResource(R.string.recipe_not_found))
         return
     }
+    LaunchedEffect(Unit) {
+        vm.loadCatalog()
+        vm.loadRecipeExtras()
+    }
+    val catalog by vm.catalog.collectAsState()
+    val bjcp by vm.bjcp.collectAsState()
+    val costSettings by vm.costSettings.collectAsState()
     val stock = remember(recipe.ingredients, state.inventory) {
         if (recipe.ingredients.isEmpty()) null
         else StockCheck.check(recipe.ingredients, state.inventory)
@@ -253,6 +262,41 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
             StockBanner(stock, state.shopping) { vm.addNeedsToShopping(it) }
         }
 
+        // ── Estimations OG/FG/ABV/IBU/EBC + eau + coût, comme le site ──
+        if (recipe.ingredients.isNotEmpty()) {
+            val settings = costSettings
+            val estIngs = remember(recipe, catalog) { estIngredients(recipe.ingredients, catalog) }
+            val est = remember(estIngs, recipe, settings) {
+                RecipeEstimator.estimates(
+                    estIngs, recipe.volume, recipe.brewhouseEfficiency,
+                    settings?.ibuFormula ?: "tinseth",
+                )
+            }
+            val waterPlan = remember(estIngs, recipe) {
+                RecipeEstimator.water(
+                    recipe.volume, recipe.boilTime?.toDouble(), recipe.mashRatio,
+                    recipe.evapRate, recipe.grainAbsorption,
+                    RecipeEstimator.grainKg(estIngs),
+                    recipe.waterMashOverride, recipe.waterSpargeOverride,
+                )
+            }
+            val cost = remember(estIngs, state.inventory, settings, waterPlan) {
+                RecipeEstimator.cost(
+                    estIngs, state.inventory,
+                    settings?.waterPricePerL, waterPlan?.total,
+                    settings?.gasPerBrew ?: 0.0, settings?.elecPerBrew ?: 0.0,
+                )
+            }
+            RecipeEstimatesCard(
+                est = est,
+                style = bjcp?.find { it.name == recipe.style?.trim() },
+                water = waterPlan,
+                cost = cost,
+                volume = recipe.volume,
+                ibuFormula = settings?.ibuFormula ?: "tinseth",
+            )
+        }
+
         InfoCard {
             InfoLine(stringResource(R.string.label_volume), recipe.volume?.let { "${fmtQty(it)} L" })
             InfoLine(stringResource(R.string.label_mash), recipe.mashTemp?.let { t ->
@@ -267,6 +311,9 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         val grouped = recipe.ingredients.groupBy { it.category.lowercase() }
         val orderedCats = categoryOrder.filter { grouped.containsKey(it) } +
             grouped.keys.filterNot { it in categoryOrder }.sorted()
+        // Part de chaque malt dans l'empâtement (en % du poids total)
+        val totalMaltKg = grouped["malt"].orEmpty()
+            .sumOf { if (it.unit == "kg") it.quantity else it.quantity / 1000 }
         orderedCats.forEach { cat ->
             Text(
                 categoryLabel(cat),
@@ -277,7 +324,11 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
                 Column(Modifier.padding(12.dp)) {
                     grouped.getValue(cat).forEachIndexed { i, ing ->
                         if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                        IngredientLine(ing, stockByName[ing.name.trim().lowercase()])
+                        val gristPct = if (cat == "malt" && totalMaltKg > 0) {
+                            val kg = if (ing.unit == "kg") ing.quantity else ing.quantity / 1000
+                            kg / totalMaltKg * 100
+                        } else null
+                        IngredientLine(ing, stockByName[ing.name.trim().lowercase()], gristPct)
                     }
                 }
             }
@@ -339,8 +390,22 @@ private fun StockBanner(
     }
 }
 
+/** Libellé français d'un moment d'ajout (other_type / hop_type du serveur). */
 @Composable
-private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?) {
+fun additionLabel(type: String): String = when (type) {
+    "empatage" -> stringResource(R.string.add_empatage)
+    "sparge" -> stringResource(R.string.add_sparge)
+    "ebullition" -> stringResource(R.string.hop_boil)
+    "flameout" -> stringResource(R.string.add_flameout)
+    "whirlpool" -> stringResource(R.string.hop_whirlpool)
+    "dryhop" -> stringResource(R.string.hop_dryhop)
+    "fermentation" -> stringResource(R.string.add_fermentation)
+    "packaging" -> stringResource(R.string.add_packaging)
+    else -> type
+}
+
+@Composable
+private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?, gristPct: Double? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         ing.ebc?.let {
             EbcDot(it)
@@ -349,8 +414,12 @@ private fun IngredientLine(ing: RecipeIngredient, stock: StockCheck.Line?) {
         Column(Modifier.weight(1f)) {
             Text(ing.name, style = MaterialTheme.typography.bodyLarge)
             val details = listOfNotNull(
-                ing.hopTime?.let { "$it min" },
-                ing.hopType,
+                gristPct?.let { "${fmtQty(kotlin.math.round(it * 10) / 10)} %" },
+                ing.hopType?.let { additionLabel(it) },
+                if (ing.hopType == "dryhop") ing.hopDays?.let { "$it j" }
+                else ing.hopTime?.let { "$it min" },
+                ing.otherType?.let { additionLabel(it) },
+                ing.otherTime?.let { "${fmtQty(it)} min" },
                 ing.alpha?.let { "${fmtQty(it)}% α" },
                 ing.ebc?.let { "${fmtQty(it)} EBC" },
                 ing.notes,

@@ -102,9 +102,39 @@ data class Recipe(
     @SerialName("boil_time") val boilTime: Int? = null,
     @SerialName("ferm_temp") val fermTemp: Double? = null,
     @SerialName("ferm_time") val fermTime: Int? = null,
+    @SerialName("mash_ratio") val mashRatio: Double? = null,
+    @SerialName("evap_rate") val evapRate: Double? = null,
+    @SerialName("grain_absorption") val grainAbsorption: Double? = null,
+    @SerialName("brewhouse_efficiency") val brewhouseEfficiency: Double? = null,
+    @SerialName("water_mash_override") val waterMashOverride: Double? = null,
+    @SerialName("water_sparge_override") val waterSpargeOverride: Double? = null,
     val rating: Int? = null,
     val notes: String? = null,
     val ingredients: List<RecipeIngredient> = emptyList(),
+)
+
+/** Style BJCP (plages cibles affichées sur les jauges d'estimation). */
+@Serializable
+data class BjcpStyle(
+    val name: String? = null,
+    @SerialName("og_min") val ogMin: Double? = null,
+    @SerialName("og_max") val ogMax: Double? = null,
+    @SerialName("fg_min") val fgMin: Double? = null,
+    @SerialName("fg_max") val fgMax: Double? = null,
+    @SerialName("abv_min") val abvMin: Double? = null,
+    @SerialName("abv_max") val abvMax: Double? = null,
+    @SerialName("ibu_min") val ibuMin: Double? = null,
+    @SerialName("ibu_max") val ibuMax: Double? = null,
+    @SerialName("ebc_min") val ebcMin: Double? = null,
+    @SerialName("ebc_max") val ebcMax: Double? = null,
+)
+
+/** Coûts fixes et formule IBU, extraits de /api/app-settings (clés water/energy). */
+data class CostSettings(
+    val waterPricePerL: Double? = null,
+    val gasPerBrew: Double = 0.0,
+    val elecPerBrew: Double = 0.0,
+    val ibuFormula: String = "tinseth",
 )
 
 @Serializable
@@ -229,6 +259,8 @@ data class CatalogItem(
     val category: String,
     val subcategory: String? = null,
     val ebc: Double? = null,
+    /** Potentiel gravimétrique du malt (points/kg/L), utilisé pour l'OG estimé. */
+    val gu: Double? = null,
     val alpha: Double? = null,
 )
 

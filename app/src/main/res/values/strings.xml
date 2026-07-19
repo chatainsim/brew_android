@@ -66,6 +66,19 @@
     <string name="hop_dryhop">Dry hop</string>
     <string name="hop_minutes">min</string>
     <string name="hop_days">jours</string>
+    <string name="est_title">Estimations</string>
+    <string name="est_ibu_formula">IBU : %1$s</string>
+    <string name="est_color_morey">EBC %1$d · SRM %2$d · Couleur Morey</string>
+    <string name="est_water">Eau empâtage %1$s L · Rinçage %2$s L · Pré-ébullition %3$s L · Total %4$s L</string>
+    <string name="est_cost_title">Coût matières estimé</string>
+    <string name="est_cost_water">Eau</string>
+    <string name="est_cost_gas">Gaz</string>
+    <string name="est_cost_elec">Électricité</string>
+    <string name="add_empatage">Empâtage</string>
+    <string name="add_sparge">Eau de rinçage</string>
+    <string name="add_flameout">Flameout</string>
+    <string name="add_fermentation">Fermentation</string>
+    <string name="add_packaging">Embouteillage</string>
     <string name="title_stats">Statistiques</string>
     <string name="title_shopping">Courses</string>
 

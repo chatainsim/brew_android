@@ -3,6 +3,7 @@ package fr.easter.brewhome
 import fr.easter.brewhome.calc.StockCheck
 import fr.easter.brewhome.data.AppSettings
 import fr.easter.brewhome.data.Beer
+import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
@@ -181,6 +182,7 @@ class BrewViewModelTest {
         override suspend fun getRecipeRaw(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun createRecipe(body: RecipePost): Recipe = throw NotImplementedError()
         override suspend fun updateRecipe(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
+        override suspend fun getBjcpStyles(): List<BjcpStyle> = throw NotImplementedError()
     }
 
     private val api = FakeApi()

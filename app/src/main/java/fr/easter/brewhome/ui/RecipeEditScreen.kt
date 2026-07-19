@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.calc.RecipeEstimator
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredientPut
 import fr.easter.brewhome.data.RecipePost
@@ -81,8 +82,13 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
     val ings = remember { mutableStateListOf<EditRecipeIng>().apply { seedFrom(existing) } }
     var saving by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { vm.loadCatalog() }
+    LaunchedEffect(Unit) {
+        vm.loadCatalog()
+        vm.loadRecipeExtras()
+    }
     val catalog by vm.catalog.collectAsState()
+    val bjcp by vm.bjcp.collectAsState()
+    val costSettings by vm.costSettings.collectAsState()
 
     Column(
         Modifier
@@ -116,6 +122,53 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             NumField(fermTemp, { fermTemp = it }, stringResource(R.string.recipe_ferm_temp), Modifier.weight(1f))
             NumField(fermTime, { fermTime = it }, stringResource(R.string.recipe_ferm_time), Modifier.weight(1f))
+        }
+
+        // ── Estimations en direct : recalculées à chaque frappe ──
+        run {
+            val settings = costSettings
+            fun num(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
+            val estIngs = ings.filter { it.name.isNotBlank() }.map { ing ->
+                val cat = catalog.find { it.name.equals(ing.name.trim(), ignoreCase = true) }
+                RecipeEstimator.Ing(
+                    name = ing.name.trim(),
+                    category = ing.category,
+                    quantity = num(ing.quantity) ?: 0.0,
+                    unit = ing.unit,
+                    hopTime = ing.hopTime.trim().toIntOrNull(),
+                    hopType = ing.hopType,
+                    alpha = ing.alpha ?: cat?.alpha,
+                    ebc = ing.ebc ?: cat?.ebc,
+                    gu = cat?.gu,
+                    inventoryItemId = ing.inventoryItemId,
+                )
+            }
+            if (estIngs.isNotEmpty()) {
+                val vol = num(volume)
+                val est = RecipeEstimator.estimates(
+                    estIngs, vol, existing?.brewhouseEfficiency,
+                    settings?.ibuFormula ?: "tinseth",
+                )
+                val waterPlan = RecipeEstimator.water(
+                    vol, num(boilTime), existing?.mashRatio,
+                    existing?.evapRate, existing?.grainAbsorption,
+                    RecipeEstimator.grainKg(estIngs),
+                    existing?.waterMashOverride, existing?.waterSpargeOverride,
+                )
+                val cost = RecipeEstimator.cost(
+                    estIngs, state.inventory,
+                    settings?.waterPricePerL, waterPlan?.total,
+                    settings?.gasPerBrew ?: 0.0, settings?.elecPerBrew ?: 0.0,
+                )
+                RecipeEstimatesCard(
+                    est = est,
+                    style = bjcp?.find { it.name == style.trim() },
+                    water = waterPlan,
+                    cost = cost,
+                    volume = vol,
+                    ibuFormula = settings?.ibuFormula ?: "tinseth",
+                )
+            }
         }
 
         Text(

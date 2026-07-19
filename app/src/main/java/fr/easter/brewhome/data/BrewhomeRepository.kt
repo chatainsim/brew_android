@@ -84,6 +84,32 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun recipes(): List<Recipe> = api().getRecipes()
 
+    suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
+
+    /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
+    suspend fun costSettings(): CostSettings {
+        val settings = api().getAppSettings()
+        // Les clés "water" et "energy" contiennent du JSON sérialisé en chaîne
+        fun nested(key: String): kotlinx.serialization.json.JsonObject? =
+            (settings[key] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull?.let {
+                runCatching {
+                    kotlinx.serialization.json.Json.parseToJsonElement(it)
+                        as? kotlinx.serialization.json.JsonObject
+                }.getOrNull()
+            }
+        fun num(obj: kotlinx.serialization.json.JsonObject?, key: String): Double? =
+            (obj?.get(key) as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull?.toDoubleOrNull()
+        val water = nested("water")
+        val energy = nested("energy")
+        return CostSettings(
+            waterPricePerL = num(water, "price"),
+            gasPerBrew = num(energy, "gas_per_brew") ?: 0.0,
+            elecPerBrew = num(energy, "elec_per_brew") ?: 0.0,
+            ibuFormula = (energy?.get("ibu_formula") as? kotlinx.serialization.json.JsonPrimitive)
+                ?.contentOrNull ?: "tinseth",
+        )
+    }
+
     suspend fun createRecipe(post: RecipePost): Recipe = api().createRecipe(post)
 
     /**

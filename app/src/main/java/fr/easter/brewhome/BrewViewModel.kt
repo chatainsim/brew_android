@@ -16,7 +16,9 @@ import fr.easter.brewhome.data.BrewLogEntry
 import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
+import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Consumption
+import fr.easter.brewhome.data.CostSettings
 import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.CustomEventPost
 import fr.easter.brewhome.data.RecipePost
@@ -344,6 +346,26 @@ class BrewViewModel(
     }
 
     // ── Recettes ──────────────────────────────────────────────────────────
+
+    private val _bjcp = MutableStateFlow<List<BjcpStyle>?>(null)
+    val bjcp: StateFlow<List<BjcpStyle>?> = _bjcp
+
+    private val _costSettings = MutableStateFlow<CostSettings?>(null)
+    val costSettings: StateFlow<CostSettings?> = _costSettings
+
+    /** Styles BJCP + coûts fixes, pour les estimations de recette. */
+    fun loadRecipeExtras() {
+        if (_bjcp.value == null) {
+            viewModelScope.launch {
+                _bjcp.value = runCatching { repo.bjcpStyles() }.getOrDefault(emptyList())
+            }
+        }
+        if (_costSettings.value == null) {
+            viewModelScope.launch {
+                _costSettings.value = runCatching { repo.costSettings() }.getOrDefault(CostSettings())
+            }
+        }
+    }
 
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
