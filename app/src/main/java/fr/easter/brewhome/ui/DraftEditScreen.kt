@@ -1,7 +1,9 @@
 package fr.easter.brewhome.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -64,6 +67,47 @@ private data class EditIng(
 
 internal fun numToField(v: Double): String =
     if (v % 1.0 == 0.0) v.toInt().toString() else v.toString()
+
+/** En-tête de section d'ingrédients : pastille de couleur + nom de la catégorie. */
+@Composable
+internal fun IngredientSectionHeader(cat: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 4.dp),
+    ) {
+        Box(
+            Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(categoryColor(cat)),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            categoryLabel(cat),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+/** Bouton « Ajouter un malt / houblon / … » sous chaque section. */
+@Composable
+internal fun AddIngredientButton(cat: String, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Filled.Add, contentDescription = null)
+        Text(
+            stringResource(
+                when (cat) {
+                    "malt" -> R.string.add_malt
+                    "houblon" -> R.string.add_hop
+                    "levure" -> R.string.add_yeast
+                    else -> R.string.add_other
+                },
+            ),
+            Modifier.padding(start = 8.dp),
+        )
+    }
+}
 
 /**
  * Suggestions de noms pour une catégorie : catalogue d'ingrédients filtré à la
@@ -182,21 +226,22 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             )
         }
 
-        Text(stringResource(R.string.label_ingredients), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        ings.forEachIndexed { i, ing ->
-            IngredientEditor(
-                ing = ing,
-                suggest = { cat, q -> ingredientSuggestions(catalog, state.inventory, cat, q) },
-                onChange = { ings[i] = it },
-                onDelete = { ings.removeAt(i) },
-            )
-        }
-        OutlinedButton(
-            onClick = { ings.add(EditIng("", "malt", "", "kg")) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = null)
-            Text(stringResource(R.string.add_ingredient), Modifier.padding(start = 8.dp))
+        // Comme le site : une section par catégorie, malts en tête
+        draftCategories.forEach { cat ->
+            IngredientSectionHeader(cat)
+            ings.forEachIndexed { i, ing ->
+                if (ing.category == cat) {
+                    IngredientEditor(
+                        ing = ing,
+                        suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                        onChange = { ings[i] = it },
+                        onDelete = { ings.removeAt(i) },
+                    )
+                }
+            }
+            AddIngredientButton(cat) {
+                ings.add(EditIng("", cat, "", unitsByCategory.getValue(cat).first()))
+            }
         }
 
         OutlinedTextField(
@@ -253,27 +298,12 @@ private fun IngredientEditor(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallDropdown(
-                    value = categoryLabel(ing.category),
-                    options = draftCategories,
-                    optionLabel = { categoryLabel(it) },
-                    onSelect = { cat ->
-                        val units = unitsByCategory.getValue(cat)
-                        onChange(ing.copy(
-                            category = cat,
-                            unit = if (ing.unit in units) ing.unit else units.first(),
-                        ))
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                NameFieldWithSuggestions(
-                    value = ing.name,
-                    suggestions = { q -> suggest(ing.category, q) },
-                    onChange = { onChange(ing.copy(name = it)) },
-                    modifier = Modifier.weight(2f),
-                )
-            }
+            NameFieldWithSuggestions(
+                value = ing.name,
+                suggestions = { q -> suggest(ing.category, q) },
+                onChange = { onChange(ing.copy(name = it)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,

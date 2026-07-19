@@ -315,6 +315,10 @@
     <string name="label_volume_l">Volume (L)</string>
     <string name="label_ingredients">Ingrédients</string>
     <string name="add_ingredient">Ajouter un ingrédient</string>
+    <string name="add_malt">Ajouter un malt</string>
+    <string name="add_hop">Ajouter un houblon</string>
+    <string name="add_yeast">Ajouter une levure</string>
+    <string name="add_other">Ajouter un autre ingrédient</string>
     <string name="create_draft">Créer le brouillon</string>
     <string name="qty_short">Qté</string>
     <string name="cd_delete_ingredient">Supprimer l\'ingrédient</string>

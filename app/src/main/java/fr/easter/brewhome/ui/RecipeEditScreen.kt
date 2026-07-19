@@ -171,25 +171,22 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
             }
         }
 
-        Text(
-            stringResource(R.string.label_ingredients),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        ings.forEachIndexed { i, ing ->
-            RecipeIngredientEditor(
-                ing = ing,
-                suggest = { cat, q -> ingredientSuggestions(catalog, state.inventory, cat, q) },
-                onChange = { ings[i] = it },
-                onDelete = { ings.removeAt(i) },
-            )
-        }
-        OutlinedButton(
-            onClick = { ings.add(EditRecipeIng("", "malt", "", "kg")) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = null)
-            Text(stringResource(R.string.add_ingredient), Modifier.padding(start = 8.dp))
+        // Comme le site : une section par catégorie, malts en tête
+        draftCategories.forEach { cat ->
+            IngredientSectionHeader(cat)
+            ings.forEachIndexed { i, ing ->
+                if (ing.category == cat) {
+                    RecipeIngredientEditor(
+                        ing = ing,
+                        suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                        onChange = { ings[i] = it },
+                        onDelete = { ings.removeAt(i) },
+                    )
+                }
+            }
+            AddIngredientButton(cat) {
+                ings.add(EditRecipeIng("", cat, "", unitsByCategory.getValue(cat).first()))
+            }
         }
 
         OutlinedTextField(
@@ -306,27 +303,12 @@ private fun RecipeIngredientEditor(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallDropdown(
-                    value = categoryLabel(ing.category),
-                    options = draftCategories,
-                    optionLabel = { categoryLabel(it) },
-                    onSelect = { cat ->
-                        val units = unitsByCategory.getValue(cat)
-                        onChange(ing.copy(
-                            category = cat,
-                            unit = if (ing.unit in units) ing.unit else units.first(),
-                        ))
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                NameFieldWithSuggestions(
-                    value = ing.name,
-                    suggestions = { q -> suggest(ing.category, q) },
-                    onChange = { onChange(ing.copy(name = it)) },
-                    modifier = Modifier.weight(2f),
-                )
-            }
+            NameFieldWithSuggestions(
+                value = ing.name,
+                suggestions = { q -> suggest(ing.category, q) },
+                onChange = { onChange(ing.copy(name = it)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
