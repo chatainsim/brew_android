@@ -291,6 +291,13 @@ fun BrewHomeApp(
                     NavigationBarItem(
                         selected = currentTab == tab.route,
                         onClick = {
+                            // Réglages = écran transitoire : le retirer de la pile
+                            // avant de changer d'onglet, sinon il est sauvegardé
+                            // dans l'état de l'onglet quitté et réapparaît par-dessus
+                            // le contenu quand on revient sur cet onglet.
+                            if (currentRoute == "settings" && currentRoute != startDestination) {
+                                navController.popBackStack()
+                            }
                             navController.navigate(tab.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
@@ -162,6 +163,20 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             placeholder = { Text(stringResource(R.string.settings_vpn_tunnel_placeholder)) },
             singleLine = true,
             enabled = wgAuto,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(8.dp))
+        val version = remember {
+            runCatching {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            }.getOrNull() ?: "?"
+        }
+        Text(
+            stringResource(R.string.settings_version, version),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
     }

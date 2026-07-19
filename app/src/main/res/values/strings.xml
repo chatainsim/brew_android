@@ -86,6 +86,7 @@
     <string name="settings_vpn_switch">VPN automatique si serveur injoignable</string>
     <string name="settings_vpn_tunnel_label">Nom du tunnel WireGuard</string>
     <string name="settings_vpn_tunnel_placeholder">maison</string>
+    <string name="settings_version">BrewHome Android %1$s</string>
 
     <!-- Cave -->
     <string name="beers_empty">Aucune bière en cave.</string>
