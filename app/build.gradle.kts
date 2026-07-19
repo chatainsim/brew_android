@@ -13,8 +13,23 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 19
-        versionName = "1.15"
+        versionCode = 20
+        versionName = "1.15.1"
+    }
+
+    // Clé de release BrewHome : identifiants dans ~/.gradle/gradle.properties
+    // (BREWHOME_*), keystore dans ~/backup/Simon/brewhome-keys/. Sur une machine
+    // sans la clé, repli silencieux sur la clé debug pour que le build passe.
+    signingConfigs {
+        val storePath = providers.gradleProperty("BREWHOME_STORE_FILE").orNull
+        if (storePath != null && file(storePath).exists()) {
+            create("release") {
+                storeFile = file(storePath)
+                storePassword = providers.gradleProperty("BREWHOME_STORE_PASSWORD").orNull
+                keyAlias = providers.gradleProperty("BREWHOME_KEY_ALIAS").orNull
+                keyPassword = providers.gradleProperty("BREWHOME_KEY_PASSWORD").orNull
+            }
+        }
     }
 
     buildTypes {
@@ -26,7 +41,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 

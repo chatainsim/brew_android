@@ -40,7 +40,8 @@ jobs:
           # ── Build + tests avec le toolchain local ──
           export JAVA_HOME="$HOME/android-toolchain/jdk-17.0.11+9"
           echo "sdk.dir=$HOME/android-toolchain/sdk" > local.properties
-          # Release = build minifié R8 (signé avec la clé debug, comme avant)
+          # Release = build minifié R8, signé avec la clé BrewHome lue depuis
+          # ~/.gradle/gradle.properties du runner (mode host, même $HOME)
           "$HOME/android-toolchain/gradle-8.14.3/bin/gradle" -q assembleRelease testDebugUnitTest
           test -f app/build/outputs/apk/release/app-release.apk
 
