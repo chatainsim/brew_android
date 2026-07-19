@@ -74,6 +74,11 @@
     <string name="est_cost_water">Eau</string>
     <string name="est_cost_gas">Gaz</string>
     <string name="est_cost_elec">Électricité</string>
+    <string name="est_water_mash">Empâtage</string>
+    <string name="est_water_sparge">Rinçage</string>
+    <string name="est_water_preboil">Pré-ébu.</string>
+    <string name="est_water_total">Total eau</string>
+    <string name="est_pct_total">%1$d %% du total</string>
     <string name="add_empatage">Empâtage</string>
     <string name="add_sparge">Eau de rinçage</string>
     <string name="add_flameout">Flameout</string>

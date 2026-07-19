@@ -15,6 +15,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -93,8 +94,12 @@ internal fun IngredientSectionHeader(cat: String) {
 /** Bouton « Ajouter un malt / houblon / … » sous chaque section. */
 @Composable
 internal fun AddIngredientButton(cat: String, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Icon(Icons.Filled.Add, contentDescription = null)
+    androidx.compose.material3.TextButton(onClick = onClick) {
+        Icon(
+            Icons.Filled.Add,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
         Text(
             stringResource(
                 when (cat) {
@@ -104,7 +109,7 @@ internal fun AddIngredientButton(cat: String, onClick: () -> Unit) {
                     else -> R.string.add_other
                 },
             ),
-            Modifier.padding(start = 8.dp),
+            Modifier.padding(start = 6.dp),
         )
     }
 }
@@ -229,14 +234,20 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         // Comme le site : une section par catégorie, malts en tête
         draftCategories.forEach { cat ->
             IngredientSectionHeader(cat)
-            ings.forEachIndexed { i, ing ->
-                if (ing.category == cat) {
-                    IngredientEditor(
-                        ing = ing,
-                        suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
-                        onChange = { ings[i] = it },
-                        onDelete = { ings.removeAt(i) },
-                    )
+            val indices = ings.withIndex().filter { it.value.category == cat }.map { it.index }
+            if (indices.isNotEmpty()) {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        indices.forEachIndexed { pos, i ->
+                            if (pos > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                            IngredientEditor(
+                                ing = ings[i],
+                                suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                                onChange = { ings[i] = it },
+                                onDelete = { ings.removeAt(i) },
+                            )
+                        }
+                    }
                 }
             }
             AddIngredientButton(cat) {
@@ -296,44 +307,70 @@ private fun IngredientEditor(
     onChange: (EditIng) -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             NameFieldWithSuggestions(
                 value = ing.name,
                 suggestions = { q -> suggest(ing.category, q) },
                 onChange = { onChange(ing.copy(name = it)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = ing.quantity,
-                    onValueChange = { onChange(ing.copy(quantity = it)) },
-                    placeholder = { Text(stringResource(R.string.qty_short)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.cd_delete_ingredient),
+                    tint = MaterialTheme.colorScheme.outline,
                 )
-                SmallDropdown(
-                    value = ing.unit,
-                    options = unitsByCategory.getValue(ing.category),
-                    optionLabel = { it },
-                    onSelect = { onChange(ing.copy(unit = it)) },
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.cd_delete_ingredient),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
             }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SoftField(
+                value = ing.quantity,
+                onChange = { onChange(ing.copy(quantity = it)) },
+                placeholder = stringResource(R.string.qty_short),
+                keyboardType = KeyboardType.Decimal,
+                modifier = Modifier.weight(1f),
+            )
+            SmallDropdown(
+                value = ing.unit,
+                options = unitsByCategory.getValue(ing.category),
+                optionLabel = { it },
+                onSelect = { onChange(ing.copy(unit = it)) },
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
+
+/** Champ texte compact aux bordures douces, pour les lignes d'ingrédients. */
+@Composable
+internal fun SoftField(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    label: String? = null,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        placeholder = { Text(placeholder) },
+        label = label?.let { { Text(it) } },
+        singleLine = true,
+        shape = softFieldShape,
+        colors = softFieldColors(),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        modifier = modifier,
+    )
+}
+
+internal val softFieldShape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+
+@Composable
+internal fun softFieldColors() = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+)
 
 /**
  * Champ nom avec liste de suggestions filtrée à la frappe (catalogue +
@@ -357,6 +394,8 @@ internal fun NameFieldWithSuggestions(
             onValueChange = onChange,
             placeholder = { Text(stringResource(R.string.label_name)) },
             singleLine = true,
+            shape = softFieldShape,
+            colors = softFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { focused = it.isFocused },
@@ -393,6 +432,8 @@ internal fun SmallDropdown(
             onValueChange = {},
             readOnly = true,
             singleLine = true,
+            shape = softFieldShape,
+            colors = softFieldColors(),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .menuAnchor()

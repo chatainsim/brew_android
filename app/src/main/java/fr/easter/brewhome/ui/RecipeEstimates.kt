@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -57,6 +61,8 @@ fun estIngredients(
 private fun estFmt(v: Double, dec: Int): String =
     String.format(Locale.FRANCE, "%.${dec}f", v)
 
+private val InRangeGreen = Color(0xFF16A34A)
+
 /**
  * Carte « Estimations » : jauges OG/FG/ABV/IBU/EBC avec plage du style BJCP,
  * pastille de couleur Morey, plan d'eau et coût matières estimé.
@@ -71,17 +77,17 @@ fun RecipeEstimatesCard(
     ibuFormula: String,
 ) {
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(R.string.est_title),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     stringResource(R.string.est_ibu_formula, ibuFormula.uppercase()),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
             }
@@ -95,11 +101,11 @@ fun RecipeEstimatesCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier
-                            .size(24.dp)
+                            .size(26.dp)
                             .clip(CircleShape)
                             .background(ebcColor(est.ebc)),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(10.dp))
                     Text(
                         stringResource(
                             R.string.est_color_morey,
@@ -112,17 +118,20 @@ fun RecipeEstimatesCard(
             }
 
             if (water != null) {
-                Text(
-                    stringResource(
-                        R.string.est_water,
-                        estFmt(water.mash, 1), estFmt(water.sparge, 1),
-                        estFmt(water.preboil, 1), estFmt(water.total, 1),
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                HorizontalDivider()
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    WaterStat(stringResource(R.string.est_water_mash), water.mash)
+                    WaterStat(stringResource(R.string.est_water_sparge), water.sparge)
+                    WaterStat(stringResource(R.string.est_water_preboil), water.preboil)
+                    WaterStat(stringResource(R.string.est_water_total), water.total)
+                }
             }
 
             if (cost != null && cost.total > 0) {
+                HorizontalDivider()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.est_cost_title),
@@ -132,7 +141,7 @@ fun RecipeEstimatesCard(
                     )
                     Text(
                         "${estFmt(cost.total, 2)} €",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -144,19 +153,108 @@ fun RecipeEstimatesCard(
                         )
                     }
                 }
-                val parts = buildList {
-                    cost.byCategory.forEach { (cat, v) ->
-                        if (v > 0) add(categoryLabel(cat) to v)
-                    }
-                    cost.water?.takeIf { it > 0 }?.let { add(stringResource(R.string.est_cost_water) to it) }
-                    cost.gas.takeIf { it > 0 }?.let { add(stringResource(R.string.est_cost_gas) to it) }
-                    cost.elec.takeIf { it > 0 }?.let { add(stringResource(R.string.est_cost_elec) to it) }
+                // Tuiles par catégorie, dans l'ordre malt/houblon/levure/autre
+                val tiles = categoryOrder.mapNotNull { cat ->
+                    cost.byCategory[cat]?.takeIf { it > 0 }?.let { cat to it }
                 }
+                tiles.chunked(2).forEach { pair ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pair.forEach { (cat, v) ->
+                            CostTile(
+                                label = categoryLabel(cat),
+                                value = v,
+                                total = cost.total,
+                                accent = categoryColor(cat),
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+                // Coûts fixes : eau, gaz, électricité
+                listOfNotNull(
+                    cost.water?.takeIf { it > 0 }?.let { stringResource(R.string.est_cost_water) to it },
+                    cost.gas.takeIf { it > 0 }?.let { stringResource(R.string.est_cost_gas) to it },
+                    cost.elec.takeIf { it > 0 }?.let { stringResource(R.string.est_cost_elec) to it },
+                ).forEach { (label, v) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "${estFmt(v, 2)} €",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            "  " + stringResource(
+                                R.string.est_pct_total,
+                                (v / cost.total * 100).toInt(),
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WaterStat(label: String, liters: Double) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "${estFmt(liters, 1)} L",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+    }
+}
+
+@Composable
+private fun CostTile(
+    label: String,
+    value: Double,
+    total: Double,
+    accent: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier,
+    ) {
+        Row {
+            Box(
+                Modifier
+                    .width(4.dp)
+                    .height(58.dp)
+                    .background(accent),
+            )
+            Column(Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
                 Text(
-                    parts.joinToString("  ·  ") { (label, v) ->
-                        "$label ${estFmt(v, 2)} €"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = accent,
+                )
+                Text(
+                    "${estFmt(value, 2)} €",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    stringResource(R.string.est_pct_total, (value / total * 100).toInt()),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
             }
@@ -164,7 +262,10 @@ fun RecipeEstimatesCard(
     }
 }
 
-/** Jauge : plage BJCP en bande, marqueur coloré vert (dans la plage) / rouge (hors). */
+/**
+ * Jauge : bande verte = plage cible du style BJCP, rond = valeur estimée
+ * (vert dans la plage, rouge en dehors, ambre sans style).
+ */
 @Composable
 private fun EstRow(
     label: String,
@@ -181,64 +282,68 @@ private fun EstRow(
     val markerColor = when {
         value == null -> MaterialTheme.colorScheme.outline
         !hasBjcp -> MaterialTheme.colorScheme.primary
-        inRange -> Color(0xFF16A34A)
+        inRange -> InRangeGreen
         else -> MaterialTheme.colorScheme.error
     }
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val rangeColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    val bandColor = InRangeGreen.copy(alpha = 0.22f)
+    val ringColor = MaterialTheme.colorScheme.surfaceContainerHighest
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.width(34.dp),
+            modifier = Modifier.width(40.dp),
         )
         Canvas(
             Modifier
                 .weight(1f)
-                .height(10.dp),
+                .height(16.dp),
         ) {
             val span = (cfgMax - cfgMin).toFloat()
             fun xOf(v: Double): Float =
                 (((v - cfgMin) / span).toFloat().coerceIn(0f, 1f)) * size.width
+            val midY = size.height / 2
             drawRoundRect(
                 trackColor,
-                topLeft = Offset(0f, size.height * 0.3f),
-                size = Size(size.width, size.height * 0.4f),
-                cornerRadius = CornerRadius(size.height * 0.2f),
+                topLeft = Offset(0f, midY - 3.dp.toPx() / 2),
+                size = Size(size.width, 3.dp.toPx()),
+                cornerRadius = CornerRadius(1.5.dp.toPx()),
             )
             if (hasBjcp) {
                 val left = xOf(bjcpMin!!)
                 drawRoundRect(
-                    rangeColor,
-                    topLeft = Offset(left, size.height * 0.15f),
-                    size = Size((xOf(bjcpMax!!) - left).coerceAtLeast(2f), size.height * 0.7f),
-                    cornerRadius = CornerRadius(size.height * 0.2f),
+                    bandColor,
+                    topLeft = Offset(left, midY - 5.dp.toPx()),
+                    size = Size(
+                        (xOf(bjcpMax!!) - left).coerceAtLeast(4.dp.toPx()),
+                        10.dp.toPx(),
+                    ),
+                    cornerRadius = CornerRadius(5.dp.toPx()),
                 )
             }
             if (value != null) {
-                drawRoundRect(
-                    markerColor,
-                    topLeft = Offset((xOf(value) - 2.5f).coerceAtLeast(0f), 0f),
-                    size = Size(5f, size.height),
-                    cornerRadius = CornerRadius(2.5f),
+                val x = xOf(value)
+                drawCircle(ringColor, radius = 8.dp.toPx(), center = Offset(x, midY))
+                drawCircle(markerColor, radius = 5.5.dp.toPx(), center = Offset(x, midY))
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(min = 88.dp)) {
+            Text(
+                if (value != null) estFmt(value, dec) + unit else "–",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = markerColor,
+            )
+            if (hasBjcp) {
+                Text(
+                    "⌖ ${estFmt(bjcpMin!!, dec)}–${estFmt(bjcpMax!!, dec)}$unit",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
                 )
             }
         }
-        Spacer(Modifier.width(8.dp))
-        Text(
-            if (value != null) estFmt(value, dec) + unit else "–",
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
-            color = markerColor,
-            modifier = Modifier.width(56.dp),
-        )
-        Text(
-            if (hasBjcp) "⌖ ${estFmt(bjcpMin!!, dec)}–${estFmt(bjcpMax!!, dec)}$unit" else "",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.width(92.dp),
-        )
     }
 }

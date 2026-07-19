@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -174,14 +175,20 @@ fun RecipeEditScreen(vm: BrewViewModel, recipeId: Int?, onSaved: () -> Unit) {
         // Comme le site : une section par catégorie, malts en tête
         draftCategories.forEach { cat ->
             IngredientSectionHeader(cat)
-            ings.forEachIndexed { i, ing ->
-                if (ing.category == cat) {
-                    RecipeIngredientEditor(
-                        ing = ing,
-                        suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
-                        onChange = { ings[i] = it },
-                        onDelete = { ings.removeAt(i) },
-                    )
+            val indices = ings.withIndex().filter { it.value.category == cat }.map { it.index }
+            if (indices.isNotEmpty()) {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        indices.forEachIndexed { pos, i ->
+                            if (pos > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
+                            RecipeIngredientEditor(
+                                ing = ings[i],
+                                suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                                onChange = { ings[i] = it },
+                                onDelete = { ings.removeAt(i) },
+                            )
+                        }
+                    }
                 }
             }
             AddIngredientButton(cat) {
@@ -301,74 +308,67 @@ private fun RecipeIngredientEditor(
     onChange: (EditRecipeIng) -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             NameFieldWithSuggestions(
                 value = ing.name,
                 suggestions = { q -> suggest(ing.category, q) },
                 onChange = { onChange(ing.copy(name = it)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = ing.quantity,
-                    onValueChange = { onChange(ing.copy(quantity = it)) },
-                    placeholder = { Text(stringResource(R.string.qty_short)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.cd_delete_ingredient),
+                    tint = MaterialTheme.colorScheme.outline,
                 )
-                SmallDropdown(
-                    value = ing.unit,
-                    options = unitsByCategory.getValue(ing.category),
-                    optionLabel = { it },
-                    onSelect = { onChange(ing.copy(unit = it)) },
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.cd_delete_ingredient),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
             }
-            if (ing.category == "houblon") {
-                // Libellés résolus ici : optionLabel n'est pas un contexte composable
-                val hopLabels = hopTypes.associateWith { hopTypeLabel(it) }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SmallDropdown(
-                        value = hopLabels[ing.hopType] ?: ing.hopType,
-                        options = hopTypes,
-                        optionLabel = { hopLabels.getValue(it) },
-                        onSelect = { onChange(ing.copy(hopType = it)) },
-                        modifier = Modifier.weight(1.4f),
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SoftField(
+                value = ing.quantity,
+                onChange = { onChange(ing.copy(quantity = it)) },
+                placeholder = stringResource(R.string.qty_short),
+                keyboardType = KeyboardType.Decimal,
+                modifier = Modifier.weight(1f),
+            )
+            SmallDropdown(
+                value = ing.unit,
+                options = unitsByCategory.getValue(ing.category),
+                optionLabel = { it },
+                onSelect = { onChange(ing.copy(unit = it)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (ing.category == "houblon") {
+            // Libellés résolus ici : optionLabel n'est pas un contexte composable
+            val hopLabels = hopTypes.associateWith { hopTypeLabel(it) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SmallDropdown(
+                    value = hopLabels[ing.hopType] ?: ing.hopType,
+                    options = hopTypes,
+                    optionLabel = { hopLabels.getValue(it) },
+                    onSelect = { onChange(ing.copy(hopType = it)) },
+                    modifier = Modifier.weight(1.4f),
+                )
+                if (ing.hopType == "dryhop") {
+                    SoftField(
+                        value = ing.hopDays,
+                        onChange = { onChange(ing.copy(hopDays = it)) },
+                        placeholder = stringResource(R.string.hop_days),
+                        label = stringResource(R.string.hop_days),
+                        keyboardType = KeyboardType.Number,
+                        modifier = Modifier.weight(1f),
                     )
-                    if (ing.hopType == "dryhop") {
-                        OutlinedTextField(
-                            value = ing.hopDays,
-                            onValueChange = { onChange(ing.copy(hopDays = it)) },
-                            label = { Text(stringResource(R.string.hop_days)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f),
-                        )
-                    } else {
-                        OutlinedTextField(
-                            value = ing.hopTime,
-                            onValueChange = { onChange(ing.copy(hopTime = it)) },
-                            label = { Text(stringResource(R.string.hop_minutes)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                } else {
+                    SoftField(
+                        value = ing.hopTime,
+                        onChange = { onChange(ing.copy(hopTime = it)) },
+                        placeholder = stringResource(R.string.hop_minutes),
+                        label = stringResource(R.string.hop_minutes),
+                        keyboardType = KeyboardType.Number,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
