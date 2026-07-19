@@ -43,6 +43,7 @@ data class RecipeIngredient(
     val unit: String = "g",
     @SerialName("hop_time") val hopTime: Int? = null,
     @SerialName("hop_type") val hopType: String? = null,
+    @SerialName("hop_days") val hopDays: Int? = null,
     val ebc: Double? = null,
     val alpha: Double? = null,
     val notes: String? = null,
@@ -248,6 +249,24 @@ fun Draft.parsedIngredients(): List<DraftIngredient> {
     return runCatching { draftJson.decodeFromString<List<DraftIngredient>>(raw) }
         .getOrDefault(emptyList())
 }
+
+/** Événement personnalisé du calendrier (fête, concours, brassage prévu…). */
+@Serializable
+data class CustomEvent(
+    val id: Int,
+    val title: String = "Événement",
+    val emoji: String? = null,
+    @SerialName("event_date") val eventDate: String? = null,
+    val color: String? = null,
+    val notes: String? = null,
+    @SerialName("brew_reminder") val brewReminder: Int? = 0,
+    @SerialName("brew_reminder_days") val brewReminderDays: Int? = null,
+    /** JSON : {"type":"yearly"|"monthly"|"weekly"|"yearly_nth_dow"|"monthly_nth_dow", …} */
+    val recurrence: String? = null,
+    val style: String? = null,
+    @SerialName("recipe_id") val recipeId: Int? = null,
+    @SerialName("draft_id") val draftId: Int? = null,
+)
 
 @Serializable
 data class ConsumptionMonth(

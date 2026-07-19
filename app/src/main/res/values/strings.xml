@@ -17,6 +17,12 @@
     <string name="title_draft">Brouillon</string>
     <string name="title_draft_new">Nouveau brouillon</string>
     <string name="title_draft_edit">Modifier le brouillon</string>
+    <string name="title_calendar">Calendrier</string>
+    <string name="tools_calendar_sub">Brassins, dry hops, rappels et fêtes de la bière</string>
+    <string name="cal_empty">Aucun événement à venir</string>
+    <string name="cal_today">Aujourd\'hui</string>
+    <string name="cal_this_week">Cette semaine</string>
+    <string name="cal_this_month">Ce mois-ci</string>
     <string name="title_stats">Statistiques</string>
     <string name="title_shopping">Courses</string>
 

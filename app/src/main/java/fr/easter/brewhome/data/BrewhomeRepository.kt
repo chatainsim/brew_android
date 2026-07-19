@@ -74,6 +74,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun consumption(): Consumption = api().getConsumption()
 
+    suspend fun customEvents(): List<CustomEvent> = api().getCustomEvents()
+
     /** Le serveur répond-il ? (utilisé au lancement et par le VPN auto) */
     suspend fun reachable(timeoutMs: Long): Boolean =
         runCatching { withTimeout(timeoutMs) { api().getAppSettings() } }.isSuccess

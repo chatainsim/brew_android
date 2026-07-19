@@ -17,6 +17,7 @@ import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
+import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.DraftsRepository
@@ -295,6 +296,18 @@ class BrewViewModel(
         viewModelScope.launch {
             runCatching { repo.consumption() }
                 .onSuccess { _consumption.value = it }
+        }
+    }
+
+    // ── Calendrier ────────────────────────────────────────────────────────
+
+    private val _customEvents = MutableStateFlow<List<CustomEvent>?>(null)
+    /** null = pas encore chargé ; liste vide si échec (le reste du calendrier vit sans). */
+    val customEvents: StateFlow<List<CustomEvent>?> = _customEvents
+
+    fun loadCustomEvents() {
+        viewModelScope.launch {
+            _customEvents.value = runCatching { repo.customEvents() }.getOrDefault(emptyList())
         }
     }
 

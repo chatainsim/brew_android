@@ -11,6 +11,7 @@ import fr.easter.brewhome.data.BulkCheckPut
 import fr.easter.brewhome.data.BuyResult
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
+import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.FermReading
@@ -172,6 +173,7 @@ class BrewViewModelTest {
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
+        override suspend fun getCustomEvents(): List<CustomEvent> = throw NotImplementedError()
     }
 
     private val api = FakeApi()

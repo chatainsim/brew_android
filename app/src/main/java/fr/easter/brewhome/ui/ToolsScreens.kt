@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Biotech
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.BubbleChart
 import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.LocalFireDepartment
@@ -77,7 +78,7 @@ private fun toolAccent(index: Int): Pair<androidx.compose.ui.graphics.Color, and
     }
 
 @Composable
-fun ToolsScreen(onOpenStats: () -> Unit, onOpen: (String) -> Unit) {
+fun ToolsScreen(onOpenStats: () -> Unit, onOpenCalendar: () -> Unit, onOpen: (String) -> Unit) {
     LazyColumn(
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -92,12 +93,21 @@ fun ToolsScreen(onOpenStats: () -> Unit, onOpen: (String) -> Unit) {
                 onClick = onOpenStats,
             )
         }
+        item(key = "calendar") {
+            ToolCard(
+                stringResource(R.string.title_calendar),
+                stringResource(R.string.tools_calendar_sub),
+                Icons.Outlined.CalendarMonth,
+                accent = toolAccent(1),
+                onClick = onOpenCalendar,
+            )
+        }
         itemsIndexed(toolDefs, key = { _, tool -> tool.id }) { i, tool ->
             ToolCard(
                 stringResource(tool.titleRes),
                 stringResource(tool.subtitleRes),
                 tool.icon,
-                accent = toolAccent(i + 1),
+                accent = toolAccent(i + 2),
             ) { onOpen(tool.id) }
         }
     }

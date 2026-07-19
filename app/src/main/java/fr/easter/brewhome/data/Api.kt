@@ -85,6 +85,9 @@ interface BrewApi {
 
     @GET("api/consumption")
     suspend fun getConsumption(): Consumption
+
+    @GET("api/custom_events")
+    suspend fun getCustomEvents(): List<CustomEvent>
 }
 
 object ApiClient {

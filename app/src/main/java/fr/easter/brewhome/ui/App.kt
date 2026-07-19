@@ -79,7 +79,8 @@ private fun tabOf(route: String?): String? = when {
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
     route == "brews" || route.startsWith("brew/") -> "brews"
-    route == "tools" || route.startsWith("tools/") || route == "stats" -> "tools"
+    route == "tools" || route.startsWith("tools/") ||
+        route == "stats" || route == "calendar" -> "tools"
     else -> null
 }
 
@@ -161,6 +162,7 @@ fun BrewHomeApp(
                                     stringResource(R.string.title_draft_new)
                                 else stringResource(R.string.title_draft_edit)
                             currentRoute == "stats" -> stringResource(R.string.title_stats)
+                            currentRoute == "calendar" -> stringResource(R.string.title_calendar)
                             currentRoute == "shopping" -> stringResource(R.string.title_shopping)
                             currentRoute == "tools" -> stringResource(R.string.tab_tools)
                             currentRoute?.startsWith("tools/") == true ->
@@ -371,9 +373,11 @@ fun BrewHomeApp(
             composable("tools") {
                 ToolsScreen(
                     onOpenStats = { navController.navigate("stats") },
+                    onOpenCalendar = { navController.navigate("calendar") },
                     onOpen = { navController.navigate("tools/$it") },
                 )
             }
+            composable("calendar") { CalendarScreen(vm) }
             composable("tools/{id}") { entry ->
                 ToolScreen(entry.arguments?.getString("id"))
             }
