@@ -188,6 +188,10 @@
     <string name="keg_status_serving">En service</string>
     <string name="keg_status_cleaning">Nettoyage</string>
     <string name="keg_revision">Révision : %1$s</string>
+    <string name="error_keg_update">Échec de la mise à jour du fût</string>
+    <string name="keg_edit_title">Modifier le fût</string>
+    <string name="keg_status">Statut</string>
+    <string name="keg_level">Niveau restant (L)</string>
     <string name="brew_change_status">Changer le statut</string>
     <string name="error_stock_update">Échec de mise à jour du stock</string>
     <string name="error_qty_update">Échec de mise à jour de la quantité</string>

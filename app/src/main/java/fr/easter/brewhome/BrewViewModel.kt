@@ -470,6 +470,15 @@ class BrewViewModel(
         }
     }
 
+    /** Change le statut et/ou le niveau d'un fût puis recharge la liste. */
+    fun updateKeg(id: Int, status: String, currentLiters: Double?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_keg_update) {
+            repo.updateKeg(id, status, currentLiters)
+            _sodaKegs.value = repo.sodaKegs()
+            onDone()
+        }
+    }
+
     /** Archive ou désarchive une bière puis recharge la Cave. */
     fun setBeerArchived(beer: Beer, archived: Boolean) {
         launchWithError(R.string.error_beer_archive) {

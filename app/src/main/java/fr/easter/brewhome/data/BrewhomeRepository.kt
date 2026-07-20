@@ -181,6 +181,20 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun sodaKegs(): List<SodaKeg> = api().getSodaKegs()
 
+    /** Met à jour statut et/ou niveau d'un fût en préservant ses autres champs. */
+    suspend fun updateKeg(id: Int, status: String, currentLiters: Double?) {
+        val api = api()
+        val raw = api.getSodaKegsRaw().firstOrNull {
+            (it["id"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() == id
+        } ?: return
+        val body = kotlinx.serialization.json.buildJsonObject {
+            raw.forEach { (k, v) -> if (k != "id" && k != "beer_name" && k != "brew_name") put(k, v) }
+            put("status", status)
+            if (currentLiters != null) put("current_liters", currentLiters)
+        }
+        api.updateSodaKeg(id, body)
+    }
+
     suspend fun setBeerArchived(id: Int, archived: Boolean): Beer =
         api().patchBeerArchived(id, BeerArchivePatch(archived))
 

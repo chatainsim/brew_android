@@ -1,6 +1,7 @@
 package fr.easter.brewhome.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,11 +62,14 @@ private fun kegStatusLabel(status: String): String = stringResource(
     },
 )
 
+private val kegStatuses = listOf("empty", "fermenting", "serving", "cleaning")
+
 /** Vue des fûts à soda : niveau, état de service, révisions. */
 @Composable
 fun KegsScreen(vm: BrewViewModel) {
     val kegs by vm.sodaKegs.collectAsState()
     LaunchedEffect(Unit) { vm.loadSodaKegs() }
+    var editing by remember { mutableStateOf<SodaKeg?>(null) }
 
     when {
         kegs == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -75,15 +82,74 @@ fun KegsScreen(vm: BrewViewModel) {
             modifier = Modifier.fillMaxSize(),
         ) {
             items(kegs!!.filter { (it.archived ?: 0) == 0 }, key = { it.id }) { keg ->
-                KegCard(keg)
+                KegCard(keg) { editing = keg }
             }
         }
+    }
+
+    editing?.let { keg ->
+        KegEditDialog(
+            keg = keg,
+            onDismiss = { editing = null },
+            onSave = { status, liters -> vm.updateKeg(keg.id, status, liters) { editing = null } },
+        )
     }
 }
 
 @Composable
-private fun KegCard(keg: SodaKeg) {
-    Card(Modifier.fillMaxWidth()) {
+private fun KegEditDialog(
+    keg: SodaKeg,
+    onDismiss: () -> Unit,
+    onSave: (status: String, currentLiters: Double?) -> Unit,
+) {
+    var status by remember { mutableStateOf(keg.status) }
+    var liters by remember { mutableStateOf(keg.currentLiters?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    val statusLabels = kegStatuses.associateWith { kegStatusLabel(it) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(keg.name) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.keg_status), style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    kegStatuses.forEach { s ->
+                        androidx.compose.material3.FilterChip(
+                            selected = status == s,
+                            onClick = { status = s },
+                            label = { Text(statusLabels.getValue(s), style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+                androidx.compose.material3.OutlinedTextField(
+                    value = liters,
+                    onValueChange = { liters = it },
+                    label = { Text(stringResource(R.string.keg_level)) },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = {
+                onSave(status, liters.trim().replace(',', '.').toDoubleOrNull())
+            }) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun KegCard(keg: SodaKeg, onClick: () -> Unit) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
         Row(Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min)) {
             // Liseré de la couleur du fût
             val accent = keg.color?.let { hex ->

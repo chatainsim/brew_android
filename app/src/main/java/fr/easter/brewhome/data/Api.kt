@@ -175,6 +175,16 @@ interface BrewApi {
     @GET("api/soda-kegs")
     suspend fun getSodaKegs(): List<SodaKeg>
 
+    /** Fûts en JSON brut : base du PUT fusionné (le PUT écrase toutes les colonnes). */
+    @GET("api/soda-kegs")
+    suspend fun getSodaKegsRaw(): List<kotlinx.serialization.json.JsonObject>
+
+    @PUT("api/soda-kegs/{id}")
+    suspend fun updateSodaKeg(
+        @Path("id") id: Int,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject
+
     @PATCH("api/beers/{id}")
     suspend fun patchBeerArchived(@Path("id") id: Int, @Body body: BeerArchivePatch): Beer
 
