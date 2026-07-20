@@ -5,6 +5,7 @@ import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.Recipe
+import fr.easter.brewhome.data.parsedDryhopDone
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.intOrNull
@@ -34,6 +35,8 @@ object CalendarEvents {
         /** id du brassin / brouillon lié (pour ouvrir sa fiche). */
         val brewId: Int? = null,
         val draftId: Int? = null,
+        /** true si ce dry hop a déjà été marqué comme ajouté. */
+        val dryhopDone: Boolean = false,
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -138,13 +141,16 @@ object CalendarEvents {
                             it.hopType == "dryhop" && (it.hopDays ?: 0) > 0
                     }
                 if (fermStart != null) {
+                    val doneDates = b.parsedDryhopDone()
                     dryHops.groupBy { it.hopDays!! }.forEach { (days, hops) ->
                         val offset = fermDays - days
                         if (offset >= 0) {
                             val what = hops.joinToString(", ") { "${fmtNum(it.quantity)} ${it.unit} ${it.name}" }
+                            val date = fermStart.plusDays(offset.toLong())
                             add(Event(
-                                fermStart.plusDays(offset.toLong()), Type.DRYHOP,
+                                date, Type.DRYHOP,
                                 "${b.name} — Dry Hop (J$offset) : $what", "🌿", brewId = b.id,
+                                dryhopDone = date.toString() in doneDates,
                             ))
                         }
                     }

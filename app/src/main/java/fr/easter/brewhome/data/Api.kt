@@ -48,6 +48,24 @@ interface BrewApi {
     @GET("api/brews/{id}/photos")
     suspend fun getBrewPhotos(@Path("id") id: Int): List<BrewPhoto>
 
+    @POST("api/brews/{id}/log")
+    suspend fun addBrewLog(@Path("id") id: Int, @Body body: BrewLogPost): kotlinx.serialization.json.JsonObject
+
+    @GET("api/brews/{id}/steps")
+    suspend fun getBrewSteps(@Path("id") id: Int): List<BrewStep>
+
+    @POST("api/brews/{id}/steps")
+    suspend fun addBrewStep(@Path("id") id: Int, @Body body: BrewStepPost): BrewStep
+
+    @PUT("api/brew-steps/{stepId}")
+    suspend fun updateBrewStep(@Path("stepId") stepId: Int, @Body body: BrewStepPut): BrewStep
+
+    @DELETE("api/brew-steps/{stepId}")
+    suspend fun deleteBrewStep(@Path("stepId") stepId: Int): kotlinx.serialization.json.JsonObject
+
+    @POST("api/brews/{id}/dryhop_done")
+    suspend fun markDryhopDone(@Path("id") id: Int, @Body body: DryhopDonePost): kotlinx.serialization.json.JsonObject
+
     @GET("api/app-settings")
     suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
 

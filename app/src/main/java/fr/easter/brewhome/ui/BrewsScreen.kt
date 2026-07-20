@@ -12,18 +12,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -142,6 +149,8 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     LaunchedEffect(brew.id) { vm.loadBrewExtras(brew.id) }
     val extras = vm.brewExtras.collectAsState().value[brew.id]
     var viewing by remember { mutableStateOf<BrewPhoto?>(null) }
+    var showAddLog by remember { mutableStateOf(false) }
+    var showAddStep by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -231,6 +240,21 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                     )
                     PhotosRow(vm, extras.photos) { viewing = it }
                 }
+                // Étapes de brassage (checklist) — toujours visible avec bouton +
+                BrewSectionHeader(stringResource(R.string.steps_section)) { showAddStep = true }
+                if (extras.steps.isEmpty()) {
+                    Text(
+                        stringResource(R.string.steps_empty),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                } else {
+                    StepsCard(
+                        extras.steps,
+                        onToggle = { s -> vm.setStepDone(brew.id, s.id, s.done == 0) },
+                        onDelete = { s -> vm.deleteBrewStep(brew.id, s.id) },
+                    )
+                }
                 if (extras.readings.isNotEmpty()) {
                     Text(
                         stringResource(R.string.ferm_section, extras.readings.size),
@@ -239,14 +263,9 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                     )
                     FermentationCard(extras.readings)
                 }
-                if (extras.log.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.log_section),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    LogCard(extras.log)
-                }
+                // Journal de brassage — bouton + pour ajouter une note
+                BrewSectionHeader(stringResource(R.string.log_section)) { showAddLog = true }
+                if (extras.log.isNotEmpty()) LogCard(extras.log)
             }
         }
 
@@ -258,6 +277,168 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     }
 
     viewing?.let { photo -> PhotoViewer(vm, photo) { viewing = null } }
+    if (showAddLog) {
+        AddLogDialog(
+            onAdd = { note, step -> vm.addBrewLog(brew.id, note, step) { showAddLog = false } },
+            onDismiss = { showAddLog = false },
+        )
+    }
+    if (showAddStep) {
+        AddStepDialog(
+            onAdd = { date, title, notes -> vm.addBrewStep(brew.id, date, title, notes) { showAddStep = false } },
+            onDismiss = { showAddStep = false },
+        )
+    }
+}
+
+/** Titre de section avec un bouton « + » à droite. */
+@Composable
+private fun BrewSectionHeader(title: String, onAdd: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onAdd) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add))
+        }
+    }
+}
+
+@Composable
+private fun StepsCard(
+    steps: List<fr.easter.brewhome.data.BrewStep>,
+    onToggle: (fr.easter.brewhome.data.BrewStep) -> Unit,
+    onDelete: (fr.easter.brewhome.data.BrewStep) -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(vertical = 4.dp)) {
+            steps.sortedBy { it.scheduledDate }.forEach { step ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 4.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = step.done == 1,
+                        onCheckedChange = { onToggle(step) },
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            step.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textDecoration = if (step.done == 1)
+                                androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                            color = if (step.done == 1) MaterialTheme.colorScheme.outline
+                                else MaterialTheme.colorScheme.onSurface,
+                        )
+                        val sub = listOfNotNull(step.scheduledDate, step.notes?.takeIf { it.isNotBlank() })
+                            .joinToString(" · ")
+                        if (sub.isNotEmpty()) {
+                            Text(
+                                sub,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    }
+                    IconButton(onClick = { onDelete(step) }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddLogDialog(onAdd: (note: String, step: String?) -> Unit, onDismiss: () -> Unit) {
+    var note by remember { mutableStateOf("") }
+    var step by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.log_add_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = step,
+                    onValueChange = { step = it },
+                    label = { Text(stringResource(R.string.log_step)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text(stringResource(R.string.log_note)) },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onAdd(note.trim(), step.trim().ifBlank { null }) }, enabled = note.isNotBlank()) {
+                Text(stringResource(R.string.add))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun AddStepDialog(
+    onAdd: (date: String, title: String, notes: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var title by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var notes by remember { mutableStateOf("") }
+    val dateOk = runCatching { java.time.LocalDate.parse(date.trim()) }.isSuccess
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.step_add_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(R.string.step_title)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text(stringResource(R.string.step_date)) },
+                    placeholder = { Text("2026-08-01") },
+                    isError = !dateOk,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(date.trim(), title.trim(), notes.trim().ifBlank { null }) },
+                enabled = title.isNotBlank() && dateOk,
+            ) { Text(stringResource(R.string.add)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 private val brewStatuses = listOf("planned", "in_progress", "fermenting", "completed")

@@ -162,6 +162,13 @@ fun CalendarScreen(vm: BrewViewModel, onOpenBrew: (Int) -> Unit, onOpenDraft: (I
             onDismiss = { selected = null },
             onOpenBrew = ev.brewId?.let { id -> { selected = null; onOpenBrew(id) } },
             onOpenDraft = ev.draftId?.let { id -> { selected = null; onOpenDraft(id) } },
+            // Dry hop non encore fait : bouton pour le marquer (déduit le stock)
+            onDryhopDone = if (ev.type == CalendarEvents.Type.DRYHOP && !ev.dryhopDone && ev.brewId != null) {
+                {
+                    vm.markDryhopDone(ev.brewId, ev.date.toString())
+                    selected = null
+                }
+            } else null,
             onDelete = if (ev.type == CalendarEvents.Type.CUSTOM) {
                 {
                     val custom = (vm.customEvents.value ?: emptyList()).find { it.id == ev.customId }
@@ -231,6 +238,7 @@ private fun EventDetailDialog(
     onDismiss: () -> Unit,
     onOpenBrew: (() -> Unit)?,
     onOpenDraft: (() -> Unit)?,
+    onDryhopDone: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
     AlertDialog(
@@ -261,10 +269,21 @@ private fun EventDetailDialog(
                     Spacer(Modifier.height(2.dp))
                     Text(ev.notes, style = MaterialTheme.typography.bodyMedium)
                 }
+                if (ev.type == CalendarEvents.Type.DRYHOP && ev.dryhopDone) {
+                    Text(
+                        stringResource(R.string.cal_dryhop_done),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
         },
         confirmButton = {
             when {
+                onDryhopDone != null -> TextButton(onClick = onDryhopDone) {
+                    Text(stringResource(R.string.cal_dryhop_mark))
+                }
                 onOpenBrew != null -> TextButton(onClick = onOpenBrew) {
                     Text(stringResource(R.string.cal_open_brew))
                 }

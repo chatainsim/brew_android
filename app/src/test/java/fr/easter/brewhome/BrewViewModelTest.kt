@@ -7,6 +7,11 @@ import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
+import fr.easter.brewhome.data.BrewLogPost
+import fr.easter.brewhome.data.BrewStep
+import fr.easter.brewhome.data.BrewStepPost
+import fr.easter.brewhome.data.BrewStepPut
+import fr.easter.brewhome.data.DryhopDonePost
 import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BulkCheckPut
 import fr.easter.brewhome.data.BuyResult
@@ -177,6 +182,12 @@ class BrewViewModelTest {
         override suspend fun getBrewFermentation(id: Int): List<FermReading> = throw NotImplementedError()
         override suspend fun getBrewLog(id: Int): List<BrewLogEntry> = throw NotImplementedError()
         override suspend fun getBrewPhotos(id: Int): List<BrewPhoto> = throw NotImplementedError()
+        override suspend fun addBrewLog(id: Int, body: BrewLogPost): JsonObject = throw NotImplementedError()
+        override suspend fun getBrewSteps(id: Int): List<BrewStep> = throw NotImplementedError()
+        override suspend fun addBrewStep(id: Int, body: BrewStepPost): BrewStep = throw NotImplementedError()
+        override suspend fun updateBrewStep(stepId: Int, body: BrewStepPut): BrewStep = throw NotImplementedError()
+        override suspend fun deleteBrewStep(stepId: Int): JsonObject = throw NotImplementedError()
+        override suspend fun markDryhopDone(id: Int, body: DryhopDonePost): JsonObject = throw NotImplementedError()
         override suspend fun getCatalog(): List<CatalogItem> = throw NotImplementedError()
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()

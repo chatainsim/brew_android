@@ -14,6 +14,7 @@ import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
 import fr.easter.brewhome.data.BrewPhoto
+import fr.easter.brewhome.data.BrewStep
 import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.BjcpStyle
@@ -72,6 +73,7 @@ data class BrewExtras(
     val readings: List<FermReading> = emptyList(),
     val log: List<BrewLogEntry> = emptyList(),
     val photos: List<BrewPhoto> = emptyList(),
+    val steps: List<BrewStep> = emptyList(),
     val error: String? = null,
 )
 
@@ -284,14 +286,63 @@ class BrewViewModel(
         viewModelScope.launch {
             _brewExtras.value += brewId to BrewExtras(loading = true)
             try {
-                val (readings, log, photos) = repo.brewExtras(brewId)
-                _brewExtras.value += brewId to BrewExtras(readings = readings, log = log, photos = photos)
+                val e = repo.brewExtras(brewId)
+                _brewExtras.value += brewId to BrewExtras(
+                    readings = e.readings, log = e.log, photos = e.photos, steps = e.steps,
+                )
             } catch (e: Exception) {
                 _brewExtras.value += brewId to BrewExtras(
                     error = errorMessage(R.string.error_brew_load, e),
                 )
             }
         }
+    }
+
+    /** Ajoute une note au journal de brassage puis recharge la fiche. */
+    fun addBrewLog(brewId: Int, note: String, step: String?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_log_add) {
+            repo.addBrewLog(brewId, note, step?.ifBlank { null })
+            reloadBrewExtras(brewId)
+            onDone()
+        }
+    }
+
+    fun addBrewStep(brewId: Int, date: String, title: String, notes: String?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_step_add) {
+            repo.addBrewStep(brewId, date, title, notes?.ifBlank { null })
+            reloadBrewExtras(brewId)
+            onDone()
+        }
+    }
+
+    fun setStepDone(brewId: Int, stepId: Int, done: Boolean) {
+        launchWithError(R.string.error_step_update) {
+            repo.setStepDone(stepId, done)
+            reloadBrewExtras(brewId)
+        }
+    }
+
+    fun deleteBrewStep(brewId: Int, stepId: Int) {
+        launchWithError(R.string.error_step_delete) {
+            repo.deleteBrewStep(stepId)
+            reloadBrewExtras(brewId)
+        }
+    }
+
+    /** Marque un dry hop comme ajouté (déduit le stock côté serveur, une seule fois). */
+    fun markDryhopDone(brewId: Int, date: String, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_dryhop) {
+            repo.markDryhopDone(brewId, date)
+            _state.value = _state.value.copy(brews = repo.brews(), error = null)
+            onDone()
+        }
+    }
+
+    private suspend fun reloadBrewExtras(brewId: Int) {
+        val e = repo.brewExtras(brewId)
+        _brewExtras.value += brewId to BrewExtras(
+            readings = e.readings, log = e.log, photos = e.photos, steps = e.steps,
+        )
     }
 
     /** Change le statut d'un brassin (planned/in_progress/fermenting/completed). */

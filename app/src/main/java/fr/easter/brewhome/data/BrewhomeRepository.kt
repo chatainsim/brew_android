@@ -36,15 +36,45 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         )
     }
 
-    suspend fun brewExtras(brewId: Int): Triple<List<FermReading>, List<BrewLogEntry>, List<BrewPhoto>> =
-        coroutineScope {
-            val api = api()
-            val readings = async { api.getBrewFermentation(brewId) }
-            val log = async { api.getBrewLog(brewId) }
-            // Endpoint plus récent : fiche sans photos si le serveur ne l'a pas
-            val photos = async { runCatching { api.getBrewPhotos(brewId) }.getOrDefault(emptyList()) }
-            Triple(readings.await(), log.await(), photos.await())
-        }
+    /** Regroupe mesures, journal, photos et étapes d'un brassin. */
+    data class BrewExtrasData(
+        val readings: List<FermReading>,
+        val log: List<BrewLogEntry>,
+        val photos: List<BrewPhoto>,
+        val steps: List<BrewStep>,
+    )
+
+    suspend fun brewExtras(brewId: Int): BrewExtrasData = coroutineScope {
+        val api = api()
+        val readings = async { api.getBrewFermentation(brewId) }
+        val log = async { api.getBrewLog(brewId) }
+        // Endpoints plus récents : dégradés en liste vide si le serveur ne les a pas
+        val photos = async { runCatching { api.getBrewPhotos(brewId) }.getOrDefault(emptyList()) }
+        val steps = async { runCatching { api.getBrewSteps(brewId) }.getOrDefault(emptyList()) }
+        BrewExtrasData(readings.await(), log.await(), photos.await(), steps.await())
+    }
+
+    suspend fun addBrewLog(brewId: Int, note: String, step: String?) {
+        api().addBrewLog(brewId, BrewLogPost(ts = nowTimestamp(), step = step, note = note))
+    }
+
+    suspend fun addBrewStep(brewId: Int, date: String, title: String, notes: String?): BrewStep =
+        api().addBrewStep(brewId, BrewStepPost(scheduledDate = date, title = title, notes = notes))
+
+    suspend fun setStepDone(stepId: Int, done: Boolean) {
+        api().updateBrewStep(stepId, BrewStepPut(done))
+    }
+
+    suspend fun deleteBrewStep(stepId: Int) {
+        api().deleteBrewStep(stepId)
+    }
+
+    suspend fun markDryhopDone(brewId: Int, date: String) {
+        api().markDryhopDone(brewId, DryhopDonePost(date))
+    }
+
+    private fun nowTimestamp(): String = java.time.LocalDateTime.now()
+        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
     suspend fun adjustBeerStock(beer: Beer, d33: Int, d75: Int, dKeg: Double): Beer {
         val patch = StockPatch(

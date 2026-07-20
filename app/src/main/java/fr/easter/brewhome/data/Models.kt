@@ -182,8 +182,45 @@ data class Brew(
     @SerialName("photo_count") val photoCount: Int? = null,
     /** Champ hérité renvoyé tel quel au PUT pour ne pas l'effacer. */
     @SerialName("photos_url") val photosUrl: String? = null,
+    /** JSON : dates de dry hop déjà marquées comme faites (["AAAA-MM-JJ", …]). */
+    @SerialName("dryhop_done_dates") val dryhopDoneDates: String? = null,
     val notes: String? = null,
 )
+
+/** Étape planifiée d'un brassin (cold crash, ajout, contrôle…). */
+@Serializable
+data class BrewStep(
+    val id: Int,
+    @SerialName("scheduled_date") val scheduledDate: String,
+    val title: String,
+    val notes: String? = null,
+    val done: Int = 0,
+)
+
+@Serializable
+data class BrewLogPost(val ts: String, val step: String? = null, val note: String)
+
+@Serializable
+data class BrewStepPost(
+    @SerialName("scheduled_date") val scheduledDate: String,
+    val title: String,
+    val notes: String? = null,
+)
+
+@Serializable
+data class BrewStepPut(val done: Boolean)
+
+@Serializable
+data class DryhopDonePost(val date: String)
+
+/** Dates de dry hop déjà faites (parsées du champ JSON du brassin). */
+fun Brew.parsedDryhopDone(): Set<String> {
+    val raw = dryhopDoneDates
+    if (raw.isNullOrBlank()) return emptySet()
+    return runCatching { draftJson.decodeFromString<List<String>>(raw) }
+        .getOrDefault(emptyList())
+        .toSet()
+}
 
 /**
  * Corps du PUT /api/brews/{id} — écrase toutes les colonnes. On repasse tous
