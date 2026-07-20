@@ -66,6 +66,10 @@
     <string name="hop_dryhop">Dry hop</string>
     <string name="hop_minutes">min</string>
     <string name="hop_days">jours</string>
+    <string name="section_recipe">La recette</string>
+    <string name="section_brewing">Brassage</string>
+    <string name="section_fermentation">Fermentation</string>
+    <string name="recipe_notes_hint">Procédé, remarques, ajustements…</string>
     <string name="est_title">Estimations</string>
     <string name="est_ibu_formula">IBU : %1$s</string>
     <string name="est_color_morey">EBC %1$d · SRM %2$d · Couleur Morey</string>

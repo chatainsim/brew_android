@@ -5,8 +5,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.LocalDrink
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -126,31 +131,44 @@ fun RecipeEditScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.label_name)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FormSection(stringResource(R.string.section_recipe), Icons.Outlined.LocalDrink) {
             OutlinedTextField(
-                value = style,
-                onValueChange = { style = it },
-                label = { Text(stringResource(R.string.label_style)) },
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.label_name)) },
                 singleLine = true,
-                modifier = Modifier.weight(2f),
+                shape = softFieldShape,
+                colors = softFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
             )
-            NumField(volume, { volume = it }, stringResource(R.string.label_volume_l), Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = style,
+                    onValueChange = { style = it },
+                    label = { Text(stringResource(R.string.label_style)) },
+                    singleLine = true,
+                    shape = softFieldShape,
+                    colors = softFieldColors(),
+                    modifier = Modifier.weight(2f),
+                )
+                NumField(volume, { volume = it }, stringResource(R.string.label_volume_l), Modifier.weight(1f))
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            NumField(mashTemp, { mashTemp = it }, stringResource(R.string.recipe_mash_temp), Modifier.weight(1f))
-            NumField(mashTime, { mashTime = it }, stringResource(R.string.recipe_mash_time), Modifier.weight(1f))
-            NumField(boilTime, { boilTime = it }, stringResource(R.string.recipe_boil_time), Modifier.weight(1f))
+
+        FormSection(stringResource(R.string.section_brewing), Icons.Outlined.LocalFireDepartment) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                NumField(mashTemp, { mashTemp = it }, stringResource(R.string.recipe_mash_temp), Modifier.weight(1f))
+                NumField(mashTime, { mashTime = it }, stringResource(R.string.recipe_mash_time), Modifier.weight(1f))
+                NumField(boilTime, { boilTime = it }, stringResource(R.string.recipe_boil_time), Modifier.weight(1f))
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            NumField(fermTemp, { fermTemp = it }, stringResource(R.string.recipe_ferm_temp), Modifier.weight(1f))
-            NumField(fermTime, { fermTime = it }, stringResource(R.string.recipe_ferm_time), Modifier.weight(1f))
+
+        FormSection(stringResource(R.string.section_fermentation), Icons.Outlined.Thermostat) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                NumField(fermTemp, { fermTemp = it }, stringResource(R.string.recipe_ferm_temp), Modifier.weight(1f))
+                NumField(fermTime, { fermTime = it }, stringResource(R.string.recipe_ferm_time), Modifier.weight(1f))
+                Spacer(Modifier.weight(1f))
+            }
         }
 
         // ── Estimations en direct : recalculées à chaque frappe ──
@@ -224,13 +242,17 @@ fun RecipeEditScreen(
             }
         }
 
-        OutlinedTextField(
-            value = notes,
-            onValueChange = { notes = it },
-            label = { Text(stringResource(R.string.notes)) },
-            minLines = 3,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        FormSection(stringResource(R.string.notes), Icons.AutoMirrored.Outlined.Notes) {
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                placeholder = { Text(stringResource(R.string.recipe_notes_hint)) },
+                minLines = 3,
+                shape = softFieldShape,
+                colors = softFieldColors(),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         Button(
             onClick = {
@@ -243,11 +265,16 @@ fun RecipeEditScreen(
                 saving = false
             },
             enabled = name.isNotBlank() && !saving,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
         ) {
+            Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
             Text(
                 if (recipeId == null) stringResource(R.string.create_recipe)
                 else stringResource(R.string.save),
+                Modifier.padding(start = 8.dp),
+                fontWeight = FontWeight.SemiBold,
             )
         }
         Spacer(Modifier.height(24.dp))
@@ -357,9 +384,39 @@ private fun NumField(value: String, onChange: (String) -> Unit, label: String, m
         onValueChange = onChange,
         label = { Text(label) },
         singleLine = true,
+        shape = softFieldShape,
+        colors = softFieldColors(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = modifier,
     )
+}
+
+/** Section encartée du formulaire : icône + titre, puis les champs. */
+@Composable
+private fun FormSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            content()
+        }
+    }
 }
 
 @Composable
