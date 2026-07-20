@@ -59,6 +59,13 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         api().addBrewLog(brewId, BrewLogPost(ts = nowTimestamp(), step = step, note = note))
     }
 
+    suspend fun addFermReading(brewId: Int, gravity: Double, temperature: Double?, notes: String?) {
+        api().addBrewFermentation(
+            brewId,
+            FermReadingPost(recordedAt = nowTimestamp(), gravity = gravity, temperature = temperature, notes = notes),
+        )
+    }
+
     suspend fun addBrewStep(brewId: Int, date: String, title: String, notes: String?): BrewStep =
         api().addBrewStep(brewId, BrewStepPost(scheduledDate = date, title = title, notes = notes))
 

@@ -201,6 +201,14 @@ data class BrewStep(
 data class BrewLogPost(val ts: String, val step: String? = null, val note: String)
 
 @Serializable
+data class FermReadingPost(
+    @SerialName("recorded_at") val recordedAt: String,
+    val gravity: Double,
+    val temperature: Double? = null,
+    val notes: String? = null,
+)
+
+@Serializable
 data class BrewStepPost(
     @SerialName("scheduled_date") val scheduledDate: String,
     val title: String,

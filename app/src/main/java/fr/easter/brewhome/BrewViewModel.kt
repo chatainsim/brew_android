@@ -316,6 +316,15 @@ class BrewViewModel(
         }
     }
 
+    /** Ajoute un relevé de fermentation (densité obligatoire) puis recharge la fiche. */
+    fun addFermReading(brewId: Int, gravity: Double, temperature: Double?, notes: String?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_ferm_add) {
+            repo.addFermReading(brewId, gravity, temperature, notes?.ifBlank { null })
+            reloadBrewExtras(brewId)
+            onDone()
+        }
+    }
+
     fun addBrewStep(brewId: Int, date: String, title: String, notes: String?, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_step_add) {
             repo.addBrewStep(brewId, date, title, notes?.ifBlank { null })

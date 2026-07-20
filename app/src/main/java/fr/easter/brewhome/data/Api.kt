@@ -51,6 +51,9 @@ interface BrewApi {
     @POST("api/brews/{id}/log")
     suspend fun addBrewLog(@Path("id") id: Int, @Body body: BrewLogPost): kotlinx.serialization.json.JsonObject
 
+    @POST("api/brews/{id}/fermentation")
+    suspend fun addBrewFermentation(@Path("id") id: Int, @Body body: FermReadingPost): kotlinx.serialization.json.JsonObject
+
     @GET("api/brews/{id}/steps")
     suspend fun getBrewSteps(@Path("id") id: Int): List<BrewStep>
 

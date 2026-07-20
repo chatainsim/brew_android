@@ -151,6 +151,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     var viewing by remember { mutableStateOf<BrewPhoto?>(null) }
     var showAddLog by remember { mutableStateOf(false) }
     var showAddStep by remember { mutableStateOf(false) }
+    var showAddFerm by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -255,14 +256,11 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                         onDelete = { s -> vm.deleteBrewStep(brew.id, s.id) },
                     )
                 }
-                if (extras.readings.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.ferm_section, extras.readings.size),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    FermentationCard(extras.readings)
-                }
+                BrewSectionHeader(
+                    if (extras.readings.isEmpty()) stringResource(R.string.ferm_section_empty)
+                    else stringResource(R.string.ferm_section, extras.readings.size),
+                ) { showAddFerm = true }
+                if (extras.readings.isNotEmpty()) FermentationCard(extras.readings)
                 // Journal de brassage — bouton + pour ajouter une note
                 BrewSectionHeader(stringResource(R.string.log_section)) { showAddLog = true }
                 if (extras.log.isNotEmpty()) LogCard(extras.log)
@@ -289,6 +287,68 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             onDismiss = { showAddStep = false },
         )
     }
+    if (showAddFerm) {
+        AddFermDialog(
+            onAdd = { gravity, temp, notes ->
+                vm.addFermReading(brew.id, gravity, temp, notes) { showAddFerm = false }
+            },
+            onDismiss = { showAddFerm = false },
+        )
+    }
+}
+
+@Composable
+private fun AddFermDialog(
+    onAdd: (gravity: Double, temperature: Double?, notes: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var gravity by remember { mutableStateOf("") }
+    var temp by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    val g = gravity.trim().replace(',', '.').toDoubleOrNull()
+    val t = temp.trim().replace(',', '.').toDoubleOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ferm_add_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = gravity,
+                    onValueChange = { gravity = it },
+                    label = { Text(stringResource(R.string.ferm_gravity)) },
+                    placeholder = { Text("1.012") },
+                    isError = gravity.isNotBlank() && g == null,
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = temp,
+                    onValueChange = { temp = it },
+                    label = { Text(stringResource(R.string.ferm_temp)) },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { g?.let { onAdd(it, t, notes.trim().ifBlank { null }) } }, enabled = g != null) {
+                Text(stringResource(R.string.add))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 /** Titre de section avec un bouton « + » à droite. */

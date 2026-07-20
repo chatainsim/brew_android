@@ -154,6 +154,11 @@
     <string name="error_step_update">Échec de la mise à jour de l\'étape</string>
     <string name="error_step_delete">Échec de la suppression de l\'étape</string>
     <string name="error_dryhop">Échec du marquage du dry hop</string>
+    <string name="error_ferm_add">Échec de l\'ajout du relevé</string>
+    <string name="ferm_section_empty">Fermentation</string>
+    <string name="ferm_add_title">Relevé de fermentation</string>
+    <string name="ferm_gravity">Densité</string>
+    <string name="ferm_temp">Température (°C)</string>
     <string name="error_beer_archive">Échec de l\'archivage</string>
     <string name="beer_archive">Archiver</string>
     <string name="beer_unarchive">Désarchiver</string>
