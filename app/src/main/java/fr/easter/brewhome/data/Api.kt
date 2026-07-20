@@ -48,6 +48,12 @@ interface BrewApi {
     @GET("api/brews/{id}/photos")
     suspend fun getBrewPhotos(@Path("id") id: Int): List<BrewPhoto>
 
+    @POST("api/brews/{id}/photos")
+    suspend fun addBrewPhoto(@Path("id") id: Int, @Body body: BrewPhotoPost): BrewPhoto
+
+    @DELETE("api/brews/{id}/photos/{photoId}")
+    suspend fun deleteBrewPhoto(@Path("id") id: Int, @Path("photoId") photoId: Int): kotlinx.serialization.json.JsonObject
+
     @POST("api/brews/{id}/log")
     suspend fun addBrewLog(@Path("id") id: Int, @Body body: BrewLogPost): kotlinx.serialization.json.JsonObject
 

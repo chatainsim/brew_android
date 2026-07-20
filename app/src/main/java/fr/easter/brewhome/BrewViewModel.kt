@@ -325,6 +325,30 @@ class BrewViewModel(
         }
     }
 
+    private val _photoUploading = MutableStateFlow(false)
+    /** true pendant l'envoi d'une photo (spinner). */
+    val photoUploading: StateFlow<Boolean> = _photoUploading
+
+    fun addBrewPhoto(brewId: Int, dataUrl: String, caption: String?, onDone: () -> Unit = {}) {
+        _photoUploading.value = true
+        launchWithError(R.string.error_photo_add) {
+            try {
+                repo.addBrewPhoto(brewId, dataUrl, caption?.ifBlank { null })
+                reloadBrewExtras(brewId)
+                onDone()
+            } finally {
+                _photoUploading.value = false
+            }
+        }
+    }
+
+    fun deleteBrewPhoto(brewId: Int, photoId: Int) {
+        launchWithError(R.string.error_photo_delete) {
+            repo.deleteBrewPhoto(brewId, photoId)
+            reloadBrewExtras(brewId)
+        }
+    }
+
     fun addBrewStep(brewId: Int, date: String, title: String, notes: String?, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_step_add) {
             repo.addBrewStep(brewId, date, title, notes?.ifBlank { null })

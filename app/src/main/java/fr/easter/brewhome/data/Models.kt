@@ -336,6 +336,14 @@ data class BrewPhoto(
     @SerialName("created_at") val createdAt: String? = null,
 )
 
+/** Envoi d'une photo de brassin : `photo` = data URL base64 (data:image/jpeg;base64,…). */
+@Serializable
+data class BrewPhotoPost(
+    val photo: String,
+    val step: String? = null,
+    val caption: String? = null,
+)
+
 /** Mesure de fermentation (manuelle ou densimètre connecté). */
 @Serializable
 data class FermReading(

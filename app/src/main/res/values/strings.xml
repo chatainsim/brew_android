@@ -157,6 +157,12 @@
     <string name="error_ferm_add">Échec de l\'ajout du relevé</string>
     <string name="ferm_section_empty">Fermentation</string>
     <string name="ferm_add_title">Relevé de fermentation</string>
+    <string name="error_photo_add">Échec de l\'envoi de la photo</string>
+    <string name="error_photo_delete">Échec de la suppression de la photo</string>
+    <string name="photos_section_empty">Photos</string>
+    <string name="photo_add">Ajouter une photo</string>
+    <string name="photo_camera">Prendre une photo</string>
+    <string name="photo_gallery">Choisir dans la galerie</string>
     <string name="ferm_gravity">Densité</string>
     <string name="ferm_temp">Température (°C)</string>
     <string name="error_beer_archive">Échec de l\'archivage</string>

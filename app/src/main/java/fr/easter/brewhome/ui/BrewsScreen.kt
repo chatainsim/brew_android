@@ -1,5 +1,8 @@
 package fr.easter.brewhome.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,9 +16,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -47,6 +53,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -153,6 +160,21 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     var showAddStep by remember { mutableStateOf(false) }
     var showAddFerm by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val photoUploading by vm.photoUploading.collectAsState()
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview(),
+    ) { bmp -> if (bmp != null) vm.addBrewPhoto(brew.id, ImageUpload.bitmapToDataUrl(bmp), null) }
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri ->
+        if (uri != null) {
+            ImageUpload.uriToBitmap(context, uri)?.let {
+                vm.addBrewPhoto(brew.id, ImageUpload.bitmapToDataUrl(it), null)
+            }
+        }
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -233,14 +255,17 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                 color = MaterialTheme.colorScheme.error,
             )
             else -> {
-                if (extras.photos.isNotEmpty()) {
-                    Text(
-                        stringResource(R.string.photos_section, extras.photos.size),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    PhotosRow(vm, extras.photos) { viewing = it }
-                }
+                PhotosSectionHeader(
+                    count = extras.photos.size,
+                    uploading = photoUploading,
+                    onCamera = { cameraLauncher.launch(null) },
+                    onGallery = {
+                        galleryLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                        )
+                    },
+                )
+                if (extras.photos.isNotEmpty()) PhotosRow(vm, extras.photos) { viewing = it }
                 // Étapes de brassage (checklist) — toujours visible avec bouton +
                 BrewSectionHeader(stringResource(R.string.steps_section)) { showAddStep = true }
                 if (extras.steps.isEmpty()) {
@@ -274,7 +299,13 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
         Spacer(Modifier.height(24.dp))
     }
 
-    viewing?.let { photo -> PhotoViewer(vm, photo) { viewing = null } }
+    viewing?.let { photo ->
+        PhotoViewer(
+            vm, photo,
+            onDelete = { vm.deleteBrewPhoto(brew.id, photo.id); viewing = null },
+            onDismiss = { viewing = null },
+        )
+    }
     if (showAddLog) {
         AddLogDialog(
             onAdd = { note, step -> vm.addBrewLog(brew.id, note, step) { showAddLog = false } },
@@ -363,6 +394,47 @@ private fun BrewSectionHeader(title: String, onAdd: () -> Unit) {
         )
         IconButton(onClick = onAdd) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add))
+        }
+    }
+}
+
+/** En-tête « Photos » avec menu Appareil photo / Galerie et spinner d'envoi. */
+@Composable
+private fun PhotosSectionHeader(
+    count: Int,
+    uploading: Boolean,
+    onCamera: () -> Unit,
+    onGallery: () -> Unit,
+) {
+    var menu by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            if (count > 0) stringResource(R.string.photos_section, count)
+            else stringResource(R.string.photos_section_empty),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        if (uploading) {
+            CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.5.dp)
+        } else {
+            Box {
+                IconButton(onClick = { menu = true }) {
+                    Icon(Icons.Filled.AddAPhoto, contentDescription = stringResource(R.string.photo_add))
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.photo_camera)) },
+                        leadingIcon = { Icon(Icons.Filled.PhotoCamera, contentDescription = null) },
+                        onClick = { menu = false; onCamera() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.photo_gallery)) },
+                        leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                        onClick = { menu = false; onGallery() },
+                    )
+                }
+            }
         }
     }
 }
@@ -592,29 +664,38 @@ private fun PhotosRow(vm: BrewViewModel, photos: List<BrewPhoto>, onOpen: (BrewP
 
 /** Photo plein format dans une boîte de dialogue, fermée d'un tap. */
 @Composable
-private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDismiss: () -> Unit) {
+private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDelete: () -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onDismiss),
-        ) {
+        Column(Modifier.clip(RoundedCornerShape(12.dp))) {
             AsyncImage(
                 model = vm.photoUrl(fullPhotoPath(photo.thumb)),
                 contentDescription = photo.caption ?: photo.step,
                 contentScale = ContentScale.FillWidth,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onDismiss),
             )
-            val label = listOfNotNull(photo.step, photo.caption).joinToString(" · ")
-            if (label.isNotBlank()) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val label = listOfNotNull(photo.step, photo.caption).joinToString(" · ")
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
+                    modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }

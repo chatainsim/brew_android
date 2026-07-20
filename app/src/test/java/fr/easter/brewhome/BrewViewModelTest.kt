@@ -14,6 +14,7 @@ import fr.easter.brewhome.data.BrewStepPost
 import fr.easter.brewhome.data.BrewStepPut
 import fr.easter.brewhome.data.DryhopDonePost
 import fr.easter.brewhome.data.BrewPhoto
+import fr.easter.brewhome.data.BrewPhotoPost
 import fr.easter.brewhome.data.BulkCheckPut
 import fr.easter.brewhome.data.BuyResult
 import fr.easter.brewhome.data.BrewPut
@@ -187,6 +188,8 @@ class BrewViewModelTest {
         override suspend fun getBrewFermentation(id: Int): List<FermReading> = throw NotImplementedError()
         override suspend fun getBrewLog(id: Int): List<BrewLogEntry> = throw NotImplementedError()
         override suspend fun getBrewPhotos(id: Int): List<BrewPhoto> = throw NotImplementedError()
+        override suspend fun addBrewPhoto(id: Int, body: BrewPhotoPost): BrewPhoto = throw NotImplementedError()
+        override suspend fun deleteBrewPhoto(id: Int, photoId: Int): JsonObject = throw NotImplementedError()
         override suspend fun addBrewLog(id: Int, body: BrewLogPost): JsonObject = throw NotImplementedError()
         override suspend fun addBrewFermentation(id: Int, body: FermReadingPost): JsonObject = throw NotImplementedError()
         override suspend fun getBrewSteps(id: Int): List<BrewStep> = throw NotImplementedError()
