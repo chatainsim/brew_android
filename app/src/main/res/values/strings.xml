@@ -296,6 +296,13 @@
     <string name="label_updated_on">Modifié le</string>
 
     <!-- Stock et courses -->
+    <string name="inventory_add_title">Nouvel article</string>
+    <string name="inventory_edit_title">Modifier l\'article</string>
+    <string name="inv_min_stock">Seuil bas</string>
+    <string name="inv_price">Prix / unité (€)</string>
+    <string name="inv_ebc">EBC</string>
+    <string name="inv_alpha">Alpha (%)</string>
+    <string name="inv_origin">Origine</string>
     <string name="inventory_seg">Stock (%1$d)</string>
     <string name="shopping_seg">Courses (%1$d)</string>
     <string name="inventory_empty">Aucun ingrédient en stock.</string>

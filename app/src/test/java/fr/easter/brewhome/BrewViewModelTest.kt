@@ -26,6 +26,7 @@ import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
+import fr.easter.brewhome.data.InventoryPost
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipePost
@@ -185,6 +186,9 @@ class BrewViewModelTest {
         override suspend fun putBeerTasting(id: Int, body: TastingPut): Beer = throw NotImplementedError()
         override suspend fun getRecipe(id: Int): Recipe = throw NotImplementedError()
         override suspend fun patchInventoryQty(id: Int, body: QtyPatch): InventoryItem = throw NotImplementedError()
+        override suspend fun createInventoryItem(body: InventoryPost): InventoryItem = throw NotImplementedError()
+        override suspend fun updateInventoryItem(id: Int, body: InventoryPost): InventoryItem = throw NotImplementedError()
+        override suspend fun deleteInventoryItem(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getBrewFermentation(id: Int): List<FermReading> = throw NotImplementedError()
         override suspend fun getBrewLog(id: Int): List<BrewLogEntry> = throw NotImplementedError()
         override suspend fun getBrewPhotos(id: Int): List<BrewPhoto> = throw NotImplementedError()

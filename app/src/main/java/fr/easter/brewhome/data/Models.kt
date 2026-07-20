@@ -377,6 +377,21 @@ data class ShoppingPost(
     @SerialName("inventory_item_id") val inventoryItemId: Int? = null,
 )
 
+/** Corps de POST/PUT /api/inventory : création ou édition d'un article. */
+@Serializable
+data class InventoryPost(
+    val name: String,
+    val category: String,
+    val quantity: Double = 0.0,
+    val unit: String = "kg",
+    val origin: String? = null,
+    val ebc: Double? = null,
+    val alpha: Double? = null,
+    @SerialName("min_stock") val minStock: Double? = null,
+    @SerialName("price_per_unit") val pricePerUnit: Double? = null,
+    val notes: String? = null,
+)
+
 @Serializable
 data class BulkCheckPut(val ids: List<Int>, val checked: Boolean)
 

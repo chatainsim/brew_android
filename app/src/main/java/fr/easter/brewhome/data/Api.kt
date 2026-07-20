@@ -36,6 +36,15 @@ interface BrewApi {
     @PATCH("api/inventory/{id}/qty")
     suspend fun patchInventoryQty(@Path("id") id: Int, @Body body: QtyPatch): InventoryItem
 
+    @POST("api/inventory")
+    suspend fun createInventoryItem(@Body body: InventoryPost): InventoryItem
+
+    @PUT("api/inventory/{id}")
+    suspend fun updateInventoryItem(@Path("id") id: Int, @Body body: InventoryPost): InventoryItem
+
+    @DELETE("api/inventory/{id}")
+    suspend fun deleteInventoryItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
     @GET("api/brews")
     suspend fun getBrews(): List<Brew>
 

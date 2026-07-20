@@ -240,6 +240,22 @@ class BrewViewModel(
         }
     }
 
+    /** Crée (id == null) ou met à jour un article d'inventaire (nom, prix, seuil…). */
+    fun saveInventoryItem(id: Int?, post: fr.easter.brewhome.data.InventoryPost, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_qty_update) {
+            if (id == null) repo.createInventoryItem(post) else repo.updateInventoryItem(id, post)
+            _state.value = _state.value.copy(inventory = repo.inventory(), error = null)
+            onDone()
+        }
+    }
+
+    fun deleteInventoryItem(item: InventoryItem) {
+        launchWithError(R.string.error_shopping_delete) {
+            repo.deleteInventoryItem(item.id)
+            _state.value = _state.value.copy(inventory = repo.inventory(), error = null)
+        }
+    }
+
     private fun replaceBeer(updated: Beer) {
         _state.value = _state.value.copy(
             beers = _state.value.beers.map { if (it.id == updated.id) updated else it },

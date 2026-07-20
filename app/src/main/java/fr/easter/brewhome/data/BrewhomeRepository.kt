@@ -134,6 +134,17 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun beers(): List<Beer> = api().getBeers()
 
+    suspend fun inventory(): List<InventoryItem> = api().getInventory()
+
+    suspend fun createInventoryItem(post: InventoryPost): InventoryItem = api().createInventoryItem(post)
+
+    suspend fun updateInventoryItem(id: Int, post: InventoryPost): InventoryItem =
+        api().updateInventoryItem(id, post)
+
+    suspend fun deleteInventoryItem(id: Int) {
+        api().deleteInventoryItem(id)
+    }
+
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
 
     /** Change le statut d'un brassin en repassant tous ses champs (PUT). */

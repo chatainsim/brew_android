@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -31,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
 import fr.easter.brewhome.data.InventoryItem
+import fr.easter.brewhome.data.InventoryPost
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
 
@@ -46,6 +49,7 @@ private fun stepFor(unit: String): Double = when (unit.lowercase()) {
 fun InventoryScreen(vm: BrewViewModel, initialShopping: Boolean = false) {
     val state by vm.state.collectAsState()
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
+    var creating by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var showShopping by rememberSaveable { mutableStateOf(initialShopping) }
 
@@ -70,21 +74,157 @@ fun InventoryScreen(vm: BrewViewModel, initialShopping: Boolean = false) {
             if (showShopping) {
                 ShoppingContent(vm)
             } else {
-                InventoryContent(state.inventory, query, { query = it }, vm) { editing = it }
+                Box(Modifier.fillMaxSize()) {
+                    InventoryContent(state.inventory, query, { query = it }, vm) { editing = it }
+                    FloatingActionButton(
+                        onClick = { creating = true },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.inventory_add_title))
+                    }
+                }
             }
         }
     }
 
-    editing?.let { item ->
-        QtyDialog(
-            item = item,
-            onDismiss = { editing = null },
-            onSave = { qty ->
-                vm.setInventoryQty(item, qty)
-                editing = null
-            },
+    if (creating) {
+        InventoryItemDialog(
+            item = null,
+            onDismiss = { creating = false },
+            onSave = { post -> vm.saveInventoryItem(null, post) { creating = false } },
+            onDelete = null,
         )
     }
+    editing?.let { item ->
+        InventoryItemDialog(
+            item = item,
+            onDismiss = { editing = null },
+            onSave = { post -> vm.saveInventoryItem(item.id, post) { editing = null } },
+            onDelete = { vm.deleteInventoryItem(item); editing = null },
+        )
+    }
+}
+
+private val inventoryUnits = listOf("g", "kg", "mL", "L", "sachet", "pièce", "unité")
+
+@Composable
+private fun InventoryItemDialog(
+    item: InventoryItem?,
+    onDismiss: () -> Unit,
+    onSave: (InventoryPost) -> Unit,
+    onDelete: (() -> Unit)?,
+) {
+    var name by remember { mutableStateOf(item?.name ?: "") }
+    var category by remember { mutableStateOf(item?.category?.lowercase() ?: "malt") }
+    var qty by remember { mutableStateOf(item?.quantity?.let { fmtQty(it).replace(',', '.') } ?: "0") }
+    var unit by remember { mutableStateOf(item?.unit ?: "kg") }
+    var minStock by remember { mutableStateOf(item?.minStock?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    var price by remember { mutableStateOf(item?.pricePerUnit?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    var ebc by remember { mutableStateOf(item?.ebc?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    var alpha by remember { mutableStateOf(item?.alpha?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    var origin by remember { mutableStateOf(item?.origin ?: "") }
+    var notes by remember { mutableStateOf(item?.notes ?: "") }
+    val qtyOk = qty.replace(',', '.').toDoubleOrNull() != null
+
+    fun num(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (item == null) stringResource(R.string.inventory_add_title)
+                else stringResource(R.string.inventory_edit_title),
+            )
+        },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.label_name)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+                DialogDropdown(
+                    label = stringResource(R.string.label_category),
+                    value = categoryLabel(category),
+                    options = categoryOrder,
+                    optionLabel = { categoryLabel(it) },
+                    onSelect = { category = it },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = qty, onValueChange = { qty = it },
+                        label = { Text(stringResource(R.string.label_quantity)) },
+                        isError = !qtyOk, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f),
+                    )
+                    DialogDropdown(
+                        label = stringResource(R.string.label_unit),
+                        value = unit, options = inventoryUnits, optionLabel = { it },
+                        onSelect = { unit = it }, modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NumFieldInv(minStock, { minStock = it }, stringResource(R.string.inv_min_stock), Modifier.weight(1f))
+                    NumFieldInv(price, { price = it }, stringResource(R.string.inv_price), Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    NumFieldInv(ebc, { ebc = it }, stringResource(R.string.inv_ebc), Modifier.weight(1f))
+                    NumFieldInv(alpha, { alpha = it }, stringResource(R.string.inv_alpha), Modifier.weight(1f))
+                }
+                OutlinedTextField(
+                    value = origin, onValueChange = { origin = it },
+                    label = { Text(stringResource(R.string.inv_origin)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = notes, onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.notes)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (onDelete != null) {
+                    TextButton(onClick = onDelete) {
+                        Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(InventoryPost(
+                        name = name.trim(),
+                        category = category,
+                        quantity = num(qty) ?: 0.0,
+                        unit = unit,
+                        origin = origin.trim().ifBlank { null },
+                        ebc = num(ebc),
+                        alpha = num(alpha),
+                        minStock = num(minStock),
+                        pricePerUnit = num(price),
+                        notes = notes.trim().ifBlank { null },
+                    ))
+                },
+                enabled = name.isNotBlank() && qtyOk,
+            ) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+@Composable
+private fun NumFieldInv(value: String, onChange: (String) -> Unit, label: String, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = value, onValueChange = onChange,
+        label = { Text(label) }, singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -510,32 +650,3 @@ private fun InventoryRow(
     }
 }
 
-@Composable
-private fun QtyDialog(item: InventoryItem, onDismiss: () -> Unit, onSave: (Double) -> Unit) {
-    var text by remember { mutableStateOf(fmtQty(item.quantity).replace(',', '.')) }
-    val parsed = text.replace(',', '.').toDoubleOrNull()
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(item.name) },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text(stringResource(R.string.qty_with_unit, item.unit)) },
-                isError = parsed == null,
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { parsed?.let(onSave) },
-                enabled = parsed != null && parsed >= 0,
-            ) { Text(stringResource(R.string.save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
-}
