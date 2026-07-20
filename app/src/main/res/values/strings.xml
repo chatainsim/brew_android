@@ -186,6 +186,11 @@
     <string name="theme_dark">Sombre</string>
     <string name="settings_dynamic_title">Couleurs du téléphone</string>
     <string name="settings_dynamic_help">Material You : palette dérivée de ton fond d\'écran au lieu de l\'ambre BrewHome.</string>
+    <string name="settings_notifs_title">Rappels de brassage</string>
+    <string name="settings_notifs_help">Notifications locales le jour de chaque échéance : dry hop à ajouter, fin de fermentation prévue, rappels d\'événements.</string>
+    <string name="settings_notifs_switch">Activer les rappels</string>
+    <string name="notif_channel_name">Rappels de brassage</string>
+    <string name="notif_channel_desc">Échéances de fermentation, dry hop et événements</string>
     <string name="settings_vpn_title">VPN WireGuard</string>
     <string name="settings_vpn_help">Si le serveur ne répond pas au lancement (hors du réseau local), l\'app monte le tunnel WireGuard puis réessaie. Nécessite l\'app WireGuard avec « Autoriser les applications de contrôle à distance » activé dans ses réglages avancés.</string>
     <string name="settings_vpn_switch">VPN automatique si serveur injoignable</string>

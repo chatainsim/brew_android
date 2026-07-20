@@ -119,6 +119,42 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         }
 
         Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.settings_notifs_title), style = MaterialTheme.typography.titleLarge)
+        Text(
+            stringResource(R.string.settings_notifs_help),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        val notifsEnabled by vm.notifsEnabled.collectAsState()
+        val notifContext = LocalContext.current
+        val notifPermLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted -> vm.setNotifsEnabled(granted) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.settings_notifs_switch),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = notifsEnabled,
+                onCheckedChange = { on ->
+                    if (!on) {
+                        vm.setNotifsEnabled(false)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(
+                            notifContext, android.Manifest.permission.POST_NOTIFICATIONS,
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notifPermLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        vm.setNotifsEnabled(true)
+                    }
+                },
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
         Text(stringResource(R.string.settings_vpn_title), style = MaterialTheme.typography.titleLarge)
         Text(
             stringResource(R.string.settings_vpn_help),

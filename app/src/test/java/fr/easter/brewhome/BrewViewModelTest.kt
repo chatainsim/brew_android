@@ -90,11 +90,13 @@ class BrewViewModelTest {
         override val dynamicColor = MutableStateFlow(false)
         override val wgAuto = MutableStateFlow(false)
         override val wgTunnel = MutableStateFlow("")
+        override val notifsEnabled = MutableStateFlow(false)
         override suspend fun setServerUrl(url: String) { serverUrl.value = url }
         override suspend fun setThemeMode(mode: String) { themeMode.value = mode }
         override suspend fun setDynamicColor(enabled: Boolean) { dynamicColor.value = enabled }
         override suspend fun setWgAuto(enabled: Boolean) { wgAuto.value = enabled }
         override suspend fun setWgTunnel(name: String) { wgTunnel.value = name }
+        override suspend fun setNotifsEnabled(enabled: Boolean) { notifsEnabled.value = enabled }
     }
 
     /** Serveur en mémoire : bascule [down] pour simuler la perte de réseau. */

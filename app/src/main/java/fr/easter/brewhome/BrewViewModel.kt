@@ -145,6 +145,14 @@ class BrewViewModel(
         viewModelScope.launch { settings.setWgTunnel(name) }
     }
 
+    /** Notifications locales des échéances de brassage. */
+    val notifsEnabled: StateFlow<Boolean> = settings.notifsEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setNotifsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setNotifsEnabled(enabled) }
+    }
+
     fun saveServerUrl(url: String, onDone: () -> Unit = {}) {
         viewModelScope.launch {
             settings.setServerUrl(ApiClient.normalizeUrl(url))

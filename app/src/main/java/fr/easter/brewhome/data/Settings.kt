@@ -14,6 +14,7 @@ private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
 private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
 private val KEY_WG_AUTO = booleanPreferencesKey("wg_auto")
 private val KEY_WG_TUNNEL = stringPreferencesKey("wg_tunnel")
+private val KEY_NOTIFS = booleanPreferencesKey("notifs_enabled")
 
 /** Réglages de l'app, abstraits pour pouvoir tester le ViewModel sans DataStore. */
 interface AppSettings {
@@ -29,11 +30,15 @@ interface AppSettings {
     val wgAuto: Flow<Boolean>
     val wgTunnel: Flow<String>
 
+    /** Notifications locales des échéances de brassage (dry hop, fin de ferm…). */
+    val notifsEnabled: Flow<Boolean>
+
     suspend fun setServerUrl(url: String)
     suspend fun setThemeMode(mode: String)
     suspend fun setDynamicColor(enabled: Boolean)
     suspend fun setWgAuto(enabled: Boolean)
     suspend fun setWgTunnel(name: String)
+    suspend fun setNotifsEnabled(enabled: Boolean)
 }
 
 class SettingsRepository(private val context: Context) : AppSettings {
@@ -42,6 +47,7 @@ class SettingsRepository(private val context: Context) : AppSettings {
     override val dynamicColor: Flow<Boolean> = context.dataStore.data.map { it[KEY_DYNAMIC_COLOR] ?: false }
     override val wgAuto: Flow<Boolean> = context.dataStore.data.map { it[KEY_WG_AUTO] ?: false }
     override val wgTunnel: Flow<String> = context.dataStore.data.map { it[KEY_WG_TUNNEL] ?: "" }
+    override val notifsEnabled: Flow<Boolean> = context.dataStore.data.map { it[KEY_NOTIFS] ?: false }
 
     override suspend fun setServerUrl(url: String) {
         context.dataStore.edit { it[KEY_SERVER_URL] = url }
@@ -61,5 +67,9 @@ class SettingsRepository(private val context: Context) : AppSettings {
 
     override suspend fun setWgTunnel(name: String) {
         context.dataStore.edit { it[KEY_WG_TUNNEL] = name }
+    }
+
+    override suspend fun setNotifsEnabled(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_NOTIFS] = enabled }
     }
 }

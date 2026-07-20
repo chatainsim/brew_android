@@ -127,6 +127,38 @@ fun BrewHomeApp(
         }
     }
 
+    // Rappels de brassage : (re)programmer les notifications locales quand les
+    // données ou le réglage changent (dry hop, fin de fermentation…).
+    val notifsEnabled by vm.notifsEnabled.collectAsState()
+    val customEvents by vm.customEvents.collectAsState()
+    val appContext = LocalContext.current.applicationContext
+    LaunchedEffect(notifsEnabled) {
+        if (notifsEnabled) vm.loadCustomEvents()
+    }
+    LaunchedEffect(notifsEnabled, state.loaded, state.brews, state.beers, state.drafts, customEvents) {
+        if (!notifsEnabled) {
+            fr.easter.brewhome.notif.BrewReminders.cancelAll(appContext)
+            return@LaunchedEffect
+        }
+        if (!state.loaded || !fr.easter.brewhome.notif.BrewReminders.hasPermission(appContext)) {
+            return@LaunchedEffect
+        }
+        val today = java.time.LocalDate.now()
+        val events = fr.easter.brewhome.calc.CalendarEvents.agenda(
+            from = today,
+            to = today.plusDays(60),
+            brews = state.brews,
+            recipes = state.recipes.associateBy { it.id },
+            beers = state.beers,
+            drafts = state.drafts,
+            customEvents = customEvents ?: emptyList(),
+        )
+        fr.easter.brewhome.notif.BrewReminders.schedule(
+            appContext,
+            fr.easter.brewhome.notif.BrewReminders.remindersFrom(events),
+        )
+    }
+
     // Actions annulables : snackbar avec bouton « Annuler »
     val undoNotice by vm.undo.collectAsState()
     val undoLabel = stringResource(R.string.undo)
