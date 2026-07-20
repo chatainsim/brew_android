@@ -13,8 +13,8 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 50
-        versionName = "1.40"
+        versionCode = 51
+        versionName = "1.41"
     }
 
     // Clé de release BrewHome : identifiants dans ~/.gradle/gradle.properties
@@ -77,6 +77,7 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")

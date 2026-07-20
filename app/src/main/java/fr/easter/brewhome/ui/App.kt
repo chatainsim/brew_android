@@ -1,6 +1,7 @@
 package fr.easter.brewhome.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.glance.appwidget.updateAll
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
@@ -163,6 +164,15 @@ fun BrewHomeApp(
             appContext,
             fr.easter.brewhome.notif.BrewReminders.remindersFrom(events),
         )
+    }
+
+    // Rafraîchir le widget écran d'accueil quand de nouvelles données arrivent
+    LaunchedEffect(state.dataAt) {
+        if (state.dataAt != null) {
+            runCatching {
+                fr.easter.brewhome.widget.BrewWidget().updateAll(appContext)
+            }
+        }
     }
 
     // Actions annulables : snackbar avec bouton « Annuler »
