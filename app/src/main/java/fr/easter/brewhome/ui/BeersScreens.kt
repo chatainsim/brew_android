@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -103,52 +104,40 @@ fun EmptyHint(text: String, icon: ImageVector = Icons.Outlined.SportsBar) {
 
 @Composable
 private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val hasStock = (beer.stock33 ?: 0) > 0 || (beer.stock75 ?: 0) > 0 || (beer.kegLiters ?: 0.0) > 0.0
-    val accent = if (hasStock) MaterialTheme.colorScheme.primary
-                 else MaterialTheme.colorScheme.outlineVariant
-    Card(
+    val hasKeg = (beer.kegLiters ?: 0.0) > 0.0 || (beer.kegInitialLiters ?: 0.0) > 0.0
+    ElevatedCard(
+        shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(beer.id) },
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
-            // Liseré d'accent : ambre si en cave, gris si épuisée
-            Box(
-                Modifier
-                    .width(5.dp)
-                    .fillMaxHeight()
-                    .background(accent),
-            )
+            // Photo pleine hauteur, bord à bord (arrondie par la carte)
+            BeerHero(beer, vm)
             Column(Modifier.padding(14.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    BeerAvatar(beer, vm)
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            beer.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        val subtitle = listOfNotNull(
-                            beer.type,
-                            beer.abv?.let { "${fmtQty(it)} % alc." },
-                        ).joinToString(" · ")
-                        if (subtitle.isNotEmpty()) {
-                            Text(
-                                subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        beer.tasteRating?.takeIf { it > 0 }?.let {
-                            Spacer(Modifier.height(4.dp))
-                            RatingPill(it)
-                        }
-                    }
+                Text(
+                    beer.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = listOfNotNull(
+                    beer.type,
+                    beer.abv?.let { "${fmtQty(it)} % alc." },
+                ).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                beer.tasteRating?.takeIf { it > 0 }?.let {
+                    Spacer(Modifier.height(5.dp))
+                    RatingPill(it)
                 }
                 Spacer(Modifier.height(12.dp))
                 Stepper(
@@ -166,7 +155,7 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modif
                     onDecrement = { vm.adjustBeerStock(beer, d75 = -1) },
                     onIncrement = { vm.adjustBeerStock(beer, d75 = 1) },
                 )
-                if ((beer.kegLiters ?: 0.0) > 0.0 || (beer.kegInitialLiters ?: 0.0) > 0.0) {
+                if (hasKeg) {
                     Spacer(Modifier.height(6.dp))
                     Stepper(
                         stringResource(R.string.keg), beer.kegLiters ?: 0.0,
@@ -181,40 +170,86 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modif
     }
 }
 
-/** Vignette 72 dp : photo de la bière, ou monogramme sur dégradé si absente. */
+/** Photo pleine hauteur de la carte, ou monogramme sur dégradé, avec le
+ *  total de bouteilles en pastille en bas. */
 @Composable
-private fun BeerAvatar(beer: Beer, vm: BrewViewModel) {
+private fun BeerHero(beer: Beer, vm: BrewViewModel) {
     val photoUrl = vm.photoUrl(beer.photo)
-    if (photoUrl != null) {
-        AsyncImage(
-            model = photoUrl,
-            contentDescription = beer.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(14.dp)),
-        )
-    } else {
-        Box(
-            Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.tertiaryContainer,
+    val totalBottles = (beer.stock33 ?: 0) + (beer.stock75 ?: 0)
+    Box(
+        Modifier
+            .width(104.dp)
+            .fillMaxHeight(),
+        contentAlignment = Alignment.BottomStart,
+    ) {
+        if (photoUrl != null) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = beer.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Voile sombre en bas pour lisibilité de la pastille
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)),
                         ),
                     ),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                beer.name.trim().take(1).uppercase(),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
+        } else {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                            ),
+                        ),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    beer.name.trim().take(1).uppercase(),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                )
+            }
+        }
+        if (totalBottles > 0) {
+            val onPhoto = photoUrl != null
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (onPhoto) Color.Black.copy(alpha = 0.55f)
+                        else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                modifier = Modifier.padding(6.dp),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.SportsBar,
+                        contentDescription = null,
+                        tint = if (onPhoto) Color.White else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "$totalBottles",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (onPhoto) Color.White else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
         }
     }
 }
