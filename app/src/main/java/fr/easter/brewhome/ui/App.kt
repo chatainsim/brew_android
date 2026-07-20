@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocalDrink
 import androidx.compose.material.icons.outlined.Science
@@ -67,6 +68,7 @@ import java.time.format.DateTimeFormatter
 data class Tab(val route: String, @StringRes val labelRes: Int, val icon: ImageVector)
 
 val tabs = listOf(
+    Tab("home", R.string.tab_home, Icons.Outlined.Home),
     Tab("beers", R.string.tab_beers, Icons.Outlined.LocalDrink),
     Tab("recipes", R.string.tab_recipes, Icons.AutoMirrored.Outlined.MenuBook),
     Tab("inventory", R.string.tab_inventory, Icons.Outlined.Inventory2),
@@ -77,6 +79,7 @@ val tabs = listOf(
 /** Onglet auquel appartient une route (pour la sélection de la barre du bas). */
 private fun tabOf(route: String?): String? = when {
     route == null -> null
+    route == "home" -> "home"
     route == "beers" || route.startsWith("beer/") || route.startsWith("beerEdit/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") || route.startsWith("recipeEdit/") ||
         route.startsWith("recipeFromDraft/") ||
@@ -190,7 +193,7 @@ fun BrewHomeApp(
 
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val startDestination = if (serverUrl.isNullOrBlank()) "settings" else "beers"
+    val startDestination = if (serverUrl.isNullOrBlank()) "settings" else "home"
     val currentTab = tabOf(currentRoute)
     val canGoBack = currentRoute != null && currentRoute != startDestination &&
         currentRoute !in tabs.map { it.route }
@@ -430,6 +433,19 @@ fun BrewHomeApp(
                 fadeOut(tween(220)) + slideOutVertically(tween(220)) { it / 20 }
             },
         ) {
+            composable("home") {
+                DashboardScreen(
+                    vm,
+                    onOpenBrew = { navController.navigate("brew/$it") },
+                    onOpen = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
             composable("beers") { BeersScreen(vm) { navController.navigate("beer/$it") } }
             composable("beer/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
@@ -523,7 +539,7 @@ fun BrewHomeApp(
             composable("stats") { StatsScreen(vm) }
             composable("settings") {
                 SettingsScreen(vm) {
-                    navController.navigate("beers") { popUpTo("settings") { inclusive = true } }
+                    navController.navigate("home") { popUpTo("settings") { inclusive = true } }
                 }
             }
         }

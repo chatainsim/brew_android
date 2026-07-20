@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BrewHome</string>
+    <string name="dash_cave">Ma cave</string>
+    <string name="dash_cave_detail">%1$d × 33 cl · %2$d × 75 cl</string>
+    <string name="dash_active_brews">Brassins en cours</string>
+    <string name="dash_upcoming">Prochaines échéances</string>
+    <string name="dash_low_stock">Stock bas</string>
 
     <!-- Onglets -->
+    <string name="tab_home">Accueil</string>
     <string name="tab_beers">Cave</string>
     <string name="tab_recipes">Recettes</string>
     <string name="tab_inventory">Stock</string>
