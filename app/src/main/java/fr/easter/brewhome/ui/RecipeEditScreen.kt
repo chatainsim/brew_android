@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -222,20 +221,13 @@ fun RecipeEditScreen(
         draftCategories.forEach { cat ->
             IngredientSectionHeader(cat)
             val indices = ings.withIndex().filter { it.value.category == cat }.map { it.index }
-            if (indices.isNotEmpty()) {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        indices.forEachIndexed { pos, i ->
-                            if (pos > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                            RecipeIngredientEditor(
-                                ing = ings[i],
-                                suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
-                                onChange = { ings[i] = it },
-                                onDelete = { ings.removeAt(i) },
-                            )
-                        }
-                    }
-                }
+            indices.forEach { i ->
+                RecipeIngredientEditor(
+                    ing = ings[i],
+                    suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                    onChange = { ings[i] = it },
+                    onDelete = { ings.removeAt(i) },
+                )
             }
             AddIngredientButton(cat) {
                 ings.add(EditRecipeIng("", cat, "", unitsByCategory.getValue(cat).first()))
@@ -426,22 +418,13 @@ private fun RecipeIngredientEditor(
     onChange: (EditRecipeIng) -> Unit,
     onDelete: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NameFieldWithSuggestions(
-                value = ing.name,
-                suggestions = { q -> suggest(ing.category, q) },
-                onChange = { onChange(ing.copy(name = it)) },
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.cd_delete_ingredient),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
+    IngredientTile(category = ing.category, onDelete = onDelete) {
+        NameFieldWithSuggestions(
+            value = ing.name,
+            suggestions = { q -> suggest(ing.category, q) },
+            onChange = { onChange(ing.copy(name = it)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SoftField(
                 value = ing.quantity,

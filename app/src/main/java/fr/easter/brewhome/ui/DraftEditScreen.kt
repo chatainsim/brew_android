@@ -10,12 +10,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -235,20 +234,13 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         draftCategories.forEach { cat ->
             IngredientSectionHeader(cat)
             val indices = ings.withIndex().filter { it.value.category == cat }.map { it.index }
-            if (indices.isNotEmpty()) {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) {
-                        indices.forEachIndexed { pos, i ->
-                            if (pos > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp))
-                            IngredientEditor(
-                                ing = ings[i],
-                                suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
-                                onChange = { ings[i] = it },
-                                onDelete = { ings.removeAt(i) },
-                            )
-                        }
-                    }
-                }
+            indices.forEach { i ->
+                IngredientEditor(
+                    ing = ings[i],
+                    suggest = { c, q -> ingredientSuggestions(catalog, state.inventory, c, q) },
+                    onChange = { ings[i] = it },
+                    onDelete = { ings.removeAt(i) },
+                )
             }
             AddIngredientButton(cat) {
                 ings.add(EditIng("", cat, "", unitsByCategory.getValue(cat).first()))
@@ -299,7 +291,6 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun IngredientEditor(
     ing: EditIng,
@@ -307,22 +298,13 @@ private fun IngredientEditor(
     onChange: (EditIng) -> Unit,
     onDelete: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NameFieldWithSuggestions(
-                value = ing.name,
-                suggestions = { q -> suggest(ing.category, q) },
-                onChange = { onChange(ing.copy(name = it)) },
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.cd_delete_ingredient),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
+    IngredientTile(category = ing.category, onDelete = onDelete) {
+        NameFieldWithSuggestions(
+            value = ing.name,
+            suggestions = { q -> suggest(ing.category, q) },
+            onChange = { onChange(ing.copy(name = it)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SoftField(
                 value = ing.quantity,
@@ -338,6 +320,48 @@ private fun IngredientEditor(
                 onSelect = { onChange(ing.copy(unit = it)) },
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+/**
+ * Tuile d'un ingrédient : petit bloc arrondi et teinté avec une poignée de
+ * couleur de catégorie à gauche et un bouton supprimer discret en haut.
+ */
+@Composable
+internal fun IngredientTile(
+    category: String,
+    onDelete: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            Box(
+                Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(categoryColor(category)),
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                content()
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.padding(top = 2.dp)) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.cd_delete_ingredient),
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }
