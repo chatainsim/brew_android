@@ -19,6 +19,8 @@ import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CostSettings
+import fr.easter.brewhome.data.Spindle
+import fr.easter.brewhome.data.SpindleReading
 import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.CustomEventPost
 import fr.easter.brewhome.data.RecipePost
@@ -286,6 +288,37 @@ class BrewViewModel(
                 _brewExtras.value += brewId to BrewExtras(
                     error = errorMessage(R.string.error_brew_load, e),
                 )
+            }
+        }
+    }
+
+    /** Change le statut d'un brassin (planned/in_progress/fermenting/completed). */
+    fun setBrewStatus(brew: Brew, status: String) {
+        launchWithError(R.string.error_brew_status) {
+            repo.setBrewStatus(brew, status)
+            _state.value = _state.value.copy(brews = repo.brews(), error = null)
+        }
+    }
+
+    // ── Densimètres connectés ─────────────────────────────────────────────
+
+    private val _spindles = MutableStateFlow<List<Spindle>?>(null)
+    /** null = pas encore chargé ; liste vide si échec ou aucun densimètre. */
+    val spindles: StateFlow<List<Spindle>?> = _spindles
+
+    private val _spindleReadings = MutableStateFlow<Map<Int, List<SpindleReading>>>(emptyMap())
+    val spindleReadings: StateFlow<Map<Int, List<SpindleReading>>> = _spindleReadings
+
+    fun loadSpindles() {
+        viewModelScope.launch {
+            val list = runCatching { repo.spindles() }.getOrDefault(emptyList())
+            _spindles.value = list
+            // Historique récent de chaque densimètre pour la courbe
+            list.forEach { sp ->
+                launch {
+                    runCatching { repo.spindleReadings(sp.id) }
+                        .onSuccess { _spindleReadings.value += sp.id to it }
+                }
             }
         }
     }

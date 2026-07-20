@@ -1,6 +1,7 @@
 package fr.easter.brewhome.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,10 +12,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -164,8 +169,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val (container, content) = brewStatusColors(brew.status)
-            StatusChip(brewStatusLabel(brew.status), container, content)
+            BrewStatusSelector(brew.status) { vm.setBrewStatus(brew, it) }
             if (brew.recipeId != null) {
                 AssistChip(
                     onClick = { onOpenRecipe(brew.recipeId) },
@@ -254,6 +258,62 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     }
 
     viewing?.let { photo -> PhotoViewer(vm, photo) { viewing = null } }
+}
+
+private val brewStatuses = listOf("planned", "in_progress", "fermenting", "completed")
+
+/** Pastille de statut cliquable : ouvre un menu pour faire avancer le brassin. */
+@Composable
+private fun BrewStatusSelector(status: String?, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val (container, content) = brewStatusColors(status)
+    Box {
+        androidx.compose.material3.Surface(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+            color = container,
+            onClick = { expanded = true },
+        ) {
+            Row(
+                Modifier.padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    brewStatusLabel(status),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = content,
+                )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = stringResource(R.string.brew_change_status),
+                    tint = content,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            brewStatuses.forEach { s ->
+                DropdownMenuItem(
+                    text = { Text(brewStatusLabel(s)) },
+                    leadingIcon = {
+                        val (c, _) = brewStatusColors(s)
+                        Box(
+                            Modifier
+                                .size(10.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(c),
+                        )
+                    },
+                    trailingIcon = if (s == status) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else null,
+                    onClick = {
+                        expanded = false
+                        if (s != status) onSelect(s)
+                    },
+                )
+            }
+        }
+    }
 }
 
 /** /api/brew-photos/{uid}_t.jpg → chemin de la photo plein format {uid}.jpg */

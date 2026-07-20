@@ -18,6 +18,15 @@
     <string name="title_draft_new">Nouveau brouillon</string>
     <string name="title_draft_edit">Modifier le brouillon</string>
     <string name="title_calendar">Calendrier</string>
+    <string name="title_spindles">Densimètres</string>
+    <string name="tools_spindles_sub">Densité, température et batterie en direct</string>
+    <string name="spindles_empty">Aucun densimètre connecté</string>
+    <string name="spindle_stable">Stable</string>
+    <string name="spindle_brew">🍺 %1$s</string>
+    <string name="spindle_gravity">Densité</string>
+    <string name="spindle_temp">Température</string>
+    <string name="spindle_battery">Batterie</string>
+    <string name="spindle_last_reading">Dernière mesure le %1$s · %2$d relevés</string>
     <string name="tools_calendar_sub">Brassins, dry hops, rappels et fêtes de la bière</string>
     <string name="cal_empty">Aucun événement à venir</string>
     <string name="cal_today">Aujourd\'hui</string>
@@ -116,6 +125,8 @@
     <!-- Erreurs (préfixes de la snackbar, complétés par le détail technique) -->
     <string name="error_connect">Connexion impossible</string>
     <string name="error_brew_load">Chargement impossible</string>
+    <string name="error_brew_status">Échec du changement de statut</string>
+    <string name="brew_change_status">Changer le statut</string>
     <string name="error_stock_update">Échec de mise à jour du stock</string>
     <string name="error_qty_update">Échec de mise à jour de la quantité</string>
     <string name="error_tasting_save">Échec d\'enregistrement de la dégustation</string>

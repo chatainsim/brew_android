@@ -84,7 +84,35 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun recipes(): List<Recipe> = api().getRecipes()
 
+    suspend fun brews(): List<Brew> = api().getBrews()
+
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
+
+    /** Change le statut d'un brassin en repassant tous ses champs (PUT). */
+    suspend fun setBrewStatus(brew: Brew, status: String) {
+        api().updateBrew(
+            brew.id,
+            BrewPut(
+                name = brew.name,
+                status = status,
+                brewDate = brew.brewDate,
+                volumeBrewed = brew.volumeBrewed,
+                og = brew.og,
+                fg = brew.fg,
+                abv = brew.abv,
+                notes = brew.notes,
+                fermTime = brew.fermTime,
+                photosUrl = brew.photosUrl,
+                costSnapshot = brew.costSnapshot,
+                costPerLiter = brew.costPerLiter,
+                batchNumber = brew.batchNumber,
+            ),
+        )
+    }
+
+    suspend fun spindles(): List<Spindle> = api().getSpindles()
+
+    suspend fun spindleReadings(id: Int): List<SpindleReading> = api().getSpindleReadings(id)
 
     /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
     suspend fun costSettings(): CostSettings {

@@ -10,6 +10,7 @@ import fr.easter.brewhome.data.BrewLogEntry
 import fr.easter.brewhome.data.BrewPhoto
 import fr.easter.brewhome.data.BulkCheckPut
 import fr.easter.brewhome.data.BuyResult
+import fr.easter.brewhome.data.BrewPut
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CustomEvent
@@ -21,6 +22,8 @@ import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipePost
+import fr.easter.brewhome.data.Spindle
+import fr.easter.brewhome.data.SpindleReading
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
 import fr.easter.brewhome.data.Snapshot
@@ -183,6 +186,9 @@ class BrewViewModelTest {
         override suspend fun createRecipe(body: RecipePost): Recipe = throw NotImplementedError()
         override suspend fun updateRecipe(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun getBjcpStyles(): List<BjcpStyle> = throw NotImplementedError()
+        override suspend fun updateBrew(id: Int, body: BrewPut): JsonObject = throw NotImplementedError()
+        override suspend fun getSpindles(): List<Spindle> = throw NotImplementedError()
+        override suspend fun getSpindleReadings(id: Int): List<SpindleReading> = throw NotImplementedError()
     }
 
     private val api = FakeApi()

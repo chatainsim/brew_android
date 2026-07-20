@@ -180,7 +180,58 @@ data class Brew(
     @SerialName("fermentation_count") val fermentationCount: Int? = null,
     @SerialName("log_count") val logCount: Int? = null,
     @SerialName("photo_count") val photoCount: Int? = null,
+    /** Champ hérité renvoyé tel quel au PUT pour ne pas l'effacer. */
+    @SerialName("photos_url") val photosUrl: String? = null,
     val notes: String? = null,
+)
+
+/**
+ * Corps du PUT /api/brews/{id} — écrase toutes les colonnes. On repasse tous
+ * les champs du brassin existant en ne changeant que `status` ; le serveur gère
+ * seul `fermenting_since` et `actual_efficiency`.
+ */
+@Serializable
+data class BrewPut(
+    val name: String,
+    val status: String,
+    @SerialName("brew_date") val brewDate: String? = null,
+    @SerialName("volume_brewed") val volumeBrewed: Double? = null,
+    val og: Double? = null,
+    val fg: Double? = null,
+    val abv: Double? = null,
+    val notes: String? = null,
+    @SerialName("ferm_time") val fermTime: Int? = null,
+    @SerialName("photos_url") val photosUrl: String? = null,
+    @SerialName("cost_snapshot") val costSnapshot: Double? = null,
+    @SerialName("cost_per_liter_snapshot") val costPerLiter: Double? = null,
+    @SerialName("batch_number") val batchNumber: Int? = null,
+)
+
+/** Densimètre connecté (iSpindel…) avec sa dernière mesure. */
+@Serializable
+data class Spindle(
+    val id: Int,
+    val name: String,
+    @SerialName("brew_id") val brewId: Int? = null,
+    @SerialName("brew_name") val brewName: String? = null,
+    @SerialName("device_type") val deviceType: String? = null,
+    @SerialName("last_gravity") val lastGravity: Double? = null,
+    @SerialName("last_temperature") val lastTemperature: Double? = null,
+    @SerialName("last_battery") val lastBattery: Double? = null,
+    @SerialName("last_reading_at") val lastReadingAt: String? = null,
+    @SerialName("reading_count") val readingCount: Int? = 0,
+    @SerialName("gravity_stable") val gravityStable: Int? = 0,
+    @SerialName("stable_gravity_avg") val stableGravityAvg: Double? = null,
+)
+
+/** Une mesure historisée d'un densimètre. */
+@Serializable
+data class SpindleReading(
+    @SerialName("recorded_at") val recordedAt: String,
+    val gravity: Double? = null,
+    val temperature: Double? = null,
+    val battery: Double? = null,
+    val angle: Double? = null,
 )
 
 /** Photo d'un brassin ; `thumb` est un chemin relatif servi par le serveur. */
@@ -322,6 +373,18 @@ fun Draft.parsedIngredients(): List<DraftIngredient> {
     if (raw.isNullOrBlank()) return emptyList()
     return runCatching { draftJson.decodeFromString<List<DraftIngredient>>(raw) }
         .getOrDefault(emptyList())
+}
+
+/**
+ * Chemins des photos du brouillon (`images` est un tableau JSON de chemins
+ * `/api/draft-images/…`). Les entrées base64 héritées sont écartées.
+ */
+fun Draft.parsedImages(): List<String> {
+    val raw = images
+    if (raw.isNullOrBlank()) return emptyList()
+    return runCatching { draftJson.decodeFromString<List<String>>(raw) }
+        .getOrDefault(emptyList())
+        .filter { it.startsWith("/") }
 }
 
 /** Événement personnalisé du calendrier (fête, concours, brassage prévu…). */

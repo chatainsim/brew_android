@@ -4,9 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.window.Dialog
+import coil.compose.AsyncImage
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -53,6 +58,7 @@ import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredient
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.parsedIngredients
+import fr.easter.brewhome.data.parsedImages
 
 // Couleurs des états de stock (mêmes teintes que le site)
 private val StockOk = Color(0xFF10B981)
@@ -672,6 +678,38 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Uni
             StatusChip(draftStatusLabel(draft.status), container, content)
         }
         draft.style?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
+
+        // Photos du brouillon (servies par /api/draft-images/…)
+        val images = remember(draft.images) { draft.parsedImages() }
+        if (images.isNotEmpty()) {
+            var viewing by remember { mutableStateOf<String?>(null) }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(images, key = { it }) { path ->
+                    AsyncImage(
+                        model = vm.photoUrl(path),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { viewing = path },
+                    )
+                }
+            }
+            viewing?.let { path ->
+                Dialog(onDismissRequest = { viewing = null }) {
+                    AsyncImage(
+                        model = vm.photoUrl(path),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { viewing = null },
+                    )
+                }
+            }
+        }
 
         // Transfert en recette, comme sur le site : éditeur pré-rempli
         OutlinedButton(

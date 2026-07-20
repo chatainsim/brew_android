@@ -110,6 +110,15 @@ interface BrewApi {
 
     @GET("api/bjcp")
     suspend fun getBjcpStyles(): List<BjcpStyle>
+
+    @PUT("api/brews/{id}")
+    suspend fun updateBrew(@Path("id") id: Int, @Body body: BrewPut): kotlinx.serialization.json.JsonObject
+
+    @GET("api/spindles")
+    suspend fun getSpindles(): List<Spindle>
+
+    @GET("api/spindles/{id}/readings")
+    suspend fun getSpindleReadings(@Path("id") id: Int): List<SpindleReading>
 }
 
 object ApiClient {
