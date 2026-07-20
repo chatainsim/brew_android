@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.SportsBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -102,147 +103,211 @@ fun EmptyHint(text: String, icon: ImageVector = Icons.Outlined.SportsBar) {
 
 @Composable
 private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val hasStock = (beer.stock33 ?: 0) > 0 || (beer.stock75 ?: 0) > 0 || (beer.kegLiters ?: 0.0) > 0.0
+    val accent = if (hasStock) MaterialTheme.colorScheme.primary
+                 else MaterialTheme.colorScheme.outlineVariant
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onOpen(beer.id) },
     ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            val photoUrl = vm.photoUrl(beer.photo)
-            if (photoUrl != null) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = beer.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                )
-            } else {
-                // Pas de photo : monogramme sur dégradé ambre → olive
-                Box(
-                    Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    MaterialTheme.colorScheme.tertiaryContainer,
-                                ),
-                            ),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        beer.name.trim().take(1).uppercase(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            // Liseré d'accent : ambre si en cave, gris si épuisée
+            Box(
+                Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(accent),
+            )
+            Column(Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BeerAvatar(beer, vm)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            beer.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        val subtitle = listOfNotNull(
+                            beer.type,
+                            beer.abv?.let { "${fmtQty(it)} % alc." },
+                        ).joinToString(" · ")
+                        if (subtitle.isNotEmpty()) {
+                            Text(
+                                subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        beer.tasteRating?.takeIf { it > 0 }?.let {
+                            Spacer(Modifier.height(4.dp))
+                            RatingPill(it)
+                        }
+                    }
                 }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    beer.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Spacer(Modifier.height(12.dp))
+                Stepper(
+                    stringResource(R.string.unit_33), (beer.stock33 ?: 0).toDouble(),
+                    format = { it.toInt().toString() },
+                    canDecrement = (beer.stock33 ?: 0) > 0,
+                    onDecrement = { vm.adjustBeerStock(beer, d33 = -1) },
+                    onIncrement = { vm.adjustBeerStock(beer, d33 = 1) },
                 )
-                val subtitle = listOfNotNull(
-                    beer.type,
-                    beer.abv?.let { "${fmtQty(it)}%" },
-                ).joinToString(" · ")
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
                 Spacer(Modifier.height(6.dp))
-                StockRow(stringResource(R.string.unit_33), beer.stock33 ?: 0) { d -> vm.adjustBeerStock(beer, d33 = d) }
-                StockRow(stringResource(R.string.unit_75), beer.stock75 ?: 0) { d -> vm.adjustBeerStock(beer, d75 = d) }
+                Stepper(
+                    stringResource(R.string.unit_75), (beer.stock75 ?: 0).toDouble(),
+                    format = { it.toInt().toString() },
+                    canDecrement = (beer.stock75 ?: 0) > 0,
+                    onDecrement = { vm.adjustBeerStock(beer, d75 = -1) },
+                    onIncrement = { vm.adjustBeerStock(beer, d75 = 1) },
+                )
                 if ((beer.kegLiters ?: 0.0) > 0.0 || (beer.kegInitialLiters ?: 0.0) > 0.0) {
-                    KegRow(beer.kegLiters ?: 0.0) { d -> vm.adjustBeerStock(beer, dKeg = d) }
+                    Spacer(Modifier.height(6.dp))
+                    Stepper(
+                        stringResource(R.string.keg), beer.kegLiters ?: 0.0,
+                        format = { "${fmtQty(it)} L" },
+                        canDecrement = (beer.kegLiters ?: 0.0) > 0.0,
+                        onDecrement = { vm.adjustBeerStock(beer, dKeg = -0.5) },
+                        onIncrement = { vm.adjustBeerStock(beer, dKeg = 0.5) },
+                    )
                 }
             }
         }
     }
 }
 
+/** Vignette 72 dp : photo de la bière, ou monogramme sur dégradé si absente. */
 @Composable
-private fun StockRow(label: String, count: Int, onAdjust: (Int) -> Unit) {
+private fun BeerAvatar(beer: Beer, vm: BrewViewModel) {
+    val photoUrl = vm.photoUrl(beer.photo)
+    if (photoUrl != null) {
+        AsyncImage(
+            model = photoUrl,
+            contentDescription = beer.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(14.dp)),
+        )
+    } else {
+        Box(
+            Modifier
+                .size(72.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.tertiaryContainer,
+                        ),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                beer.name.trim().take(1).uppercase(),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+    }
+}
+
+/** Note de dégustation compacte : étoile + valeur sur pastille. */
+@Composable
+private fun RatingPill(rating: Int) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                "$rating/5",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
+    }
+}
+
+/** Compteur de stock : libellé + boutons tonaux − / + autour du nombre animé. */
+@Composable
+private fun Stepper(
+    label: String,
+    value: Double,
+    format: (Double) -> String,
+    canDecrement: Boolean,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+) {
     val haptics = LocalHapticFeedback.current
+    val empty = value <= 0.0
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.width(44.dp),
-        )
-        IconButton(
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onAdjust(-1)
-            },
-            enabled = count > 0,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_remove_one, label))
-        }
-        AnimatedNumber(
-            value = count.toDouble(),
-            format = { it.toInt().toString() },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.widthIn(min = 28.dp),
-            color = if (count == 0) MaterialTheme.colorScheme.outline
+            color = if (empty) MaterialTheme.colorScheme.outline
                     else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
         )
-        IconButton(
+        FilledTonalIconButton(
             onClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onAdjust(1)
+                onDecrement()
             },
-            modifier = Modifier.size(32.dp),
+            enabled = canDecrement,
+            modifier = Modifier.size(36.dp),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_add_one, label))
+            Icon(
+                Icons.Filled.Remove,
+                contentDescription = stringResource(R.string.cd_remove_one, label),
+                modifier = Modifier.size(18.dp),
+            )
         }
-    }
-}
-
-@Composable
-private fun KegRow(liters: Double, onAdjust: (Double) -> Unit) {
-    val haptics = LocalHapticFeedback.current
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.keg), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(44.dp))
-        IconButton(
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onAdjust(-0.5)
-            },
-            enabled = liters > 0,
-            modifier = Modifier.size(32.dp),
+        Box(
+            Modifier
+                .widthIn(min = 52.dp)
+                .padding(horizontal = 2.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.cd_keg_remove))
+            AnimatedNumber(
+                value = value,
+                format = format,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (empty) MaterialTheme.colorScheme.outline
+                        else MaterialTheme.colorScheme.onSurface,
+            )
         }
-        AnimatedNumber(
-            value = liters,
-            format = { "${fmtQty(it)} L" },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.widthIn(min = 28.dp),
-        )
-        IconButton(
+        FilledTonalIconButton(
             onClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                onAdjust(0.5)
+                onIncrement()
             },
-            modifier = Modifier.size(32.dp),
+            modifier = Modifier.size(36.dp),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.cd_keg_add))
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = stringResource(R.string.cd_add_one, label),
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
