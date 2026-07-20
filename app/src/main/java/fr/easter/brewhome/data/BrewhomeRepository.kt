@@ -159,8 +159,16 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
 
-    /** Change le statut d'un brassin en repassant tous ses champs (PUT). */
-    suspend fun setBrewStatus(brew: Brew, status: String) {
+    /**
+     * PUT d'un brassin en repassant tous ses champs, seuls [status] et
+     * [photosUrl] pouvant différer de l'existant (le PUT écrase toutes les
+     * colonnes ; le serveur gère fermenting_since et l'efficacité).
+     */
+    private suspend fun putBrew(
+        brew: Brew,
+        status: String = brew.status ?: "completed",
+        photosUrl: String? = brew.photosUrl,
+    ) {
         api().updateBrew(
             brew.id,
             BrewPut(
@@ -173,13 +181,17 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
                 abv = brew.abv,
                 notes = brew.notes,
                 fermTime = brew.fermTime,
-                photosUrl = brew.photosUrl,
+                photosUrl = photosUrl,
                 costSnapshot = brew.costSnapshot,
                 costPerLiter = brew.costPerLiter,
                 batchNumber = brew.batchNumber,
             ),
         )
     }
+
+    suspend fun setBrewStatus(brew: Brew, status: String) = putBrew(brew, status = status)
+
+    suspend fun setBrewPhotosUrl(brew: Brew, url: String?) = putBrew(brew, photosUrl = url)
 
     suspend fun spindles(): List<Spindle> = api().getSpindles()
 

@@ -445,6 +445,15 @@ class BrewViewModel(
         }
     }
 
+    /** Enregistre le lien d'album photo externe d'un brassin (vide = retirer). */
+    fun setBrewPhotosUrl(brew: Brew, url: String?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_brew_status) {
+            repo.setBrewPhotosUrl(brew, url?.trim()?.ifBlank { null })
+            _state.value = _state.value.copy(brews = repo.brews(), error = null)
+            onDone()
+        }
+    }
+
     // ── Densimètres connectés ─────────────────────────────────────────────
 
     private val _spindles = MutableStateFlow<List<Spindle>?>(null)

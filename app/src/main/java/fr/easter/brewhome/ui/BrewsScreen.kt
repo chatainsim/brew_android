@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -160,6 +161,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
     var showAddLog by remember { mutableStateOf(false) }
     var showAddStep by remember { mutableStateOf(false) }
     var showAddFerm by remember { mutableStateOf(false) }
+    var showAlbumDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val photoUploading by vm.photoUploading.collectAsState()
@@ -217,13 +219,14 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                 )
             }
             // Lien vers l'album photo externe (Google Photos, etc.)
-            brew.photosUrl?.takeIf { it.isNotBlank() }?.let { url ->
-                val ctx = LocalContext.current
+            val ctx = LocalContext.current
+            val album = brew.photosUrl?.takeIf { it.isNotBlank() }
+            if (album != null) {
                 AssistChip(
                     onClick = {
                         runCatching {
                             ctx.startActivity(
-                                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)),
+                                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(album)),
                             )
                         }
                     },
@@ -236,6 +239,19 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                         )
                     },
                 )
+                IconButton(onClick = { showAlbumDialog = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.brew_photo_album_edit),
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                TextButton(onClick = { showAlbumDialog = true }) {
+                    Icon(Icons.Filled.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.brew_photo_album_add), Modifier.padding(start = 6.dp))
+                }
             }
         }
         brew.recipeStyle?.let { Text(it, color = MaterialTheme.colorScheme.outline) }
@@ -348,6 +364,36 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
             onDismiss = { showAddFerm = false },
         )
     }
+    if (showAlbumDialog) {
+        AlbumUrlDialog(
+            current = brew.photosUrl ?: "",
+            onSave = { url -> vm.setBrewPhotosUrl(brew, url) { showAlbumDialog = false } },
+            onDismiss = { showAlbumDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun AlbumUrlDialog(current: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var url by remember { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.brew_photo_album)) },
+        text = {
+            OutlinedTextField(
+                value = url,
+                onValueChange = { url = it },
+                label = { Text(stringResource(R.string.brew_photo_album_url)) },
+                placeholder = { Text("https://photos.app.goo.gl/…") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(url) }) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable
