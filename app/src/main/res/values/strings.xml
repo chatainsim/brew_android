@@ -190,6 +190,9 @@
     <string name="keg_revision">Révision : %1$s</string>
     <string name="error_keg_update">Échec de la mise à jour du fût</string>
     <string name="error_ai_suggest">Échec de la suggestion IA (clé Gemini configurée côté serveur ?)</string>
+    <string name="error_import">Échec de l\'import BeerXML</string>
+    <string name="import_none">Aucune recette importée (fichier BeerXML valide ?)</string>
+    <string name="recipe_import">Importer un BeerXML</string>
     <string name="ai_suggest">Suggérer (IA)</string>
     <string name="ai_suggest_title">Suggestion de recette (IA)</string>
     <string name="ai_suggest_style">Style souhaité</string>

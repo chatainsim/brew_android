@@ -208,6 +208,7 @@ class BrewViewModelTest {
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun aiDraftSuggest(body: AiSuggestPost): AiSuggestResult = throw NotImplementedError()
+        override suspend fun importBeerXml(body: okhttp3.RequestBody): JsonObject = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
         override suspend fun getCustomEvents(): List<CustomEvent> = throw NotImplementedError()
         override suspend fun createCustomEvent(body: CustomEventPost): CustomEvent = throw NotImplementedError()

@@ -122,6 +122,9 @@ interface BrewApi {
     @POST("api/ai/draft-suggest")
     suspend fun aiDraftSuggest(@Body body: AiSuggestPost): AiSuggestResult
 
+    @POST("api/import/beerxml")
+    suspend fun importBeerXml(@Body body: okhttp3.RequestBody): kotlinx.serialization.json.JsonObject
+
     @GET("api/consumption")
     suspend fun getConsumption(): Consumption
 

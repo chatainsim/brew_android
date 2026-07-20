@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /** Instantané complet des données du serveur, chargé en parallèle. */
 @Serializable
@@ -124,6 +126,13 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun aiDraftSuggest(style: String?, notes: String?, volume: Double?): AiSuggestResult =
         api().aiDraftSuggest(AiSuggestPost(style = style, notes = notes, volume = volume))
+
+    /** Importe une ou plusieurs recettes depuis du BeerXML. Renvoie le nombre importé. */
+    suspend fun importBeerXml(xml: String): Int {
+        val body = xml.toByteArray().toRequestBody("application/xml".toMediaType())
+        val res = api().importBeerXml(body)
+        return (res["imported"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: 0
+    }
 
     suspend fun addCustomEvent(post: CustomEventPost): CustomEvent = api().createCustomEvent(post)
 

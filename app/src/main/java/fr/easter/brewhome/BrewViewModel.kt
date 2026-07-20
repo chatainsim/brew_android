@@ -599,6 +599,17 @@ class BrewViewModel(
         }
     }
 
+    /** Importe des recettes depuis du BeerXML puis recharge la liste. */
+    fun importBeerXml(xml: String) {
+        launchWithError(R.string.error_import) {
+            val n = repo.importBeerXml(xml)
+            _state.value = _state.value.copy(
+                recipes = repo.recipes(),
+                error = if (n == 0) strings(R.string.import_none) else null,
+            )
+        }
+    }
+
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
             if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)

@@ -1,5 +1,6 @@
 package fr.easter.brewhome.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -174,6 +176,18 @@ fun BrewHomeApp(
         else vm.dismissUndo(notice)
     }
 
+    // Import BeerXML : sélecteur de fichier → lecture → envoi au serveur
+    val importLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent(),
+    ) { uri ->
+        if (uri != null) {
+            val xml = runCatching {
+                appContext.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+            }.getOrNull()
+            if (!xml.isNullOrBlank()) vm.importBeerXml(xml)
+        }
+    }
+
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val startDestination = if (serverUrl.isNullOrBlank()) "settings" else "beers"
@@ -322,6 +336,15 @@ fun BrewHomeApp(
                             Icon(
                                 Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = stringResource(R.string.cd_open_vitrine),
+                            )
+                        }
+                    }
+                    // Import BeerXML depuis la liste des recettes
+                    if (currentRoute == "recipes") {
+                        IconButton(onClick = { importLauncher.launch("*/*") }) {
+                            Icon(
+                                Icons.Filled.FileUpload,
+                                contentDescription = stringResource(R.string.recipe_import),
                             )
                         }
                     }
