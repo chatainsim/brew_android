@@ -296,6 +296,28 @@ data class TempReading(
     @SerialName("target_temp") val targetTemp: Double? = null,
 )
 
+/** Fût à soda / keg (post-mix) et son état de service. */
+@Serializable
+data class SodaKeg(
+    val id: Int,
+    val name: String,
+    @SerialName("keg_type") val kegType: String? = null,
+    val manufacturer: String? = null,
+    val status: String = "empty",
+    @SerialName("current_liters") val currentLiters: Double? = null,
+    @SerialName("volume_total") val volumeTotal: Double? = null,
+    @SerialName("beer_name") val beerName: String? = null,
+    @SerialName("brew_name") val brewName: String? = null,
+    @SerialName("next_revision_date") val nextRevisionDate: String? = null,
+    val color: String? = null,
+    val notes: String? = null,
+    val archived: Int? = 0,
+)
+
+/** Corps de PATCH /api/beers/{id} : archive/désarchive une bière. */
+@Serializable
+data class BeerArchivePatch(val archived: Boolean)
+
 /** Photo d'un brassin ; `thumb` est un chemin relatif servi par le serveur. */
 @Serializable
 data class BrewPhoto(

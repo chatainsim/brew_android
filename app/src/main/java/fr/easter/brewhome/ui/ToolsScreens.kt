@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Liquor
 import androidx.compose.material.icons.outlined.Percent
+import androidx.compose.material.icons.outlined.Sports
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -84,6 +85,7 @@ fun ToolsScreen(
     onOpenCalendar: () -> Unit,
     onOpenSpindles: () -> Unit,
     onOpenTemps: () -> Unit,
+    onOpenKegs: () -> Unit,
     onOpen: (String) -> Unit,
 ) {
     LazyColumn(
@@ -127,12 +129,21 @@ fun ToolsScreen(
                 onClick = onOpenTemps,
             )
         }
+        item(key = "kegs") {
+            ToolCard(
+                stringResource(R.string.title_kegs),
+                stringResource(R.string.tools_kegs_sub),
+                Icons.Outlined.Sports,
+                accent = toolAccent(4),
+                onClick = onOpenKegs,
+            )
+        }
         itemsIndexed(toolDefs, key = { _, tool -> tool.id }) { i, tool ->
             ToolCard(
                 stringResource(tool.titleRes),
                 stringResource(tool.subtitleRes),
                 tool.icon,
-                accent = toolAccent(i + 4),
+                accent = toolAccent(i + 5),
             ) { onOpen(tool.id) }
         }
     }

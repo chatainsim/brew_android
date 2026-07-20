@@ -27,6 +27,8 @@ import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.QtyPatch
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipePost
+import fr.easter.brewhome.data.SodaKeg
+import fr.easter.brewhome.data.BeerArchivePatch
 import fr.easter.brewhome.data.Spindle
 import fr.easter.brewhome.data.TempSensor
 import fr.easter.brewhome.data.TempReading
@@ -207,6 +209,8 @@ class BrewViewModelTest {
         override suspend fun getSpindleReadings(id: Int, hours: Int?): List<SpindleReading> = throw NotImplementedError()
         override suspend fun getTempSensors(): List<TempSensor> = throw NotImplementedError()
         override suspend fun getTempReadings(id: Int, hours: Int?): List<TempReading> = throw NotImplementedError()
+        override suspend fun getSodaKegs(): List<SodaKeg> = throw NotImplementedError()
+        override suspend fun patchBeerArchived(id: Int, body: BeerArchivePatch): Beer = throw NotImplementedError()
     }
 
     private val api = FakeApi()

@@ -117,6 +117,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun brews(): List<Brew> = api().getBrews()
 
+    suspend fun beers(): List<Beer> = api().getBeers()
+
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
 
     /** Change le statut d'un brassin en repassant tous ses champs (PUT). */
@@ -150,6 +152,11 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun tempReadings(id: Int, hours: Int? = null): List<TempReading> =
         api().getTempReadings(id, hours)
+
+    suspend fun sodaKegs(): List<SodaKeg> = api().getSodaKegs()
+
+    suspend fun setBeerArchived(id: Int, archived: Boolean): Beer =
+        api().patchBeerArchived(id, BeerArchivePatch(archived))
 
     /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
     suspend fun costSettings(): CostSettings {

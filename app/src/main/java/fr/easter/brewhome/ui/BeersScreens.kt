@@ -10,9 +10,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material.icons.outlined.SportsBar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -413,6 +415,23 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
             InfoLine(stringResource(R.string.taste_finish), beer.tasteFinish)
             InfoLine(stringResource(R.string.taste_overall_short), beer.tasteOverall)
             InfoLine(stringResource(R.string.taste_date), beer.tasteDate)
+        }
+
+        val archived = (beer.archived ?: 0) != 0
+        OutlinedButton(
+            onClick = { vm.setBeerArchived(beer, !archived) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                if (archived) Icons.Filled.Unarchive else Icons.Filled.Archive,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                if (archived) stringResource(R.string.beer_unarchive)
+                else stringResource(R.string.beer_archive),
+                Modifier.padding(start = 8.dp),
+            )
         }
         Spacer(Modifier.height(24.dp))
     }

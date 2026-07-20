@@ -153,6 +153,12 @@ interface BrewApi {
         @Path("id") id: Int,
         @retrofit2.http.Query("hours") hours: Int? = null,
     ): List<TempReading>
+
+    @GET("api/soda-kegs")
+    suspend fun getSodaKegs(): List<SodaKeg>
+
+    @PATCH("api/beers/{id}")
+    suspend fun patchBeerArchived(@Path("id") id: Int, @Body body: BeerArchivePatch): Beer
 }
 
 object ApiClient {

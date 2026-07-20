@@ -20,6 +20,7 @@ import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CostSettings
+import fr.easter.brewhome.data.SodaKeg
 import fr.easter.brewhome.data.Spindle
 import fr.easter.brewhome.data.SpindleReading
 import fr.easter.brewhome.data.TempReading
@@ -406,6 +407,25 @@ class BrewViewModel(
         viewModelScope.launch {
             runCatching { repo.tempReadings(id, hours) }
                 .onSuccess { _tempReadings.value += id to it }
+        }
+    }
+
+    // ── Fûts à soda ───────────────────────────────────────────────────────
+
+    private val _sodaKegs = MutableStateFlow<List<SodaKeg>?>(null)
+    val sodaKegs: StateFlow<List<SodaKeg>?> = _sodaKegs
+
+    fun loadSodaKegs() {
+        viewModelScope.launch {
+            _sodaKegs.value = runCatching { repo.sodaKegs() }.getOrDefault(emptyList())
+        }
+    }
+
+    /** Archive ou désarchive une bière puis recharge la Cave. */
+    fun setBeerArchived(beer: Beer, archived: Boolean) {
+        launchWithError(R.string.error_beer_archive) {
+            repo.setBeerArchived(beer.id, archived)
+            _state.value = _state.value.copy(beers = repo.beers(), error = null)
         }
     }
 
