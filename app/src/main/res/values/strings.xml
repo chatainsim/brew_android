@@ -166,6 +166,18 @@
     <string name="ferm_gravity">Densité</string>
     <string name="ferm_temp">Température (°C)</string>
     <string name="error_beer_archive">Échec de l\'archivage</string>
+    <string name="error_beer_save">Échec de l\'enregistrement de la bière</string>
+    <string name="title_beer_edit">Modifier la bière</string>
+    <string name="cd_edit_beer">Modifier la bière</string>
+    <string name="beer_field_type">Type</string>
+    <string name="beer_field_abv">Degré (%)</string>
+    <string name="beer_field_origin">Origine</string>
+    <string name="beer_field_desc">Description</string>
+    <string name="beer_brew_date">Date de brassage</string>
+    <string name="beer_bottling_date">Embouteillage</string>
+    <string name="beer_referm">Refermentation</string>
+    <string name="beer_referm_days">Jours</string>
+
     <string name="beer_archive">Archiver</string>
     <string name="beer_unarchive">Désarchiver</string>
     <string name="title_kegs">Fûts</string>

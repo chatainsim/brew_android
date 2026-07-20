@@ -326,6 +326,28 @@ data class SodaKeg(
 @Serializable
 data class BeerArchivePatch(val archived: Boolean)
 
+/**
+ * Corps du PUT /api/beers/{id} — écrase toutes les colonnes. On repasse tous
+ * les champs existants ; `photo` = l'URL /api/beer-photos/… existante pour la
+ * conserver, ou un data URL base64 pour la remplacer.
+ */
+@Serializable
+data class BeerPut(
+    val name: String,
+    val type: String? = null,
+    val abv: Double? = null,
+    @SerialName("stock_33cl") val stock33: Int = 0,
+    @SerialName("stock_75cl") val stock75: Int = 0,
+    @SerialName("keg_liters") val kegLiters: Double? = null,
+    val origin: String? = null,
+    val description: String? = null,
+    val photo: String? = null,
+    @SerialName("brew_date") val brewDate: String? = null,
+    @SerialName("bottling_date") val bottlingDate: String? = null,
+    val refermentation: Int = 0,
+    @SerialName("refermentation_days") val refermentationDays: Int? = null,
+)
+
 /** Photo d'un brassin ; `thumb` est un chemin relatif servi par le serveur. */
 @Serializable
 data class BrewPhoto(

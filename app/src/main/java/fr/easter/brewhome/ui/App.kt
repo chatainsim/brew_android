@@ -75,7 +75,7 @@ val tabs = listOf(
 /** Onglet auquel appartient une route (pour la sélection de la barre du bas). */
 private fun tabOf(route: String?): String? = when {
     route == null -> null
-    route == "beers" || route.startsWith("beer/") -> "beers"
+    route == "beers" || route.startsWith("beer/") || route.startsWith("beerEdit/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") || route.startsWith("recipeEdit/") ||
         route.startsWith("recipeFromDraft/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
@@ -197,6 +197,7 @@ fun BrewHomeApp(
                             currentRoute?.startsWith("recipeFromDraft/") == true ->
                                 stringResource(R.string.title_recipe_new)
                             currentRoute?.startsWith("beer/") == true -> stringResource(R.string.title_beer)
+                            currentRoute?.startsWith("beerEdit/") == true -> stringResource(R.string.title_beer_edit)
                             currentRoute?.startsWith("brew/") == true -> stringResource(R.string.title_brew)
                             currentRoute?.startsWith("draft/") == true -> stringResource(R.string.title_draft)
                             currentRoute?.startsWith("draftEdit/") == true ->
@@ -324,6 +325,18 @@ fun BrewHomeApp(
                             )
                         }
                     }
+                    // Édition de la bière ouverte
+                    if (currentRoute?.startsWith("beer/") == true) {
+                        val id = backStack?.arguments?.getString("id")?.toIntOrNull()
+                        if (id != null && state.beers.any { it.id == id }) {
+                            IconButton(onClick = { navController.navigate("beerEdit/$id") }) {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.cd_edit_beer),
+                                )
+                            }
+                        }
+                    }
                     val dataScreen = currentTab != null && currentTab != "tools"
                     if (state.loading && dataScreen) {
                         CircularProgressIndicator(
@@ -398,6 +411,10 @@ fun BrewHomeApp(
             composable("beer/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 BeerDetailScreen(vm, id)
+            }
+            composable("beerEdit/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull()
+                BeerEditScreen(vm, id) { navController.navigateUp() }
             }
             composable("recipes") {
                 RecipesScreen(

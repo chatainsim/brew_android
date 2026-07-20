@@ -184,6 +184,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     suspend fun setBeerArchived(id: Int, archived: Boolean): Beer =
         api().patchBeerArchived(id, BeerArchivePatch(archived))
 
+    suspend fun updateBeer(id: Int, put: BeerPut): Beer = api().updateBeer(id, put)
+
     /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
     suspend fun costSettings(): CostSettings {
         val settings = api().getAppSettings()

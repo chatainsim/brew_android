@@ -177,6 +177,9 @@ interface BrewApi {
 
     @PATCH("api/beers/{id}")
     suspend fun patchBeerArchived(@Path("id") id: Int, @Body body: BeerArchivePatch): Beer
+
+    @PUT("api/beers/{id}")
+    suspend fun updateBeer(@Path("id") id: Int, @Body body: BeerPut): Beer
 }
 
 object ApiClient {

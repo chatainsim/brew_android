@@ -478,6 +478,14 @@ class BrewViewModel(
         }
     }
 
+    /** Enregistre les champs édités d'une bière (nom, degré, photo, dates…). */
+    fun saveBeer(id: Int, put: fr.easter.brewhome.data.BeerPut, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_beer_save) {
+            replaceBeer(repo.updateBeer(id, put))
+            onDone()
+        }
+    }
+
     // ── Statistiques ──────────────────────────────────────────────────────
 
     private val _consumption = MutableStateFlow<Consumption?>(null)
