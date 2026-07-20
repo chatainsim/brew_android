@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -209,6 +210,27 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                     leadingIcon = {
                         Icon(
                             Icons.AutoMirrored.Outlined.MenuBook,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize),
+                        )
+                    },
+                )
+            }
+            // Lien vers l'album photo externe (Google Photos, etc.)
+            brew.photosUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                val ctx = LocalContext.current
+                AssistChip(
+                    onClick = {
+                        runCatching {
+                            ctx.startActivity(
+                                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)),
+                            )
+                        }
+                    },
+                    label = { Text(stringResource(R.string.brew_photo_album)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Filled.PhotoLibrary,
                             contentDescription = null,
                             modifier = Modifier.size(AssistChipDefaults.IconSize),
                         )

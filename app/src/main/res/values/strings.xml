@@ -210,6 +210,7 @@
     <string name="keg_status">Statut</string>
     <string name="keg_level">Niveau restant (L)</string>
     <string name="brew_change_status">Changer le statut</string>
+    <string name="brew_photo_album">Album photo</string>
     <string name="error_stock_update">Échec de mise à jour du stock</string>
     <string name="error_qty_update">Échec de mise à jour de la quantité</string>
     <string name="error_tasting_save">Échec d\'enregistrement de la dégustation</string>
