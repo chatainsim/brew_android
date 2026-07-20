@@ -119,6 +119,9 @@ interface BrewApi {
     @PUT("api/drafts/{id}")
     suspend fun updateDraft(@Path("id") id: Int, @Body body: DraftPut): Draft
 
+    @POST("api/ai/draft-suggest")
+    suspend fun aiDraftSuggest(@Body body: AiSuggestPost): AiSuggestResult
+
     @GET("api/consumption")
     suspend fun getConsumption(): Consumption
 

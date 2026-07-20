@@ -189,6 +189,14 @@
     <string name="keg_status_cleaning">Nettoyage</string>
     <string name="keg_revision">Révision : %1$s</string>
     <string name="error_keg_update">Échec de la mise à jour du fût</string>
+    <string name="error_ai_suggest">Échec de la suggestion IA (clé Gemini configurée côté serveur ?)</string>
+    <string name="ai_suggest">Suggérer (IA)</string>
+    <string name="ai_suggest_title">Suggestion de recette (IA)</string>
+    <string name="ai_suggest_style">Style souhaité</string>
+    <string name="ai_suggest_volume">Volume (L)</string>
+    <string name="ai_suggest_notes">Précisions (facultatif)</string>
+    <string name="ai_suggest_go">Générer</string>
+    <string name="ai_suggest_wait">Génération en cours…</string>
     <string name="keg_edit_title">Modifier le fût</string>
     <string name="keg_status">Statut</string>
     <string name="keg_level">Niveau restant (L)</string>

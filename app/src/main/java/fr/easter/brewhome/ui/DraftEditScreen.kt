@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -168,9 +169,38 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
         }
     }
     var saving by remember { mutableStateOf(false) }
+    var showAi by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { vm.loadCatalog() }
     val catalog by vm.catalog.collectAsState()
+    val aiSuggesting by vm.aiSuggesting.collectAsState()
+
+    if (showAi) {
+        AiSuggestDialog(
+            initialStyle = style,
+            initialVolume = volume,
+            busy = aiSuggesting,
+            onDismiss = { if (!aiSuggesting) showAi = false },
+            onGenerate = { s, v, n ->
+                vm.suggestDraft(s, n, v) { result ->
+                    if (result.title.isNotBlank() && title.isBlank()) title = result.title
+                    result.notes?.takeIf { it.isNotBlank() }?.let {
+                        notes = if (notes.isBlank()) it else "$notes\n\n$it"
+                    }
+                    result.ingredients.filter { it.name.isNotBlank() }.forEach { ing ->
+                        val cat = ing.type.lowercase().takeIf { it in draftCategories } ?: "autre"
+                        ings.add(EditIng(
+                            name = ing.name,
+                            category = cat,
+                            quantity = ing.qty?.let(::numToField) ?: "",
+                            unit = ing.unit ?: unitsByCategory.getValue(cat).first(),
+                        ))
+                    }
+                    showAi = false
+                }
+            },
+        )
+    }
 
     Column(
         Modifier
@@ -179,6 +209,10 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        OutlinedButton(onClick = { showAi = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.ai_suggest), Modifier.padding(start = 8.dp))
+        }
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -322,6 +356,69 @@ private fun IngredientEditor(
             )
         }
     }
+}
+
+/** Dialogue de suggestion IA : style + volume + précisions → génère la recette. */
+@Composable
+private fun AiSuggestDialog(
+    initialStyle: String,
+    initialVolume: String,
+    busy: Boolean,
+    onDismiss: () -> Unit,
+    onGenerate: (style: String, volume: Double?, notes: String) -> Unit,
+) {
+    var style by remember { mutableStateOf(initialStyle) }
+    var volume by remember { mutableStateOf(initialVolume.ifBlank { "20" }) }
+    var notes by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ai_suggest_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = style, onValueChange = { style = it },
+                    label = { Text(stringResource(R.string.ai_suggest_style)) },
+                    singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = volume, onValueChange = { volume = it },
+                    label = { Text(stringResource(R.string.ai_suggest_volume)) },
+                    singleLine = true, enabled = !busy,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = notes, onValueChange = { notes = it },
+                    label = { Text(stringResource(R.string.ai_suggest_notes)) },
+                    enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                )
+                if (busy) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            Modifier.size(18.dp), strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            stringResource(R.string.ai_suggest_wait),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { onGenerate(style.trim(), volume.trim().replace(',', '.').toDoubleOrNull(), notes.trim()) },
+                enabled = !busy,
+            ) { Text(stringResource(R.string.ai_suggest_go)) }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss, enabled = !busy) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
 }
 
 /**

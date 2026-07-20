@@ -122,6 +122,9 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun customEvents(): List<CustomEvent> = api().getCustomEvents()
 
+    suspend fun aiDraftSuggest(style: String?, notes: String?, volume: Double?): AiSuggestResult =
+        api().aiDraftSuggest(AiSuggestPost(style = style, notes = notes, volume = volume))
+
     suspend fun addCustomEvent(post: CustomEventPost): CustomEvent = api().createCustomEvent(post)
 
     suspend fun deleteCustomEvent(id: Int) {

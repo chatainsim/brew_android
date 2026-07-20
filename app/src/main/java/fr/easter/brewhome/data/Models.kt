@@ -503,6 +503,31 @@ data class DraftIngredient(
     val unit: String? = null,
 )
 
+/** Corps de POST /api/ai/draft-suggest (suggestion de recette par IA). */
+@Serializable
+data class AiSuggestPost(
+    val style: String? = null,
+    @SerialName("event_label") val eventLabel: String? = null,
+    val notes: String? = null,
+    val volume: Double? = null,
+)
+
+/** Recette suggérée par l'IA : titre, ingrédients (type/name/qty/unit), notes. */
+@Serializable
+data class AiSuggestResult(
+    val title: String = "",
+    val ingredients: List<AiIngredient> = emptyList(),
+    val notes: String? = null,
+)
+
+@Serializable
+data class AiIngredient(
+    val type: String = "autre",
+    val name: String = "",
+    val qty: Double? = null,
+    val unit: String? = null,
+)
+
 private val draftJson = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
 fun Draft.parsedIngredients(): List<DraftIngredient> {

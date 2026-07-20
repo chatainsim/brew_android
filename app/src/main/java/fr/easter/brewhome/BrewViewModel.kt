@@ -520,6 +520,22 @@ class BrewViewModel(
         }
     }
 
+    private val _aiSuggesting = MutableStateFlow(false)
+    /** true pendant l'appel à l'IA (peut durer plusieurs secondes). */
+    val aiSuggesting: StateFlow<Boolean> = _aiSuggesting
+
+    /** Demande une suggestion de recette à l'IA (Gemini côté serveur). */
+    fun suggestDraft(style: String?, notes: String?, volume: Double?, onResult: (fr.easter.brewhome.data.AiSuggestResult) -> Unit) {
+        _aiSuggesting.value = true
+        launchWithError(R.string.error_ai_suggest) {
+            try {
+                onResult(repo.aiDraftSuggest(style?.ifBlank { null }, notes?.ifBlank { null }, volume))
+            } finally {
+                _aiSuggesting.value = false
+            }
+        }
+    }
+
     fun addCustomEvent(post: CustomEventPost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_event_save) {
             repo.addCustomEvent(post)

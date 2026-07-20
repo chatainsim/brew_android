@@ -33,6 +33,8 @@ import fr.easter.brewhome.data.RecipePost
 import fr.easter.brewhome.data.SodaKeg
 import fr.easter.brewhome.data.BeerArchivePatch
 import fr.easter.brewhome.data.BeerPut
+import fr.easter.brewhome.data.AiSuggestPost
+import fr.easter.brewhome.data.AiSuggestResult
 import fr.easter.brewhome.data.Spindle
 import fr.easter.brewhome.data.TempSensor
 import fr.easter.brewhome.data.TempReading
@@ -205,6 +207,7 @@ class BrewViewModelTest {
         override suspend fun getCatalog(): List<CatalogItem> = throw NotImplementedError()
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
+        override suspend fun aiDraftSuggest(body: AiSuggestPost): AiSuggestResult = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
         override suspend fun getCustomEvents(): List<CustomEvent> = throw NotImplementedError()
         override suspend fun createCustomEvent(body: CustomEventPost): CustomEvent = throw NotImplementedError()
