@@ -234,6 +234,31 @@ data class SpindleReading(
     val angle: Double? = null,
 )
 
+/** Sonde de température (ESP, Home Assistant…) avec sa dernière mesure. */
+@Serializable
+data class TempSensor(
+    val id: Int,
+    val name: String,
+    @SerialName("brew_id") val brewId: Int? = null,
+    @SerialName("brew_name") val brewName: String? = null,
+    @SerialName("temp_min") val tempMin: Double? = null,
+    @SerialName("temp_max") val tempMax: Double? = null,
+    @SerialName("last_temperature") val lastTemperature: Double? = null,
+    @SerialName("last_humidity") val lastHumidity: Double? = null,
+    @SerialName("last_target_temp") val lastTargetTemp: Double? = null,
+    @SerialName("last_reading_at") val lastReadingAt: String? = null,
+    @SerialName("reading_count") val readingCount: Int? = 0,
+)
+
+/** Une mesure historisée d'une sonde de température. */
+@Serializable
+data class TempReading(
+    @SerialName("recorded_at") val recordedAt: String,
+    val temperature: Double? = null,
+    val humidity: Double? = null,
+    @SerialName("target_temp") val targetTemp: Double? = null,
+)
+
 /** Photo d'un brassin ; `thumb` est un chemin relatif servi par le serveur. */
 @Serializable
 data class BrewPhoto(

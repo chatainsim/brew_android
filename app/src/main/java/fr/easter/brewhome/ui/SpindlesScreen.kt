@@ -1,6 +1,8 @@
 package fr.easter.brewhome.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,7 +51,7 @@ private fun fmtSpindleTime(ts: String): String = ts.take(16).replace('T', ' ')
 
 /** Vue densimètres connectés : densité, température, batterie en direct. */
 @Composable
-fun SpindlesScreen(vm: BrewViewModel) {
+fun SpindlesScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
     val spindles by vm.spindles.collectAsState()
     val readings by vm.spindleReadings.collectAsState()
     LaunchedEffect(Unit) { vm.loadSpindles() }
@@ -68,15 +70,94 @@ fun SpindlesScreen(vm: BrewViewModel) {
             modifier = Modifier.fillMaxSize(),
         ) {
             items(spindles!!, key = { it.id }) { spindle ->
-                SpindleCard(spindle, readings[spindle.id].orEmpty())
+                SpindleCard(spindle, readings[spindle.id].orEmpty()) { onOpen(spindle.id) }
             }
         }
     }
 }
 
+/** Détail d'un densimètre : grands graphes densité et température dans le temps. */
 @Composable
-private fun SpindleCard(spindle: Spindle, readings: List<SpindleReading>) {
-    Card(Modifier.fillMaxWidth()) {
+fun SpindleDetailScreen(vm: BrewViewModel, spindleId: Int?) {
+    val spindles by vm.spindles.collectAsState()
+    val readingsMap by vm.spindleReadings.collectAsState()
+    val spindle = spindles?.find { it.id == spindleId }
+    LaunchedEffect(spindleId) {
+        if (spindleId != null) {
+            if (spindles == null) vm.loadSpindles()
+            vm.loadSpindleReadings(spindleId)
+        }
+    }
+    if (spindle == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    val readings = readingsMap[spindle.id].orEmpty()
+    val gravColor = MaterialTheme.colorScheme.primary
+    val tempColor = MaterialTheme.colorScheme.tertiary
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(spindle.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        spindle.brewName?.let {
+            Text(stringResource(R.string.spindle_brew, it), color = MaterialTheme.colorScheme.primary)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Metric(stringResource(R.string.spindle_gravity), spindle.lastGravity?.let { fmtGravity(it) } ?: "–", gravColor)
+            Metric(stringResource(R.string.spindle_temp), spindle.lastTemperature?.let { "${fmtQty(it)} °C" } ?: "–", tempColor)
+            Metric(stringResource(R.string.spindle_battery), spindle.lastBattery?.let { "${fmtQty(it)} V" } ?: "–", MaterialTheme.colorScheme.secondary)
+        }
+        if (readings.size < 2) {
+            Text(
+                stringResource(R.string.probe_no_data),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        } else {
+            val ts = readings.map { it.recordedAt }
+            SectionTitleLocal(stringResource(R.string.spindle_gravity))
+            ProbeChart(
+                ts,
+                listOf(ChartSeries(stringResource(R.string.spindle_gravity), readings.map { it.gravity }, gravColor, "", 3)),
+            )
+            if (readings.any { it.temperature != null }) {
+                SectionTitleLocal(stringResource(R.string.spindle_temp))
+                ProbeChart(
+                    ts,
+                    listOf(ChartSeries(stringResource(R.string.spindle_temp), readings.map { it.temperature }, tempColor, "°C", 1)),
+                )
+            }
+            spindle.lastReadingAt?.let {
+                Text(
+                    stringResource(R.string.spindle_last_reading, fmtSpindleTime(it), spindle.readingCount ?: 0),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+internal fun SectionTitleLocal(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+}
+
+@Composable
+private fun SpindleCard(spindle: Spindle, readings: List<SpindleReading>, onClick: () -> Unit) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -163,7 +244,7 @@ private fun SpindleCard(spindle: Spindle, readings: List<SpindleReading>) {
 }
 
 @Composable
-private fun Metric(label: String, value: String, color: Color) {
+internal fun Metric(label: String, value: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             value,

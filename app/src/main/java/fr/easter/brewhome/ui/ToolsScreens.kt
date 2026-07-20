@@ -83,6 +83,7 @@ fun ToolsScreen(
     onOpenStats: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenSpindles: () -> Unit,
+    onOpenTemps: () -> Unit,
     onOpen: (String) -> Unit,
 ) {
     LazyColumn(
@@ -117,12 +118,21 @@ fun ToolsScreen(
                 onClick = onOpenSpindles,
             )
         }
+        item(key = "temps") {
+            ToolCard(
+                stringResource(R.string.title_temps),
+                stringResource(R.string.tools_temps_sub),
+                Icons.Outlined.Thermostat,
+                accent = toolAccent(3),
+                onClick = onOpenTemps,
+            )
+        }
         itemsIndexed(toolDefs, key = { _, tool -> tool.id }) { i, tool ->
             ToolCard(
                 stringResource(tool.titleRes),
                 stringResource(tool.subtitleRes),
                 tool.icon,
-                accent = toolAccent(i + 3),
+                accent = toolAccent(i + 4),
             ) { onOpen(tool.id) }
         }
     }

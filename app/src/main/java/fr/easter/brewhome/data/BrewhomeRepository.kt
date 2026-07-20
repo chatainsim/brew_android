@@ -114,6 +114,10 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun spindleReadings(id: Int): List<SpindleReading> = api().getSpindleReadings(id)
 
+    suspend fun tempSensors(): List<TempSensor> = api().getTempSensors()
+
+    suspend fun tempReadings(id: Int): List<TempReading> = api().getTempReadings(id)
+
     /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
     suspend fun costSettings(): CostSettings {
         val settings = api().getAppSettings()

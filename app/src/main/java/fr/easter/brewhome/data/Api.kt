@@ -119,6 +119,12 @@ interface BrewApi {
 
     @GET("api/spindles/{id}/readings")
     suspend fun getSpindleReadings(@Path("id") id: Int): List<SpindleReading>
+
+    @GET("api/temperature")
+    suspend fun getTempSensors(): List<TempSensor>
+
+    @GET("api/temperature/{id}/readings")
+    suspend fun getTempReadings(@Path("id") id: Int): List<TempReading>
 }
 
 object ApiClient {

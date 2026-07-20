@@ -21,6 +21,8 @@ import fr.easter.brewhome.data.Consumption
 import fr.easter.brewhome.data.CostSettings
 import fr.easter.brewhome.data.Spindle
 import fr.easter.brewhome.data.SpindleReading
+import fr.easter.brewhome.data.TempReading
+import fr.easter.brewhome.data.TempSensor
 import fr.easter.brewhome.data.CustomEvent
 import fr.easter.brewhome.data.CustomEventPost
 import fr.easter.brewhome.data.RecipePost
@@ -314,12 +316,37 @@ class BrewViewModel(
             val list = runCatching { repo.spindles() }.getOrDefault(emptyList())
             _spindles.value = list
             // Historique récent de chaque densimètre pour la courbe
-            list.forEach { sp ->
-                launch {
-                    runCatching { repo.spindleReadings(sp.id) }
-                        .onSuccess { _spindleReadings.value += sp.id to it }
-                }
-            }
+            list.forEach { sp -> loadSpindleReadings(sp.id) }
+        }
+    }
+
+    fun loadSpindleReadings(id: Int) {
+        viewModelScope.launch {
+            runCatching { repo.spindleReadings(id) }
+                .onSuccess { _spindleReadings.value += id to it }
+        }
+    }
+
+    // ── Sondes de température ──────────────────────────────────────────────
+
+    private val _tempSensors = MutableStateFlow<List<TempSensor>?>(null)
+    val tempSensors: StateFlow<List<TempSensor>?> = _tempSensors
+
+    private val _tempReadings = MutableStateFlow<Map<Int, List<TempReading>>>(emptyMap())
+    val tempReadings: StateFlow<Map<Int, List<TempReading>>> = _tempReadings
+
+    fun loadTempSensors() {
+        viewModelScope.launch {
+            val list = runCatching { repo.tempSensors() }.getOrDefault(emptyList())
+            _tempSensors.value = list
+            list.forEach { s -> loadTempReadings(s.id) }
+        }
+    }
+
+    fun loadTempReadings(id: Int) {
+        viewModelScope.launch {
+            runCatching { repo.tempReadings(id) }
+                .onSuccess { _tempReadings.value += id to it }
         }
     }
 
