@@ -242,6 +242,7 @@ class BrewViewModelTest {
             apiProvider = { api },
             vpn = VpnController(settings, onTunnelUp),
             cache = cache,
+            pending = fr.easter.brewhome.data.PendingQueue(tmp.root),
             strings = { "s$it" },
             io = dispatcher,
         )

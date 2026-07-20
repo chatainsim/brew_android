@@ -39,6 +39,8 @@ import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.ShoppingPost
 import fr.easter.brewhome.data.ShoppingRepository
 import fr.easter.brewhome.data.Snapshot
+import fr.easter.brewhome.data.PendingQueue
+import fr.easter.brewhome.data.PendingStockOp
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.data.TastingPut
 import fr.easter.brewhome.data.VpnController
@@ -103,6 +105,7 @@ class BrewViewModel(
     apiProvider: suspend () -> BrewApi,
     private val vpn: VpnController,
     private val cache: SnapshotCache,
+    private val pending: PendingQueue,
     private val strings: (Int) -> String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
@@ -211,6 +214,8 @@ class BrewViewModel(
     }
 
     private suspend fun applySnapshot() {
+        // Reconnexion : pousser d'abord les ajustements de stock faits hors ligne
+        replayPending()
         val s = repo.snapshot()
         _state.value = uiStateOf(s).copy(dataAt = System.currentTimeMillis())
         withContext(io) { cache.save(s) }
@@ -222,13 +227,42 @@ class BrewViewModel(
     )
 
     fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
-        launchWithError(R.string.error_stock_update) {
-            replaceBeer(repo.adjustBeerStock(beer, d33, d75, dKeg))
-            val field = if (d33 != 0) "33" else if (d75 != 0) "75" else "keg"
-            pushUndo(key = "beer-${beer.id}-$field", message = strings(R.string.undo_stock_updated)) {
-                replaceBeer(repo.restoreBeerStock(beer, d33 != 0, d75 != 0, dKeg != 0.0))
+        viewModelScope.launch {
+            try {
+                replaceBeer(repo.adjustBeerStock(beer, d33, d75, dKeg))
+                val field = if (d33 != 0) "33" else if (d75 != 0) "75" else "keg"
+                pushUndo(key = "beer-${beer.id}-$field", message = strings(R.string.undo_stock_updated)) {
+                    replaceBeer(repo.restoreBeerStock(beer, d33 != 0, d75 != 0, dKeg != 0.0))
+                }
+            } catch (e: java.io.IOException) {
+                // Hors ligne : appliquer localement et mettre en file pour rejeu
+                replaceBeer(optimisticStock(beer, d33, d75, dKeg))
+                withContext(io) { pending.add(PendingStockOp(beer.id, d33, d75, dKeg)) }
+                _state.value = _state.value.copy(offline = true)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(error = errorMessage(R.string.error_stock_update, e))
             }
         }
+    }
+
+    /** Applique un delta de stock localement (mêmes bornes que le serveur : ≥ 0). */
+    private fun optimisticStock(beer: Beer, d33: Int, d75: Int, dKeg: Double): Beer = beer.copy(
+        stock33 = if (d33 != 0) maxOf(0, (beer.stock33 ?: 0) + d33) else beer.stock33,
+        stock75 = if (d75 != 0) maxOf(0, (beer.stock75 ?: 0) + d75) else beer.stock75,
+        kegLiters = if (dKeg != 0.0) maxOf(0.0, (beer.kegLiters ?: 0.0) + dKeg) else beer.kegLiters,
+    )
+
+    /** Rejoue les ajustements de stock faits hors ligne, regroupés par bière. */
+    private suspend fun replayPending() {
+        val ops = withContext(io) { pending.load() }
+        if (ops.isEmpty()) return
+        val beers = repo.beers()
+        PendingQueue.coalesce(ops).forEach { op ->
+            beers.find { it.id == op.beerId }?.let {
+                runCatching { repo.adjustBeerStock(it, op.d33, op.d75, op.dKeg) }
+            }
+        }
+        withContext(io) { pending.clear() }
     }
 
     fun setInventoryQty(item: InventoryItem, newQty: Double) {
@@ -764,6 +798,7 @@ class BrewViewModel(
                     apiProvider = { ApiClient.api(settings.serverUrl.first()) },
                     vpn = VpnController(settings, VpnController.broadcaster(app)),
                     cache = SnapshotCache(app.filesDir),
+                    pending = PendingQueue(app.filesDir),
                     strings = app::getString,
                 )
             }
