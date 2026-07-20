@@ -190,9 +190,9 @@ class BrewViewModelTest {
         override suspend fun getBjcpStyles(): List<BjcpStyle> = throw NotImplementedError()
         override suspend fun updateBrew(id: Int, body: BrewPut): JsonObject = throw NotImplementedError()
         override suspend fun getSpindles(): List<Spindle> = throw NotImplementedError()
-        override suspend fun getSpindleReadings(id: Int): List<SpindleReading> = throw NotImplementedError()
+        override suspend fun getSpindleReadings(id: Int, hours: Int?): List<SpindleReading> = throw NotImplementedError()
         override suspend fun getTempSensors(): List<TempSensor> = throw NotImplementedError()
-        override suspend fun getTempReadings(id: Int): List<TempReading> = throw NotImplementedError()
+        override suspend fun getTempReadings(id: Int, hours: Int?): List<TempReading> = throw NotImplementedError()
     }
 
     private val api = FakeApi()

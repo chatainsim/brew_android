@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -118,10 +120,11 @@ fun TempDetailScreen(vm: BrewViewModel, sensorId: Int?) {
     val sensors by vm.tempSensors.collectAsState()
     val readingsMap by vm.tempReadings.collectAsState()
     val sensor = sensors?.find { it.id == sensorId }
-    LaunchedEffect(sensorId) {
+    var hours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(72) }
+    LaunchedEffect(sensorId, hours) {
         if (sensorId != null) {
             if (sensors == null) vm.loadTempSensors()
-            vm.loadTempReadings(sensorId)
+            vm.loadTempReadings(sensorId, hours)
         }
     }
     if (sensor == null) {
@@ -151,6 +154,7 @@ fun TempDetailScreen(vm: BrewViewModel, sensorId: Int?) {
             sensor.lastHumidity?.let { Metric(stringResource(R.string.temp_humidity), "${fmtQty(it)} %", humColor) }
             sensor.lastTargetTemp?.let { Metric(stringResource(R.string.temp_target), "${fmtQty(it)} °C", targetColor) }
         }
+        RangeSelector(hours) { hours = it }
         if (readings.size < 2) {
             Text(
                 stringResource(R.string.probe_no_data),

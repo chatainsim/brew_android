@@ -28,6 +28,7 @@
     <string name="spindle_battery">Batterie</string>
     <string name="spindle_last_reading">Dernière mesure le %1$s · %2$d relevés</string>
     <string name="probe_no_data">Pas encore assez de mesures pour tracer une courbe.</string>
+    <string name="range_all">Tout</string>
     <string name="title_temps">Températures</string>
     <string name="tools_temps_sub">Sondes de température et d\'humidité en direct</string>
     <string name="temps_empty">Aucune sonde de température</string>

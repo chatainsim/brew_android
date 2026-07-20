@@ -118,13 +118,19 @@ interface BrewApi {
     suspend fun getSpindles(): List<Spindle>
 
     @GET("api/spindles/{id}/readings")
-    suspend fun getSpindleReadings(@Path("id") id: Int): List<SpindleReading>
+    suspend fun getSpindleReadings(
+        @Path("id") id: Int,
+        @retrofit2.http.Query("hours") hours: Int? = null,
+    ): List<SpindleReading>
 
     @GET("api/temperature")
     suspend fun getTempSensors(): List<TempSensor>
 
     @GET("api/temperature/{id}/readings")
-    suspend fun getTempReadings(@Path("id") id: Int): List<TempReading>
+    suspend fun getTempReadings(
+        @Path("id") id: Int,
+        @retrofit2.http.Query("hours") hours: Int? = null,
+    ): List<TempReading>
 }
 
 object ApiClient {

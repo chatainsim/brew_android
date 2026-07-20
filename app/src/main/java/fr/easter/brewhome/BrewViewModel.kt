@@ -320,9 +320,9 @@ class BrewViewModel(
         }
     }
 
-    fun loadSpindleReadings(id: Int) {
+    fun loadSpindleReadings(id: Int, hours: Int? = null) {
         viewModelScope.launch {
-            runCatching { repo.spindleReadings(id) }
+            runCatching { repo.spindleReadings(id, hours) }
                 .onSuccess { _spindleReadings.value += id to it }
         }
     }
@@ -343,9 +343,9 @@ class BrewViewModel(
         }
     }
 
-    fun loadTempReadings(id: Int) {
+    fun loadTempReadings(id: Int, hours: Int? = null) {
         viewModelScope.launch {
-            runCatching { repo.tempReadings(id) }
+            runCatching { repo.tempReadings(id, hours) }
                 .onSuccess { _tempReadings.value += id to it }
         }
     }

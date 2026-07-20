@@ -28,6 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -82,10 +84,11 @@ fun SpindleDetailScreen(vm: BrewViewModel, spindleId: Int?) {
     val spindles by vm.spindles.collectAsState()
     val readingsMap by vm.spindleReadings.collectAsState()
     val spindle = spindles?.find { it.id == spindleId }
-    LaunchedEffect(spindleId) {
+    var hours by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Int?>(72) }
+    LaunchedEffect(spindleId, hours) {
         if (spindleId != null) {
             if (spindles == null) vm.loadSpindles()
-            vm.loadSpindleReadings(spindleId)
+            vm.loadSpindleReadings(spindleId, hours)
         }
     }
     if (spindle == null) {
@@ -114,6 +117,7 @@ fun SpindleDetailScreen(vm: BrewViewModel, spindleId: Int?) {
             Metric(stringResource(R.string.spindle_temp), spindle.lastTemperature?.let { "${fmtQty(it)} °C" } ?: "–", tempColor)
             Metric(stringResource(R.string.spindle_battery), spindle.lastBattery?.let { "${fmtQty(it)} V" } ?: "–", MaterialTheme.colorScheme.secondary)
         }
+        RangeSelector(hours) { hours = it }
         if (readings.size < 2) {
             Text(
                 stringResource(R.string.probe_no_data),
