@@ -9,6 +9,8 @@ import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.outlined.LocalDrink
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Thermostat
@@ -114,6 +116,7 @@ fun RecipeEditScreen(
         }
     }
     var saving by remember { mutableStateOf(false) }
+    var showScale by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         vm.loadCatalog()
@@ -151,6 +154,12 @@ fun RecipeEditScreen(
                     modifier = Modifier.weight(2f),
                 )
                 NumField(volume, { volume = it }, stringResource(R.string.label_volume_l), Modifier.weight(1f))
+            }
+            if (ings.any { it.name.isNotBlank() }) {
+                TextButton(onClick = { showScale = true }) {
+                    Icon(Icons.Filled.Straighten, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.recipe_scale), Modifier.padding(start = 6.dp))
+                }
             }
         }
 
@@ -271,6 +280,54 @@ fun RecipeEditScreen(
         }
         Spacer(Modifier.height(24.dp))
     }
+
+    if (showScale) {
+        ScaleDialog(
+            currentVolume = volume.trim().replace(',', '.').toDoubleOrNull(),
+            onDismiss = { showScale = false },
+            onScale = { target ->
+                val from = volume.trim().replace(',', '.').toDoubleOrNull()
+                if (from != null && from > 0) {
+                    val factor = target / from
+                    ings.indices.forEach { i ->
+                        val q = ings[i].quantity.trim().replace(',', '.').toDoubleOrNull()
+                        if (q != null) {
+                            ings[i] = ings[i].copy(quantity = numToField(kotlin.math.round(q * factor * 1000) / 1000))
+                        }
+                    }
+                    volume = numToField(target)
+                }
+                showScale = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun ScaleDialog(currentVolume: Double?, onDismiss: () -> Unit, onScale: (Double) -> Unit) {
+    var target by remember { mutableStateOf(currentVolume?.let(::numToField) ?: "") }
+    val parsed = target.trim().replace(',', '.').toDoubleOrNull()
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipe_scale)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    stringResource(R.string.recipe_scale_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                NumField(target, { target = it }, stringResource(R.string.recipe_scale_target), Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsed?.let(onScale) },
+                enabled = parsed != null && parsed > 0,
+            ) { Text(stringResource(R.string.recipe_scale_apply)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 /** Notes de la recette créée depuis un brouillon : ligne « objectif » + notes. */

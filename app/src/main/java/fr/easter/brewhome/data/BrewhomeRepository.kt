@@ -6,6 +6,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 /** Instantané complet des données du serveur, chargé en parallèle. */
 @Serializable
@@ -175,6 +176,32 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     }
 
     suspend fun createRecipe(post: RecipePost): Recipe = api().createRecipe(post)
+
+    /** Duplique une recette sous [newName] en préservant tous ses champs. Renvoie le nouvel id. */
+    suspend fun duplicateRecipe(source: Recipe, newName: String): Int {
+        val ings = mergeJson.encodeToJsonElement(
+            kotlinx.serialization.builtins.ListSerializer(RecipeIngredient.serializer()),
+            source.ingredients,
+        )
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("name", newName)
+            source.style?.let { put("style", it) }
+            put("volume", source.volume ?: 20.0)
+            source.mashTemp?.let { put("mash_temp", it) }
+            source.mashTime?.let { put("mash_time", it) }
+            source.boilTime?.let { put("boil_time", it) }
+            source.mashRatio?.let { put("mash_ratio", it) }
+            source.evapRate?.let { put("evap_rate", it) }
+            source.grainAbsorption?.let { put("grain_absorption", it) }
+            source.brewhouseEfficiency?.let { put("brewhouse_efficiency", it) }
+            source.fermTemp?.let { put("ferm_temp", it) }
+            source.fermTime?.let { put("ferm_time", it) }
+            source.notes?.let { put("notes", it) }
+            put("ingredients", ings)
+        }
+        val created = api().createRecipeRaw(body)
+        return (created["id"] as kotlinx.serialization.json.JsonPrimitive).content.toInt()
+    }
 
     /**
      * Mise à jour d'une recette : le PUT du serveur écrase toutes les colonnes,

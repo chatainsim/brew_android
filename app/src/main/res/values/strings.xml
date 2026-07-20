@@ -83,6 +83,11 @@
     <string name="title_recipe_edit">Modifier la recette</string>
     <string name="create_recipe">Créer la recette</string>
     <string name="cd_edit_recipe">Modifier la recette</string>
+    <string name="cd_duplicate_recipe">Dupliquer la recette</string>
+    <string name="recipe_scale">Mettre à l\'échelle</string>
+    <string name="recipe_scale_help">Recalcule toutes les quantités d\'ingrédients pour un nouveau volume.</string>
+    <string name="recipe_scale_target">Nouveau volume (L)</string>
+    <string name="recipe_scale_apply">Appliquer</string>
     <string name="recipe_mash_temp">Empâtage °C</string>
     <string name="recipe_mash_time">Empâtage min</string>
     <string name="recipe_boil_time">Ébullition min</string>

@@ -486,6 +486,17 @@ class BrewViewModel(
         }
     }
 
+    /** Duplique une recette (nom versionné « vN ») et renvoie le nouvel id. */
+    fun duplicateRecipe(recipe: fr.easter.brewhome.data.Recipe, onDone: (Int) -> Unit = {}) {
+        launchWithError(R.string.error_recipe_save) {
+            val names = _state.value.recipes.map { it.name }
+            val newName = fr.easter.brewhome.calc.RecipeNaming.duplicateName(recipe.name, names)
+            val newId = repo.duplicateRecipe(recipe, newName)
+            _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
+            onDone(newId)
+        }
+    }
+
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
             if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)

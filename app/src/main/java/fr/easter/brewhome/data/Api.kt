@@ -120,6 +120,10 @@ interface BrewApi {
     @POST("api/recipes")
     suspend fun createRecipe(@Body body: RecipePost): Recipe
 
+    /** Création avec corps JSON libre (duplication : préserve tous les champs). */
+    @POST("api/recipes")
+    suspend fun createRecipeRaw(@Body body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject
+
     @PUT("api/recipes/{id}")
     suspend fun updateRecipe(
         @Path("id") id: Int,

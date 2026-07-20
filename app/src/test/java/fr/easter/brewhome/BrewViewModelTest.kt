@@ -199,6 +199,7 @@ class BrewViewModelTest {
         override suspend fun deleteCustomEvent(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getRecipeRaw(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun createRecipe(body: RecipePost): Recipe = throw NotImplementedError()
+        override suspend fun createRecipeRaw(body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun updateRecipe(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun getBjcpStyles(): List<BjcpStyle> = throw NotImplementedError()
         override suspend fun updateBrew(id: Int, body: BrewPut): JsonObject = throw NotImplementedError()

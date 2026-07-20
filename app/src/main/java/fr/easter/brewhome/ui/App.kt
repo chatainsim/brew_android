@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -245,6 +246,16 @@ fun BrewHomeApp(
                             Icon(
                                 Icons.Filled.Edit,
                                 contentDescription = stringResource(R.string.cd_edit_recipe),
+                            )
+                        }
+                        IconButton(onClick = {
+                            vm.duplicateRecipe(recipeToShare) { newId ->
+                                navController.navigate("recipe/$newId")
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.ContentCopy,
+                                contentDescription = stringResource(R.string.cd_duplicate_recipe),
                             )
                         }
                         IconButton(onClick = {
