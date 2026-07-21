@@ -156,6 +156,11 @@
     <string name="error_brew_load">Chargement impossible</string>
     <string name="error_brew_status">Échec du changement de statut</string>
     <string name="error_brew_create">Échec de la création du brassin</string>
+    <string name="error_brew_save">Échec de l\'enregistrement du brassin</string>
+    <string name="title_brew_edit">Modifier le brassin</string>
+    <string name="cd_edit_brew">Modifier le brassin</string>
+    <string name="brew_ferm_days">Ferm. (jours)</string>
+    <string name="brew_batch">N° batch</string>
     <string name="recipe_brew">Brasser cette recette</string>
     <string name="brew_create_title">Nouveau brassin</string>
     <string name="brew_create_status">Statut de départ</string>

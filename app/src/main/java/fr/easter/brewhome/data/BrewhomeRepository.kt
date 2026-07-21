@@ -195,6 +195,11 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun setBrewPhotosUrl(brew: Brew, url: String?) = putBrew(brew, photosUrl = url)
 
+    /** Enregistre les champs édités d'un brassin (mesures, dates, notes…). */
+    suspend fun updateBrew(put: BrewPut, brewId: Int) {
+        api().updateBrew(brewId, put)
+    }
+
     suspend fun spindles(): List<Spindle> = api().getSpindles()
 
     suspend fun spindleReadings(id: Int, hours: Int? = null): List<SpindleReading> =

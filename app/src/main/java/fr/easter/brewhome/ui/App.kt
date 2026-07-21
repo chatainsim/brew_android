@@ -86,7 +86,7 @@ private fun tabOf(route: String?): String? = when {
         route.startsWith("recipeFromDraft/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
-    route == "brews" || route.startsWith("brew/") -> "brews"
+    route == "brews" || route.startsWith("brew/") || route.startsWith("brewEdit/") -> "brews"
     route == "tools" || route.startsWith("tools/") ||
         route == "stats" || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
@@ -226,6 +226,7 @@ fun BrewHomeApp(
                             currentRoute?.startsWith("beer/") == true -> stringResource(R.string.title_beer)
                             currentRoute?.startsWith("beerEdit/") == true -> stringResource(R.string.title_beer_edit)
                             currentRoute?.startsWith("brew/") == true -> stringResource(R.string.title_brew)
+                            currentRoute?.startsWith("brewEdit/") == true -> stringResource(R.string.title_brew_edit)
                             currentRoute?.startsWith("draft/") == true -> stringResource(R.string.title_draft)
                             currentRoute?.startsWith("draftEdit/") == true ->
                                 if (backStack?.arguments?.getString("id") == "new")
@@ -350,6 +351,18 @@ fun BrewHomeApp(
                                 Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = stringResource(R.string.cd_open_vitrine),
                             )
+                        }
+                    }
+                    // Édition du brassin ouvert
+                    if (currentRoute?.startsWith("brew/") == true) {
+                        val id = backStack?.arguments?.getString("id")?.toIntOrNull()
+                        if (id != null && state.brews.any { it.id == id }) {
+                            IconButton(onClick = { navController.navigate("brewEdit/$id") }) {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.cd_edit_brew),
+                                )
+                            }
                         }
                     }
                     // Import BeerXML depuis la liste des recettes
@@ -512,6 +525,10 @@ fun BrewHomeApp(
             composable("brew/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 BrewDetailScreen(vm, id) { navController.navigate("recipe/$it") }
+            }
+            composable("brewEdit/{id}") { entry ->
+                val id = entry.arguments?.getString("id")?.toIntOrNull()
+                BrewEditScreen(vm, id) { navController.navigateUp() }
             }
             composable("tools") {
                 ToolsScreen(

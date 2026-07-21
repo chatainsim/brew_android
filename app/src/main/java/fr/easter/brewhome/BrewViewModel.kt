@@ -458,6 +458,15 @@ class BrewViewModel(
         }
     }
 
+    /** Enregistre les champs édités d'un brassin (mesures réelles, dates, notes…). */
+    fun saveBrew(brewId: Int, put: fr.easter.brewhome.data.BrewPut, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_brew_save) {
+            repo.updateBrew(put, brewId)
+            _state.value = _state.value.copy(brews = repo.brews(), error = null)
+            onDone()
+        }
+    }
+
     /** Enregistre le lien d'album photo externe d'un brassin (vide = retirer). */
     fun setBrewPhotosUrl(brew: Brew, url: String?, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_brew_status) {
