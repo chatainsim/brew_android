@@ -99,6 +99,9 @@ interface BrewApi {
     @GET("api/app-settings")
     suspend fun getAppSettings(): kotlinx.serialization.json.JsonObject
 
+    @PUT("api/app-settings")
+    suspend fun saveAppSettings(@Body body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject
+
     @GET("api/catalog")
     suspend fun getCatalog(): List<CatalogItem>
 
@@ -174,6 +177,12 @@ interface BrewApi {
 
     @GET("api/spindles")
     suspend fun getSpindles(): List<Spindle>
+
+    @PATCH("api/spindles/{id}")
+    suspend fun patchSpindle(
+        @Path("id") id: Int,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject
 
     @GET("api/spindles/{id}/readings")
     suspend fun getSpindleReadings(

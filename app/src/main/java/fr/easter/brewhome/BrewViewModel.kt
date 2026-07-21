@@ -494,6 +494,16 @@ class BrewViewModel(
         }
     }
 
+    /** Assigne (ou détache si null) un brassin à un densimètre, puis recharge. */
+    fun assignSpindleBrew(spindleId: Int, brewId: Int?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_spindle_assign) {
+            repo.assignSpindleBrew(spindleId, brewId)
+            val list = runCatching { repo.spindles() }.getOrDefault(_spindles.value.orEmpty())
+            _spindles.value = list
+            onDone()
+        }
+    }
+
     fun loadSpindleReadings(id: Int, hours: Int? = null) {
         viewModelScope.launch {
             runCatching { repo.spindleReadings(id, hours) }
@@ -650,6 +660,15 @@ class BrewViewModel(
             viewModelScope.launch {
                 _costSettings.value = runCatching { repo.costSettings() }.getOrDefault(CostSettings())
             }
+        }
+    }
+
+    /** Enregistre les coûts fixes et la formule IBU, puis rafraîchit l'état. */
+    fun saveCostSettings(cs: CostSettings, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_settings_save) {
+            repo.saveCostSettings(cs)
+            _costSettings.value = repo.costSettings()
+            onDone()
         }
     }
 

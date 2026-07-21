@@ -35,6 +35,15 @@ private val themeModes = listOf(
     "dark" to R.string.theme_dark,
 )
 
+private val ibuFormulas = listOf(
+    "tinseth" to R.string.ibu_tinseth,
+    "rager" to R.string.ibu_rager,
+)
+
+/** Affiche un nombre sans « .0 » superflu pour préremplir un champ. */
+private fun fmtNum(v: Double): String =
+    if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString()
+
 @Composable
 fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
     val serverUrl by vm.serverUrl.collectAsState()
@@ -201,6 +210,78 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             enabled = wgAuto,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.settings_costs_title), style = MaterialTheme.typography.titleLarge)
+        Text(
+            stringResource(R.string.settings_costs_help),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        LaunchedEffect(Unit) { vm.loadRecipeExtras() }
+        val costs by vm.costSettings.collectAsState()
+        var gas by remember(costs) { mutableStateOf(costs?.gasPerBrew?.let { fmtNum(it) } ?: "") }
+        var elec by remember(costs) { mutableStateOf(costs?.elecPerBrew?.let { fmtNum(it) } ?: "") }
+        var water by remember(costs) { mutableStateOf(costs?.waterPricePerL?.let { fmtNum(it) } ?: "") }
+        var ibuFormula by remember(costs) { mutableStateOf(costs?.ibuFormula ?: "tinseth") }
+        OutlinedTextField(
+            value = gas,
+            onValueChange = { gas = it },
+            label = { Text(stringResource(R.string.settings_cost_gas)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = elec,
+            onValueChange = { elec = it },
+            label = { Text(stringResource(R.string.settings_cost_elec)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = water,
+            onValueChange = { water = it },
+            label = { Text(stringResource(R.string.settings_cost_water)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            stringResource(R.string.settings_ibu_formula),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            ibuFormulas.forEachIndexed { i, (value, labelRes) ->
+                SegmentedButton(
+                    selected = ibuFormula == value,
+                    onClick = { ibuFormula = value },
+                    shape = SegmentedButtonDefaults.itemShape(index = i, count = ibuFormulas.size),
+                ) { Text(stringResource(labelRes)) }
+            }
+        }
+        Button(
+            onClick = {
+                vm.saveCostSettings(
+                    fr.easter.brewhome.data.CostSettings(
+                        waterPricePerL = water.replace(',', '.').toDoubleOrNull(),
+                        gasPerBrew = gas.replace(',', '.').toDoubleOrNull() ?: 0.0,
+                        elecPerBrew = elec.replace(',', '.').toDoubleOrNull() ?: 0.0,
+                        ibuFormula = ibuFormula,
+                    ),
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_costs_save))
+        }
 
         Spacer(Modifier.height(8.dp))
         val version = remember {

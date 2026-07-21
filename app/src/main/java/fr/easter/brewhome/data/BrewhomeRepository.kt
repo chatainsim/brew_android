@@ -169,6 +169,23 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
 
+    /** Enregistre les coûts fixes et la formule IBU (clés water/energy = JSON string). */
+    suspend fun saveCostSettings(cs: CostSettings) {
+        val water = kotlinx.serialization.json.buildJsonObject {
+            cs.waterPricePerL?.let { put("price", it) }
+        }
+        val energy = kotlinx.serialization.json.buildJsonObject {
+            put("gas_per_brew", cs.gasPerBrew)
+            put("elec_per_brew", cs.elecPerBrew)
+            put("ibu_formula", cs.ibuFormula)
+        }
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("water", water.toString())
+            put("energy", energy.toString())
+        }
+        api().saveAppSettings(body)
+    }
+
     /**
      * PUT d'un brassin en repassant tous ses champs, seuls [status] et
      * [photosUrl] pouvant différer de l'existant (le PUT écrase toutes les
@@ -209,6 +226,15 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     }
 
     suspend fun spindles(): List<Spindle> = api().getSpindles()
+
+    /** Assigne (ou détache si null) un brassin à un densimètre. */
+    suspend fun assignSpindleBrew(spindleId: Int, brewId: Int?) {
+        val body = kotlinx.serialization.json.buildJsonObject {
+            if (brewId == null) put("brew_id", kotlinx.serialization.json.JsonNull)
+            else put("brew_id", brewId)
+        }
+        api().patchSpindle(spindleId, body)
+    }
 
     suspend fun spindleReadings(id: Int, hours: Int? = null): List<SpindleReading> =
         api().getSpindleReadings(id, hours)

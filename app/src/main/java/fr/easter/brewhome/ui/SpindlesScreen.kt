@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -111,6 +112,55 @@ fun SpindleDetailScreen(vm: BrewViewModel, spindleId: Int?) {
         Text(spindle.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         spindle.brewName?.let {
             Text(stringResource(R.string.spindle_brew, it), color = MaterialTheme.colorScheme.primary)
+        }
+        var showAssign by androidx.compose.runtime.remember { mutableStateOf(false) }
+        androidx.compose.material3.OutlinedButton(onClick = { showAssign = true }) {
+            Text(stringResource(R.string.spindle_assign))
+        }
+        if (showAssign) {
+            val brews = vm.state.collectAsState().value.brews
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showAssign = false },
+                title = { Text(stringResource(R.string.spindle_assign_title)) },
+                text = {
+                    Column {
+                        androidx.compose.material3.TextButton(
+                            onClick = { vm.assignSpindleBrew(spindle.id, null); showAssign = false },
+                        ) { Text(stringResource(R.string.spindle_assign_none)) }
+                        HorizontalDivider()
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 320.dp)
+                                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                        ) {
+                            brews.forEach { b ->
+                                Text(
+                                    b.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            vm.assignSpindleBrew(spindle.id, b.id)
+                                            showAssign = false
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    color = if (b.id == spindle.brewId) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { showAssign = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+            )
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Metric(stringResource(R.string.spindle_gravity), spindle.lastGravity?.let { fmtGravity(it) } ?: "–", gravColor)
