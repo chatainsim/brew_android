@@ -155,6 +155,10 @@
     <string name="error_connect">Connexion impossible</string>
     <string name="error_brew_load">Chargement impossible</string>
     <string name="error_brew_status">Échec du changement de statut</string>
+    <string name="error_brew_create">Échec de la création du brassin</string>
+    <string name="recipe_brew">Brasser cette recette</string>
+    <string name="brew_create_title">Nouveau brassin</string>
+    <string name="brew_create_status">Statut de départ</string>
     <string name="error_log_add">Échec de l\'ajout au journal</string>
     <string name="error_step_add">Échec de l\'ajout de l\'étape</string>
     <string name="error_step_update">Échec de la mise à jour de l\'étape</string>

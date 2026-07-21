@@ -5,6 +5,7 @@ import fr.easter.brewhome.data.AppSettings
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.BjcpStyle
 import fr.easter.brewhome.data.Brew
+import fr.easter.brewhome.data.BrewCreatePost
 import fr.easter.brewhome.data.BrewApi
 import fr.easter.brewhome.data.BrewLogEntry
 import fr.easter.brewhome.data.BrewLogPost
@@ -124,6 +125,7 @@ class BrewViewModelTest {
         override suspend fun getRecipes(): List<Recipe> { gate(); return emptyList() }
         override suspend fun getInventory(): List<InventoryItem> { gate(); return emptyList() }
         override suspend fun getBrews(): List<Brew> { gate(); return emptyList() }
+        override suspend fun createBrew(body: BrewCreatePost): Brew = throw NotImplementedError()
         override suspend fun getDrafts(): List<Draft> { gate(); return emptyList() }
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }
         override suspend fun getAppSettings(): JsonObject { gate(); return JsonObject(emptyMap()) }

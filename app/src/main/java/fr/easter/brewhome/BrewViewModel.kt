@@ -437,6 +437,19 @@ class BrewViewModel(
         )
     }
 
+    /** Démarre un brassin depuis une recette (déduit le stock côté serveur). */
+    fun createBrew(post: fr.easter.brewhome.data.BrewCreatePost, onDone: (Int) -> Unit = {}) {
+        launchWithError(R.string.error_brew_create) {
+            val created = repo.createBrew(post)
+            _state.value = _state.value.copy(
+                brews = repo.brews(),
+                inventory = repo.inventory(),
+                error = null,
+            )
+            onDone(created.id)
+        }
+    }
+
     /** Change le statut d'un brassin (planned/in_progress/fermenting/completed). */
     fun setBrewStatus(brew: Brew, status: String) {
         launchWithError(R.string.error_brew_status) {

@@ -48,6 +48,9 @@ interface BrewApi {
     @GET("api/brews")
     suspend fun getBrews(): List<Brew>
 
+    @POST("api/brews")
+    suspend fun createBrew(@Body body: BrewCreatePost): Brew
+
     @GET("api/brews/{id}/fermentation")
     suspend fun getBrewFermentation(@Path("id") id: Int): List<FermReading>
 

@@ -252,6 +252,17 @@ data class BrewPut(
     @SerialName("batch_number") val batchNumber: Int? = null,
 )
 
+/** Corps de POST /api/brews : démarre un brassin depuis une recette. */
+@Serializable
+data class BrewCreatePost(
+    @SerialName("recipe_id") val recipeId: Int,
+    val name: String? = null,
+    @SerialName("brew_date") val brewDate: String? = null,
+    @SerialName("volume_brewed") val volumeBrewed: Double? = null,
+    val status: String = "in_progress",
+    @SerialName("batch_number") val batchNumber: Int? = null,
+)
+
 /** Densimètre connecté (iSpindel…) avec sa dernière mesure. */
 @Serializable
 data class Spindle(

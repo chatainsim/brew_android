@@ -476,7 +476,7 @@ fun BrewHomeApp(
             }
             composable("recipe/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
-                RecipeDetailScreen(vm, id)
+                RecipeDetailScreen(vm, id) { brewId -> navController.navigate("brew/$brewId") }
             }
             composable("recipeEdit/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null

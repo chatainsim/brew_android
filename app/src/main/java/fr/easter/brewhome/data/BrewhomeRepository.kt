@@ -144,6 +144,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun brews(): List<Brew> = api().getBrews()
 
+    suspend fun createBrew(post: BrewCreatePost): Brew = api().createBrew(post)
+
     suspend fun beers(): List<Beer> = api().getBeers()
 
     suspend fun inventory(): List<InventoryItem> = api().getInventory()

@@ -20,13 +20,17 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -237,12 +241,20 @@ private fun StockBadge(stock: StockCheck.Result) {
 }
 
 @Composable
-fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
+fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?, onOpenBrew: (Int) -> Unit = {}) {
     val state by vm.state.collectAsState()
     val recipe = state.recipes.find { it.id == recipeId }
     if (recipe == null) {
         EmptyHint(stringResource(R.string.recipe_not_found))
         return
+    }
+    var showBrew by remember { mutableStateOf(false) }
+    if (showBrew) {
+        BrewFromRecipeDialog(
+            recipe = recipe,
+            onDismiss = { showBrew = false },
+            onCreate = { post -> vm.createBrew(post) { id -> showBrew = false; onOpenBrew(id) } },
+        )
     }
     LaunchedEffect(Unit) {
         vm.loadCatalog()
@@ -272,6 +284,11 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?) {
         ).joinToString(" · ")
         if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
         if (recipe.rating != null) StarRating(recipe.rating)
+
+        Button(onClick = { showBrew = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.Science, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.recipe_brew), Modifier.padding(start = 8.dp))
+        }
 
         if (stock != null) {
             StockBanner(
@@ -416,6 +433,76 @@ private fun StockDetailDialog(stock: StockCheck.Result, onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         },
+    )
+}
+
+private val brewStartStatuses = listOf("planned", "in_progress", "fermenting")
+
+@Composable
+private fun BrewFromRecipeDialog(
+    recipe: Recipe,
+    onDismiss: () -> Unit,
+    onCreate: (fr.easter.brewhome.data.BrewCreatePost) -> Unit,
+) {
+    var name by remember { mutableStateOf(recipe.name) }
+    var date by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var volume by remember { mutableStateOf(recipe.volume?.let { fmtQty(it).replace(',', '.') } ?: "") }
+    var status by remember { mutableStateOf("in_progress") }
+    val statusLabels = brewStartStatuses.associateWith { brewStatusLabel(it) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.brew_create_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.label_name)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = date, onValueChange = { date = it },
+                        label = { Text(stringResource(R.string.label_brew_date)) },
+                        placeholder = { Text("2026-08-01") },
+                        singleLine = true, modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = volume, onValueChange = { volume = it },
+                        label = { Text(stringResource(R.string.label_volume_l)) },
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Text(stringResource(R.string.brew_create_status), style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    brewStartStatuses.forEach { s ->
+                        FilterChip(
+                            selected = status == s,
+                            onClick = { status = s },
+                            label = { Text(statusLabels.getValue(s), style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onCreate(fr.easter.brewhome.data.BrewCreatePost(
+                        recipeId = recipe.id,
+                        name = name.trim().ifBlank { null },
+                        brewDate = date.trim().ifBlank { null },
+                        volumeBrewed = volume.trim().replace(',', '.').toDoubleOrNull(),
+                        status = status,
+                    ))
+                },
+                enabled = name.isNotBlank(),
+            ) { Text(stringResource(R.string.recipe_brew)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 

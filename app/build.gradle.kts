@@ -13,8 +13,8 @@ android {
         applicationId = "fr.easter.brewhome"
         minSdk = 26
         targetSdk = 34
-        versionCode = 54
-        versionName = "1.44"
+        versionCode = 55
+        versionName = "1.45"
     }
 
     // Clé de release BrewHome : identifiants dans ~/.gradle/gradle.properties
