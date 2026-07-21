@@ -283,6 +283,11 @@
     <string name="keg_mark_revised">Révision faite aujourd\'hui</string>
     <string name="keg_delete_confirm">Supprimer le fût « %1$s » ?</string>
     <string name="error_keg_create">Impossible de créer le fût</string>
+    <string name="recipe_export_beerxml">Exporter en BeerXML</string>
+    <string name="title_search">Recherche</string>
+    <string name="search_hint">Rechercher</string>
+    <string name="search_prompt">Tape au moins 2 lettres pour chercher dans les bières, recettes et brassins.</string>
+    <string name="search_no_result">Aucun résultat</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

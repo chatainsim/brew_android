@@ -73,6 +73,28 @@ fun shareText(context: Context, text: String, subject: String? = null) {
     runCatching { context.startActivity(Intent.createChooser(intent, null)) }
 }
 
+/**
+ * Écrit [content] dans un fichier du cache et ouvre la feuille de partage
+ * Android avec le fichier (URI content:// via le FileProvider de l'app).
+ */
+fun shareFile(context: Context, fileName: String, content: String, mimeType: String, subject: String? = null) {
+    runCatching {
+        val dir = java.io.File(context.cacheDir, "shared").apply { mkdirs() }
+        val file = java.io.File(dir, fileName)
+        file.writeText(content)
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context, "${context.packageName}.fileprovider", file,
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            if (subject != null) putExtra(Intent.EXTRA_SUBJECT, subject)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, null))
+    }
+}
+
 /** Epoch ms → « 16/07 à 22:40 » dans le fuseau du téléphone. */
 fun fmtInstant(epochMs: Long): String = java.time.Instant.ofEpochMilli(epochMs)
     .atZone(java.time.ZoneId.systemDefault())

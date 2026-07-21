@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -288,6 +289,24 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?, onOpenBrew: (Int) -> U
         Button(onClick = { showBrew = true }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.Science, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(stringResource(R.string.recipe_brew), Modifier.padding(start = 8.dp))
+        }
+
+        val exportContext = androidx.compose.ui.platform.LocalContext.current
+        val exportSubject = stringResource(R.string.share_subject_recipe, recipe.name)
+        OutlinedButton(
+            onClick = {
+                shareFile(
+                    exportContext,
+                    fr.easter.brewhome.calc.BeerXmlExport.fileName(recipe),
+                    fr.easter.brewhome.calc.BeerXmlExport.toBeerXml(recipe),
+                    "application/xml",
+                    exportSubject,
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.recipe_export_beerxml), Modifier.padding(start = 8.dp))
         }
 
         if (stock != null) {

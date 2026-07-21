@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Calculate
@@ -224,6 +225,7 @@ fun BrewHomeApp(
                     Text(
                         when {
                             currentRoute == "settings" -> stringResource(R.string.title_settings)
+                            currentRoute == "search" -> stringResource(R.string.title_search)
                             currentRoute?.startsWith("recipe/") == true -> stringResource(R.string.title_recipe)
                             currentRoute?.startsWith("recipeEdit/") == true ->
                                 if (backStack?.arguments?.getString("id") == "new")
@@ -416,6 +418,14 @@ fun BrewHomeApp(
                             )
                         }
                     }
+                    if (currentRoute != "search" && currentRoute != "settings") {
+                        IconButton(onClick = { navController.navigate("search") }) {
+                            Icon(
+                                Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.search_hint),
+                            )
+                        }
+                    }
                     if (currentRoute != "settings") {
                         IconButton(onClick = { navController.navigate("settings") }) {
                             Icon(
@@ -582,6 +592,14 @@ fun BrewHomeApp(
                 SettingsScreen(vm) {
                     navController.navigate("home") { popUpTo("settings") { inclusive = true } }
                 }
+            }
+            composable("search") {
+                SearchScreen(
+                    vm,
+                    onOpenBeer = { navController.navigate("beer/$it") },
+                    onOpenRecipe = { navController.navigate("recipe/$it") },
+                    onOpenBrew = { navController.navigate("brew/$it") },
+                )
             }
         }
     }
