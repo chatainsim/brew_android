@@ -206,6 +206,14 @@ interface BrewApi {
     @GET("api/soda-kegs")
     suspend fun getSodaKegsRaw(): List<kotlinx.serialization.json.JsonObject>
 
+    @POST("api/soda-kegs")
+    suspend fun createSodaKeg(
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject
+
+    @DELETE("api/soda-kegs/{id}")
+    suspend fun deleteSodaKeg(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
     @PUT("api/soda-kegs/{id}")
     suspend fun updateSodaKeg(
         @Path("id") id: Int,

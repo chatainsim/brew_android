@@ -273,6 +273,16 @@
     <string name="spindle_assign_none">Aucun (détacher)</string>
     <string name="error_spindle_assign">Impossible d\'assigner le densimètre</string>
     <string name="tasting_scores_header">Notes détaillées (0–10)</string>
+    <string name="keg_add">Ajouter un fût</string>
+    <string name="keg_name">Nom</string>
+    <string name="keg_type">Type (Corny, Ball Lock…)</string>
+    <string name="keg_volume_total">Volume total (L)</string>
+    <string name="keg_interval_months">Intervalle de révision (mois)</string>
+    <string name="keg_last_revision">Dernière révision (AAAA-MM-JJ)</string>
+    <string name="keg_last_revision_at">Dernière révision : %1$s</string>
+    <string name="keg_mark_revised">Révision faite aujourd\'hui</string>
+    <string name="keg_delete_confirm">Supprimer le fût « %1$s » ?</string>
+    <string name="error_keg_create">Impossible de créer le fût</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

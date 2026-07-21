@@ -233,6 +233,8 @@ class BrewViewModelTest {
         override suspend fun getSodaKegs(): List<SodaKeg> = throw NotImplementedError()
         override suspend fun getSodaKegsRaw(): List<JsonObject> = throw NotImplementedError()
         override suspend fun updateSodaKeg(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
+        override suspend fun createSodaKeg(body: JsonObject): JsonObject = throw NotImplementedError()
+        override suspend fun deleteSodaKeg(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun patchBeerArchived(id: Int, body: BeerArchivePatch): Beer = throw NotImplementedError()
         override suspend fun updateBeer(id: Int, body: BeerPut): Beer = throw NotImplementedError()
     }

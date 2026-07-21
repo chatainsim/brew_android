@@ -554,6 +554,40 @@ class BrewViewModel(
         }
     }
 
+    /** Crée un fût puis recharge la liste. */
+    fun createKeg(
+        name: String,
+        kegType: String?,
+        volumeTotal: Double?,
+        intervalMonths: Int,
+        lastRevisionDate: String?,
+        onDone: () -> Unit = {},
+    ) {
+        launchWithError(R.string.error_keg_create) {
+            repo.createKeg(name, kegType, volumeTotal, intervalMonths, lastRevisionDate)
+            _sodaKegs.value = repo.sodaKegs()
+            onDone()
+        }
+    }
+
+    /** Supprime un fût puis recharge la liste. */
+    fun deleteKeg(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteKeg(id)
+            _sodaKegs.value = repo.sodaKegs()
+            onDone()
+        }
+    }
+
+    /** Enregistre une révision effectuée aujourd'hui puis recharge la liste. */
+    fun markKegRevised(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_keg_update) {
+            repo.markKegRevised(id)
+            _sodaKegs.value = repo.sodaKegs()
+            onDone()
+        }
+    }
+
     /** Archive ou désarchive une bière puis recharge la Cave. */
     fun setBeerArchived(beer: Beer, archived: Boolean) {
         launchWithError(R.string.error_beer_archive) {

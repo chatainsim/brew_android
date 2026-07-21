@@ -260,6 +260,52 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         api.updateSodaKeg(id, body)
     }
 
+    /** Crée un fût. Calcule la prochaine révision si une date de révision est fournie. */
+    suspend fun createKeg(
+        name: String,
+        kegType: String?,
+        volumeTotal: Double?,
+        intervalMonths: Int,
+        lastRevisionDate: String?,
+    ) {
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("name", name)
+            kegType?.let { put("keg_type", it) }
+            volumeTotal?.let { put("volume_total", it) }
+            put("revision_interval_months", intervalMonths)
+            if (!lastRevisionDate.isNullOrBlank()) {
+                put("last_revision_date", lastRevisionDate)
+                put("next_revision_date", addMonths(lastRevisionDate, intervalMonths))
+            }
+        }
+        api().createSodaKeg(body)
+    }
+
+    suspend fun deleteKeg(id: Int) {
+        api().deleteSodaKeg(id)
+    }
+
+    /** Marque une révision effectuée aujourd'hui et reporte la prochaine échéance. */
+    suspend fun markKegRevised(id: Int) {
+        val api = api()
+        val raw = api.getSodaKegsRaw().firstOrNull {
+            (it["id"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() == id
+        } ?: return
+        val today = java.time.LocalDate.now().toString()
+        val interval = (raw["revision_interval_months"] as? kotlinx.serialization.json.JsonPrimitive)
+            ?.content?.toIntOrNull() ?: 12
+        val body = kotlinx.serialization.json.buildJsonObject {
+            raw.forEach { (k, v) -> if (k != "id" && k != "beer_name" && k != "brew_name") put(k, v) }
+            put("last_revision_date", today)
+            put("next_revision_date", addMonths(today, interval))
+        }
+        api.updateSodaKeg(id, body)
+    }
+
+    private fun addMonths(date: String, months: Int): String =
+        runCatching { java.time.LocalDate.parse(date).plusMonths(months.toLong()).toString() }
+            .getOrDefault(date)
+
     suspend fun setBeerArchived(id: Int, archived: Boolean): Beer =
         api().patchBeerArchived(id, BeerArchivePatch(archived))
 

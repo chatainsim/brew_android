@@ -334,6 +334,8 @@ data class SodaKeg(
     @SerialName("beer_name") val beerName: String? = null,
     @SerialName("brew_name") val brewName: String? = null,
     @SerialName("next_revision_date") val nextRevisionDate: String? = null,
+    @SerialName("last_revision_date") val lastRevisionDate: String? = null,
+    @SerialName("revision_interval_months") val revisionIntervalMonths: Int? = null,
     val color: String? = null,
     val notes: String? = null,
     val archived: Int? = 0,
