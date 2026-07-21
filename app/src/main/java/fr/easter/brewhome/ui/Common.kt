@@ -297,6 +297,28 @@ fun SearchField(query: String, onChange: (String) -> Unit, placeholder: String) 
     )
 }
 
+/** Curseur de note 0–10 (0 = non renseigné) avec libellé et valeur. */
+@Composable
+fun ScoreSlider(label: String, value: Int?, onChange: (Int?) -> Unit) {
+    androidx.compose.foundation.layout.Column {
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                if (value != null && value > 0) "$value/10" else "–",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (value != null && value > 0) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outline,
+            )
+        }
+        androidx.compose.material3.Slider(
+            value = (value ?: 0).toFloat(),
+            onValueChange = { onChange(it.toInt().takeIf { v -> v > 0 }) },
+            valueRange = 0f..10f,
+            steps = 9,
+        )
+    }
+}
+
 @Composable
 fun StarRating(rating: Int?, max: Int = 5, onSelect: ((Int) -> Unit)? = null) {
     Row {

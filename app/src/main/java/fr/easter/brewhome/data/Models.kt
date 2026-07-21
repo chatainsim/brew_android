@@ -32,6 +32,12 @@ data class Beer(
     @SerialName("taste_overall") val tasteOverall: String? = null,
     @SerialName("taste_rating") val tasteRating: Int? = null,
     @SerialName("taste_date") val tasteDate: String? = null,
+    @SerialName("taste_score_appearance") val tasteScoreAppearance: Int? = null,
+    @SerialName("taste_score_aroma") val tasteScoreAroma: Int? = null,
+    @SerialName("taste_score_flavor") val tasteScoreFlavor: Int? = null,
+    @SerialName("taste_score_bitterness") val tasteScoreBitterness: Int? = null,
+    @SerialName("taste_score_mouthfeel") val tasteScoreMouthfeel: Int? = null,
+    @SerialName("taste_score_finish") val tasteScoreFinish: Int? = null,
 )
 
 @Serializable
@@ -641,4 +647,10 @@ data class TastingPut(
     @SerialName("taste_overall") val tasteOverall: String? = null,
     @SerialName("taste_rating") val tasteRating: Int? = null,
     @SerialName("taste_date") val tasteDate: String? = null,
+    @SerialName("taste_score_appearance") val tasteScoreAppearance: Int? = null,
+    @SerialName("taste_score_aroma") val tasteScoreAroma: Int? = null,
+    @SerialName("taste_score_flavor") val tasteScoreFlavor: Int? = null,
+    @SerialName("taste_score_bitterness") val tasteScoreBitterness: Int? = null,
+    @SerialName("taste_score_mouthfeel") val tasteScoreMouthfeel: Int? = null,
+    @SerialName("taste_score_finish") val tasteScoreFinish: Int? = null,
 )

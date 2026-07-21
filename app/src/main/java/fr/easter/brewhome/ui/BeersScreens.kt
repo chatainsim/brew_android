@@ -406,6 +406,21 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
             }
         }
         StarRating(beer.tasteRating)
+        val scores = listOf(
+            R.string.taste_appearance to beer.tasteScoreAppearance,
+            R.string.taste_aroma to beer.tasteScoreAroma,
+            R.string.taste_flavor to beer.tasteScoreFlavor,
+            R.string.taste_bitterness to beer.tasteScoreBitterness,
+            R.string.taste_mouthfeel to beer.tasteScoreMouthfeel,
+            R.string.taste_finish to beer.tasteScoreFinish,
+        ).filter { (_, v) -> v != null && v > 0 }
+        if (scores.isNotEmpty()) {
+            InfoCard {
+                scores.forEach { (labelRes, v) ->
+                    InfoLine(stringResource(labelRes), "$v/10")
+                }
+            }
+        }
         InfoCard {
             InfoLine(stringResource(R.string.taste_appearance), beer.tasteAppearance)
             InfoLine(stringResource(R.string.taste_aroma), beer.tasteAroma)
@@ -482,6 +497,12 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
     var mouthfeel by remember { mutableStateOf(beer.tasteMouthfeel ?: "") }
     var finish by remember { mutableStateOf(beer.tasteFinish ?: "") }
     var overall by remember { mutableStateOf(beer.tasteOverall ?: "") }
+    var scoreAppearance by remember { mutableStateOf(beer.tasteScoreAppearance) }
+    var scoreAroma by remember { mutableStateOf(beer.tasteScoreAroma) }
+    var scoreFlavor by remember { mutableStateOf(beer.tasteScoreFlavor) }
+    var scoreBitterness by remember { mutableStateOf(beer.tasteScoreBitterness) }
+    var scoreMouthfeel by remember { mutableStateOf(beer.tasteScoreMouthfeel) }
+    var scoreFinish by remember { mutableStateOf(beer.tasteScoreFinish) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -492,6 +513,18 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 StarRating(rating) { rating = it }
+                Text(
+                    stringResource(R.string.tasting_scores_header),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                ScoreSlider(stringResource(R.string.taste_appearance), scoreAppearance) { scoreAppearance = it }
+                ScoreSlider(stringResource(R.string.taste_aroma), scoreAroma) { scoreAroma = it }
+                ScoreSlider(stringResource(R.string.taste_flavor), scoreFlavor) { scoreFlavor = it }
+                ScoreSlider(stringResource(R.string.taste_bitterness), scoreBitterness) { scoreBitterness = it }
+                ScoreSlider(stringResource(R.string.taste_mouthfeel), scoreMouthfeel) { scoreMouthfeel = it }
+                ScoreSlider(stringResource(R.string.taste_finish), scoreFinish) { scoreFinish = it }
+                HorizontalDivider()
                 OutlinedTextField(value = appearance, onValueChange = { appearance = it }, label = { Text(stringResource(R.string.taste_appearance)) })
                 OutlinedTextField(value = aroma, onValueChange = { aroma = it }, label = { Text(stringResource(R.string.taste_aroma)) })
                 OutlinedTextField(value = flavor, onValueChange = { flavor = it }, label = { Text(stringResource(R.string.taste_flavor)) })
@@ -516,6 +549,12 @@ private fun TastingDialog(beer: Beer, onDismiss: () -> Unit, onSave: (TastingPut
                         tasteFinish = finish.ifBlank { null },
                         tasteOverall = overall.ifBlank { null },
                         tasteDate = java.time.LocalDate.now().toString(),
+                        tasteScoreAppearance = scoreAppearance,
+                        tasteScoreAroma = scoreAroma,
+                        tasteScoreFlavor = scoreFlavor,
+                        tasteScoreBitterness = scoreBitterness,
+                        tasteScoreMouthfeel = scoreMouthfeel,
+                        tasteScoreFinish = scoreFinish,
                     )
                 )
             }) { Text(stringResource(R.string.save)) }

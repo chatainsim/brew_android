@@ -272,6 +272,7 @@
     <string name="spindle_assign_title">Choisir un brassin</string>
     <string name="spindle_assign_none">Aucun (détacher)</string>
     <string name="error_spindle_assign">Impossible d\'assigner le densimètre</string>
+    <string name="tasting_scores_header">Notes détaillées (0–10)</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>
