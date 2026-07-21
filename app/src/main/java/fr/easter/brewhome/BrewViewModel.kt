@@ -675,6 +675,30 @@ class BrewViewModel(
         }
     }
 
+    fun deleteRecipe(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteRecipe(id)
+            _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
+            onDone()
+        }
+    }
+
+    fun deleteDraft(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteDraft(id)
+            _state.value = _state.value.copy(drafts = repo.drafts(), error = null)
+            onDone()
+        }
+    }
+
+    fun deleteBrew(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteBrew(id)
+            _state.value = _state.value.copy(brews = repo.brews(), error = null)
+            onDone()
+        }
+    }
+
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
             if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)

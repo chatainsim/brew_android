@@ -158,6 +158,12 @@
     <string name="error_brew_create">Échec de la création du brassin</string>
     <string name="error_brew_save">Échec de l\'enregistrement du brassin</string>
     <string name="title_brew_edit">Modifier le brassin</string>
+    <string name="error_delete">Échec de la suppression</string>
+    <string name="delete_recipe_confirm">Supprimer cette recette ?</string>
+    <string name="delete_draft_confirm">Supprimer ce brouillon ?</string>
+    <string name="delete_brew_confirm">Supprimer ce brassin ?</string>
+    <string name="cd_delete_recipe">Supprimer la recette</string>
+    <string name="cd_delete_brew">Supprimer le brassin</string>
     <string name="cd_edit_brew">Modifier le brassin</string>
     <string name="brew_ferm_days">Ferm. (jours)</string>
     <string name="brew_batch">N° batch</string>

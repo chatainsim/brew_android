@@ -126,6 +126,9 @@ class BrewViewModelTest {
         override suspend fun getInventory(): List<InventoryItem> { gate(); return emptyList() }
         override suspend fun getBrews(): List<Brew> { gate(); return emptyList() }
         override suspend fun createBrew(body: BrewCreatePost): Brew = throw NotImplementedError()
+        override suspend fun deleteBrew(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun deleteRecipe(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun deleteDraft(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getDrafts(): List<Draft> { gate(); return emptyList() }
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }
         override suspend fun getAppSettings(): JsonObject { gate(); return JsonObject(emptyMap()) }

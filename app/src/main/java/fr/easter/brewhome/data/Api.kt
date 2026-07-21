@@ -51,6 +51,15 @@ interface BrewApi {
     @POST("api/brews")
     suspend fun createBrew(@Body body: BrewCreatePost): Brew
 
+    @DELETE("api/brews/{id}")
+    suspend fun deleteBrew(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
+    @DELETE("api/recipes/{id}")
+    suspend fun deleteRecipe(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
+    @DELETE("api/drafts/{id}")
+    suspend fun deleteDraft(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
     @GET("api/brews/{id}/fermentation")
     suspend fun getBrewFermentation(@Path("id") id: Int): List<FermReading>
 

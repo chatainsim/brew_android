@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Refresh
@@ -46,7 +47,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -201,6 +204,11 @@ fun BrewHomeApp(
         }
     }
 
+    // Cible de suppression en attente de confirmation : (kind, id)
+    var deleteTarget by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<Pair<String, Int>?>(null)
+    }
+
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val startDestination = if (serverUrl.isNullOrBlank()) "settings" else "home"
@@ -296,6 +304,9 @@ fun BrewHomeApp(
                                 contentDescription = stringResource(R.string.cd_share_recipe),
                             )
                         }
+                        IconButton(onClick = { deleteTarget = "recipe" to recipeToShare.id }) {
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.cd_delete_recipe))
+                        }
                     }
                     // Partage du brouillon ouvert
                     val draftToShare = if (currentRoute?.startsWith("draft/") == true) {
@@ -320,6 +331,9 @@ fun BrewHomeApp(
                                 Icons.Filled.Share,
                                 contentDescription = stringResource(R.string.cd_share_draft),
                             )
+                        }
+                        IconButton(onClick = { deleteTarget = "draft" to draftToShare.id }) {
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
                         }
                     }
                     // Partage du stock complet
@@ -353,15 +367,15 @@ fun BrewHomeApp(
                             )
                         }
                     }
-                    // Édition du brassin ouvert
+                    // Édition + suppression du brassin ouvert
                     if (currentRoute?.startsWith("brew/") == true) {
                         val id = backStack?.arguments?.getString("id")?.toIntOrNull()
                         if (id != null && state.brews.any { it.id == id }) {
                             IconButton(onClick = { navController.navigate("brewEdit/$id") }) {
-                                Icon(
-                                    Icons.Filled.Edit,
-                                    contentDescription = stringResource(R.string.cd_edit_brew),
-                                )
+                                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.cd_edit_brew))
+                            }
+                            IconButton(onClick = { deleteTarget = "brew" to id }) {
+                                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.cd_delete_brew))
                             }
                         }
                     }
@@ -570,5 +584,35 @@ fun BrewHomeApp(
                 }
             }
         }
+    }
+
+    // Confirmation de suppression (recette / brouillon / brassin)
+    deleteTarget?.let { (kind, id) ->
+        val msg = when (kind) {
+            "recipe" -> R.string.delete_recipe_confirm
+            "draft" -> R.string.delete_draft_confirm
+            else -> R.string.delete_brew_confirm
+        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            text = { Text(stringResource(msg)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    when (kind) {
+                        "recipe" -> vm.deleteRecipe(id) { navController.navigateUp() }
+                        "draft" -> vm.deleteDraft(id) { navController.navigateUp() }
+                        else -> vm.deleteBrew(id) { navController.navigateUp() }
+                    }
+                    deleteTarget = null
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 }
