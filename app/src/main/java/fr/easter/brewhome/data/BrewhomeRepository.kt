@@ -190,6 +190,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun inventory(): List<InventoryItem> = api().getInventory()
 
+    suspend fun inventoryHistory(id: Int): InventoryHistory = api().getInventoryHistory(id)
+
     suspend fun createInventoryItem(post: InventoryPost): InventoryItem = api().createInventoryItem(post)
 
     suspend fun updateInventoryItem(id: Int, post: InventoryPost): InventoryItem =

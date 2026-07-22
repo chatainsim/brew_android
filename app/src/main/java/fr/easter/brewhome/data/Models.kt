@@ -148,6 +148,27 @@ data class Trash(
     @SerialName("retention_days") val retentionDays: Int? = null,
 )
 
+/** Un mouvement de stock d'un ingrédient (consommation, ajout, correction). */
+@Serializable
+data class InventoryLogEntry(
+    val id: Int,
+    val ts: String? = null,
+    val delta: Double = 0.0,
+    @SerialName("old_qty") val oldQty: Double? = null,
+    @SerialName("new_qty") val newQty: Double? = null,
+    val reason: String? = null,
+    @SerialName("entity_label") val entityLabel: String? = null,
+    @SerialName("brew_name") val brewName: String? = null,
+)
+
+/** Historique des mouvements de stock d'un ingrédient (/api/inventory/{id}/history). */
+@Serializable
+data class InventoryHistory(
+    @SerialName("item_name") val itemName: String? = null,
+    @SerialName("item_unit") val itemUnit: String? = null,
+    val entries: List<InventoryLogEntry> = emptyList(),
+)
+
 /** Une version historisée d'une recette (snapshot avant modification). */
 @Serializable
 data class RecipeVersion(

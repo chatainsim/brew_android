@@ -49,6 +49,7 @@ private fun stepFor(unit: String): Double = when (unit.lowercase()) {
 fun InventoryScreen(vm: BrewViewModel, initialShopping: Boolean = false) {
     val state by vm.state.collectAsState()
     var editing by remember { mutableStateOf<InventoryItem?>(null) }
+    var historyItem by remember { mutableStateOf<InventoryItem?>(null) }
     var creating by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var showShopping by rememberSaveable { mutableStateOf(initialShopping) }
@@ -103,8 +104,67 @@ fun InventoryScreen(vm: BrewViewModel, initialShopping: Boolean = false) {
             onDismiss = { editing = null },
             onSave = { post -> vm.saveInventoryItem(item.id, post) { editing = null } },
             onDelete = { vm.deleteInventoryItem(item); editing = null },
+            onHistory = { historyItem = item; editing = null },
         )
     }
+    historyItem?.let { item ->
+        InventoryHistoryDialog(vm, item, onDismiss = { historyItem = null })
+    }
+}
+
+@Composable
+private fun InventoryHistoryDialog(vm: BrewViewModel, item: InventoryItem, onDismiss: () -> Unit) {
+    val history by vm.inventoryHistory.collectAsState()
+    LaunchedEffect(item.id) { vm.loadInventoryHistory(item.id) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.inv_history_title, item.name)) },
+        text = {
+            when {
+                history == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                history!!.entries.isEmpty() -> Text(stringResource(R.string.inv_history_empty))
+                else -> Column(
+                    Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    val unit = history!!.itemUnit ?: item.unit
+                    history!!.entries.forEach { e ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                val label = listOfNotNull(
+                                    e.brewName ?: e.entityLabel,
+                                    e.reason,
+                                ).joinToString(" · ").ifBlank { stringResource(R.string.inv_history_manual) }
+                                Text(label, style = MaterialTheme.typography.bodyMedium)
+                                e.ts?.let {
+                                    Text(
+                                        it.take(16).replace('T', ' '),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            }
+                            val sign = if (e.delta >= 0) "+" else ""
+                            Text(
+                                "$sign${fmtQty(e.delta)} $unit",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (e.delta >= 0) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        HorizontalDivider()
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+    )
 }
 
 private val inventoryUnits = listOf("g", "kg", "mL", "L", "sachet", "pièce", "unité")
@@ -115,6 +175,7 @@ private fun InventoryItemDialog(
     onDismiss: () -> Unit,
     onSave: (InventoryPost) -> Unit,
     onDelete: (() -> Unit)?,
+    onHistory: (() -> Unit)? = null,
 ) {
     var name by remember { mutableStateOf(item?.name ?: "") }
     var category by remember { mutableStateOf(item?.category?.lowercase() ?: "malt") }
@@ -187,9 +248,16 @@ private fun InventoryItemDialog(
                     label = { Text(stringResource(R.string.notes)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (onDelete != null) {
-                    TextButton(onClick = onDelete) {
-                        Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                Row {
+                    if (onHistory != null) {
+                        TextButton(onClick = onHistory) {
+                            Text(stringResource(R.string.inv_history))
+                        }
+                    }
+                    if (onDelete != null) {
+                        TextButton(onClick = onDelete) {
+                            Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }

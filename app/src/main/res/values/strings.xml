@@ -309,6 +309,10 @@
     <string name="photo_edit_caption">Modifier la légende</string>
     <string name="photo_caption">Légende</string>
     <string name="photo_no_caption">Sans légende</string>
+    <string name="inv_history">Historique</string>
+    <string name="inv_history_title">Mouvements : %1$s</string>
+    <string name="inv_history_empty">Aucun mouvement enregistré</string>
+    <string name="inv_history_manual">Ajustement manuel</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

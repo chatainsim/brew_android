@@ -45,6 +45,9 @@ interface BrewApi {
     @DELETE("api/inventory/{id}")
     suspend fun deleteInventoryItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
 
+    @GET("api/inventory/{id}/history")
+    suspend fun getInventoryHistory(@Path("id") id: Int): InventoryHistory
+
     @GET("api/brews")
     suspend fun getBrews(): List<Brew>
 

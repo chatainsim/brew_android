@@ -772,6 +772,19 @@ class BrewViewModel(
         }
     }
 
+    // ── Historique des mouvements de stock ────────────────────────────────
+
+    private val _inventoryHistory = MutableStateFlow<fr.easter.brewhome.data.InventoryHistory?>(null)
+    val inventoryHistory: StateFlow<fr.easter.brewhome.data.InventoryHistory?> = _inventoryHistory
+
+    fun loadInventoryHistory(id: Int) {
+        _inventoryHistory.value = null
+        viewModelScope.launch {
+            _inventoryHistory.value = runCatching { repo.inventoryHistory(id) }
+                .getOrDefault(fr.easter.brewhome.data.InventoryHistory())
+        }
+    }
+
     // ── Corbeille ─────────────────────────────────────────────────────────
 
     private val _trash = MutableStateFlow<Trash?>(null)
