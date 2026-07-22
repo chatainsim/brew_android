@@ -67,14 +67,12 @@ fun SpindlesScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
             stringResource(R.string.spindles_empty),
             Icons.Outlined.Bloodtype,
         )
-        else -> LazyColumn(
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(spindles!!, key = { it.id }) { spindle ->
-                SpindleCard(spindle, readings[spindle.id].orEmpty()) { onOpen(spindle.id) }
-            }
+        else -> ReorderableColumn(
+            items = spindles!!,
+            key = { it.id },
+            onReorder = { vm.reorderSpindles(it) },
+        ) { spindle, itemModifier ->
+            SpindleCard(spindle, readings[spindle.id].orEmpty(), itemModifier) { onOpen(spindle.id) }
         }
     }
 }
@@ -206,9 +204,14 @@ internal fun SectionTitleLocal(text: String) {
 }
 
 @Composable
-private fun SpindleCard(spindle: Spindle, readings: List<SpindleReading>, onClick: () -> Unit) {
+private fun SpindleCard(
+    spindle: Spindle,
+    readings: List<SpindleReading>,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Card(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {

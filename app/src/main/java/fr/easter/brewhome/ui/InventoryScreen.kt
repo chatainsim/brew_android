@@ -388,21 +388,21 @@ private fun ShoppingContent(vm: BrewViewModel) {
             if (state.shopping.isEmpty()) {
                 EmptyHint(stringResource(R.string.shopping_empty))
             } else {
-                LazyColumn(
+                ReorderableColumn(
+                    items = state.shopping,
+                    key = { it.id },
+                    onReorder = { vm.reorderShopping(it) },
                     contentPadding = PaddingValues(
                         start = 12.dp, end = 12.dp, top = 8.dp, bottom = 88.dp,
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(state.shopping, key = { it.id }) { item ->
-                        ShoppingRow(
-                            item = item,
-                            onToggle = { vm.toggleShoppingChecked(item) },
-                            onDelete = { vm.deleteShoppingItem(item) },
-                            modifier = Modifier.animateItem(),
-                        )
-                    }
+                ) { item, itemModifier ->
+                    ShoppingRow(
+                        item = item,
+                        onToggle = { vm.toggleShoppingChecked(item) },
+                        onDelete = { vm.deleteShoppingItem(item) },
+                        modifier = itemModifier,
+                    )
                 }
             }
         }

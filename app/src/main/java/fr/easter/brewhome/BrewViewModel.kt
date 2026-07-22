@@ -898,6 +898,27 @@ class BrewViewModel(
         }
     }
 
+    fun reorderSpindles(reordered: List<Spindle>) {
+        _spindles.value = reordered
+        launchWithError(R.string.error_reorder) {
+            repo.reorderSpindles(reordered.map { it.id })
+        }
+    }
+
+    fun reorderTempSensors(reordered: List<TempSensor>) {
+        _tempSensors.value = reordered
+        launchWithError(R.string.error_reorder) {
+            repo.reorderTempSensors(reordered.map { it.id })
+        }
+    }
+
+    fun reorderShopping(reordered: List<ShoppingItem>) {
+        _state.value = _state.value.copy(shopping = reordered)
+        launchWithError(R.string.error_reorder) {
+            repo.reorderShopping(reordered.map { it.id })
+        }
+    }
+
     // ── Historique des versions de recette ────────────────────────────────
 
     private val _recipeHistory = MutableStateFlow<List<fr.easter.brewhome.data.RecipeVersion>?>(null)

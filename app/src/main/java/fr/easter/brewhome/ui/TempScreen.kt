@@ -52,22 +52,20 @@ fun TempScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
             CircularProgressIndicator()
         }
         sensors!!.isEmpty() -> EmptyHint(stringResource(R.string.temps_empty), Icons.Outlined.Thermostat)
-        else -> LazyColumn(
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(sensors!!, key = { it.id }) { sensor ->
-                TempCard(sensor) { onOpen(sensor.id) }
-            }
+        else -> ReorderableColumn(
+            items = sensors!!,
+            key = { it.id },
+            onReorder = { vm.reorderTempSensors(it) },
+        ) { sensor, itemModifier ->
+            TempCard(sensor, itemModifier) { onOpen(sensor.id) }
         }
     }
 }
 
 @Composable
-private fun TempCard(sensor: TempSensor, onClick: () -> Unit) {
+private fun TempCard(sensor: TempSensor, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {

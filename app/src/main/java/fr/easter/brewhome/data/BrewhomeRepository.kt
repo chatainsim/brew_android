@@ -184,6 +184,12 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun reorderSodaKegs(orderedIds: List<Int>) { api().reorderSodaKegs(entries(orderedIds)) }
 
+    suspend fun reorderSpindles(orderedIds: List<Int>) { api().reorderSpindles(entries(orderedIds)) }
+
+    suspend fun reorderTempSensors(orderedIds: List<Int>) { api().reorderTempSensors(entries(orderedIds)) }
+
+    suspend fun reorderShopping(orderedIds: List<Int>) { api().reorderShopping(entries(orderedIds)) }
+
     private fun entries(ids: List<Int>) = ids.mapIndexed { i, id -> ReorderEntry(id, i) }
 
     suspend fun recipeHistory(id: Int): List<RecipeVersion> = api().getRecipeHistory(id)
