@@ -90,6 +90,13 @@ interface BrewApi {
     @DELETE("api/brews/{id}/photos/{photoId}")
     suspend fun deleteBrewPhoto(@Path("id") id: Int, @Path("photoId") photoId: Int): kotlinx.serialization.json.JsonObject
 
+    @PATCH("api/brews/{id}/photos/{photoId}")
+    suspend fun patchBrewPhoto(
+        @Path("id") id: Int,
+        @Path("photoId") photoId: Int,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): kotlinx.serialization.json.JsonObject
+
     @POST("api/brews/{id}/log")
     suspend fun addBrewLog(@Path("id") id: Int, @Body body: BrewLogPost): kotlinx.serialization.json.JsonObject
 

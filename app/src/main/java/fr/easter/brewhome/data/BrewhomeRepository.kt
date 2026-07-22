@@ -76,6 +76,15 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         api().deleteBrewLog(brewId, entryId)
     }
 
+    /** Met à jour la légende (et préserve l'étape) d'une photo de brassin. */
+    suspend fun setBrewPhotoCaption(brewId: Int, photoId: Int, caption: String?, step: String?) {
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("caption", caption ?: "")
+            put("step", step ?: "")
+        }
+        api().patchBrewPhoto(brewId, photoId, body)
+    }
+
     suspend fun addBrewPhoto(brewId: Int, dataUrl: String, caption: String?) {
         api().addBrewPhoto(brewId, BrewPhotoPost(photo = dataUrl, caption = caption))
     }

@@ -343,7 +343,7 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
 
     viewing?.let { photo ->
         PhotoViewer(
-            vm, photo,
+            vm, brew.id, photo,
             onDelete = { vm.deleteBrewPhoto(brew.id, photo.id); viewing = null },
             onDismiss = { viewing = null },
         )
@@ -736,7 +736,14 @@ private fun PhotosRow(vm: BrewViewModel, photos: List<BrewPhoto>, onOpen: (BrewP
 
 /** Photo plein format dans une boîte de dialogue, fermée d'un tap. */
 @Composable
-private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDelete: () -> Unit, onDismiss: () -> Unit) {
+private fun PhotoViewer(
+    vm: BrewViewModel,
+    brewId: Int,
+    photo: BrewPhoto,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var editingCaption by remember { mutableStateOf(false) }
     Dialog(onDismissRequest = onDismiss) {
         Column(Modifier.clip(RoundedCornerShape(12.dp))) {
             AsyncImage(
@@ -755,12 +762,20 @@ private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDelete: () -> Uni
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val label = listOfNotNull(photo.step, photo.caption).joinToString(" · ")
+                    .ifBlank { stringResource(R.string.photo_no_caption) }
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = { editingCaption = true }) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.photo_edit_caption),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Filled.Delete,
@@ -770,6 +785,27 @@ private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDelete: () -> Uni
                 }
             }
         }
+    }
+    if (editingCaption) {
+        var caption by remember { mutableStateOf(photo.caption ?: "") }
+        AlertDialog(
+            onDismissRequest = { editingCaption = false },
+            title = { Text(stringResource(R.string.photo_edit_caption)) },
+            text = {
+                OutlinedTextField(
+                    value = caption,
+                    onValueChange = { caption = it },
+                    label = { Text(stringResource(R.string.photo_caption)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.setBrewPhotoCaption(brewId, photo.id, caption, photo.step) { editingCaption = false }
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { editingCaption = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 

@@ -387,6 +387,13 @@ class BrewViewModel(
             reloadBrewExtras(brewId)
         }
     }
+    fun setBrewPhotoCaption(brewId: Int, photoId: Int, caption: String?, step: String?, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_photo_add) {
+            repo.setBrewPhotoCaption(brewId, photoId, caption?.ifBlank { null }, step)
+            reloadBrewExtras(brewId)
+            onDone()
+        }
+    }
 
     private val _photoUploading = MutableStateFlow(false)
     /** true pendant l'envoi d'une photo (spinner). */

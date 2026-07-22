@@ -306,6 +306,9 @@
     <string name="ferm_manual_readings">Mesures saisies à la main</string>
     <string name="ferm_delete_confirm">Supprimer cette mesure de fermentation ?</string>
     <string name="log_delete_confirm">Supprimer cette entrée du journal ?</string>
+    <string name="photo_edit_caption">Modifier la légende</string>
+    <string name="photo_caption">Légende</string>
+    <string name="photo_no_caption">Sans légende</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>
