@@ -192,6 +192,43 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun inventoryHistory(id: Int): InventoryHistory = api().getInventoryHistory(id)
 
+    // ── Checklists de brassage ────────────────────────────────────────────
+
+    suspend fun checklistTemplates(): List<ChecklistTemplate> = api().getChecklistTemplates()
+
+    suspend fun deleteChecklistTemplate(id: Int) { api().deleteChecklistTemplate(id) }
+
+    /** Crée un modèle de checklist à partir d'items simples (une phase « autre »). */
+    suspend fun createChecklistTemplate(name: String, description: String?, texts: List<String>): ChecklistTemplate {
+        val items = kotlinx.serialization.json.buildJsonArray {
+            texts.forEachIndexed { i, txt ->
+                add(kotlinx.serialization.json.buildJsonObject {
+                    put("id", "item_${i + 1}")
+                    put("phase", "autre")
+                    put("text", txt)
+                })
+            }
+        }
+        val body = kotlinx.serialization.json.buildJsonObject {
+            put("name", name)
+            if (!description.isNullOrBlank()) put("description", description)
+            put("items", items)
+        }
+        return api().createChecklistTemplate(body)
+    }
+
+    suspend fun brewChecklist(brewId: Int): BrewChecklist = api().getBrewChecklist(brewId)
+
+    suspend fun saveBrewChecklist(brewId: Int, templateId: Int?, checkedItems: List<String>): BrewChecklist {
+        val body = kotlinx.serialization.json.buildJsonObject {
+            if (templateId != null) put("template_id", templateId)
+            put("checked_items", kotlinx.serialization.json.buildJsonArray {
+                checkedItems.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+            })
+        }
+        return api().saveBrewChecklist(brewId, body)
+    }
+
     suspend fun createInventoryItem(post: InventoryPost): InventoryItem = api().createInventoryItem(post)
 
     suspend fun updateInventoryItem(id: Int, post: InventoryPost): InventoryItem =

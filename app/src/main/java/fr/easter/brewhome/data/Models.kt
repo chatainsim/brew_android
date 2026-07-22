@@ -148,6 +148,38 @@ data class Trash(
     @SerialName("retention_days") val retentionDays: Int? = null,
 )
 
+/** Un item de checklist de brassage : identifiant stable, phase et libellé. */
+@Serializable
+data class ChecklistItem(
+    val id: String,
+    val phase: String? = null,
+    val text: String = "",
+)
+
+/** Modèle de checklist réutilisable ; `items` est un tableau JSON sérialisé. */
+@Serializable
+data class ChecklistTemplate(
+    val id: Int,
+    val name: String,
+    val description: String? = null,
+    val items: String? = null,
+) {
+    /** Parse le champ `items` (JSON) en liste d'items. */
+    fun parsedItems(): List<ChecklistItem> {
+        val raw = items
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching { draftJson.decodeFromString<List<ChecklistItem>>(raw) }
+            .getOrDefault(emptyList())
+    }
+}
+
+/** État de la checklist d'un brassin : modèle choisi et items cochés (ids). */
+@Serializable
+data class BrewChecklist(
+    @SerialName("template_id") val templateId: Int? = null,
+    @SerialName("checked_items") val checkedItems: List<String> = emptyList(),
+)
+
 /** Un mouvement de stock d'un ingrédient (consommation, ajout, correction). */
 @Serializable
 data class InventoryLogEntry(

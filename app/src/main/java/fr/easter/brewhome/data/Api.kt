@@ -139,6 +139,26 @@ interface BrewApi {
     @PUT("api/app-settings")
     suspend fun saveAppSettings(@Body body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject
 
+    @GET("api/checklist-templates")
+    suspend fun getChecklistTemplates(): List<ChecklistTemplate>
+
+    @POST("api/checklist-templates")
+    suspend fun createChecklistTemplate(
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): ChecklistTemplate
+
+    @DELETE("api/checklist-templates/{tid}")
+    suspend fun deleteChecklistTemplate(@Path("tid") tid: Int): kotlinx.serialization.json.JsonObject
+
+    @GET("api/brews/{id}/checklist")
+    suspend fun getBrewChecklist(@Path("id") id: Int): BrewChecklist
+
+    @POST("api/brews/{id}/checklist")
+    suspend fun saveBrewChecklist(
+        @Path("id") id: Int,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): BrewChecklist
+
     @GET("api/catalog")
     suspend fun getCatalog(): List<CatalogItem>
 

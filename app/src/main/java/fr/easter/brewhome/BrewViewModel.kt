@@ -772,6 +772,46 @@ class BrewViewModel(
         }
     }
 
+    // ── Checklists de brassage ────────────────────────────────────────────
+
+    private val _checklistTemplates = MutableStateFlow<List<fr.easter.brewhome.data.ChecklistTemplate>?>(null)
+    val checklistTemplates: StateFlow<List<fr.easter.brewhome.data.ChecklistTemplate>?> = _checklistTemplates
+
+    private val _brewChecklist = MutableStateFlow<fr.easter.brewhome.data.BrewChecklist?>(null)
+    val brewChecklist: StateFlow<fr.easter.brewhome.data.BrewChecklist?> = _brewChecklist
+
+    fun loadChecklist(brewId: Int) {
+        _brewChecklist.value = null
+        viewModelScope.launch {
+            _checklistTemplates.value = runCatching { repo.checklistTemplates() }.getOrDefault(emptyList())
+            _brewChecklist.value = runCatching { repo.brewChecklist(brewId) }
+                .getOrDefault(fr.easter.brewhome.data.BrewChecklist())
+        }
+    }
+
+    /** Enregistre l'état coché de la checklist d'un brassin. */
+    fun saveChecklist(brewId: Int, templateId: Int?, checkedItems: List<String>) {
+        _brewChecklist.value = fr.easter.brewhome.data.BrewChecklist(templateId, checkedItems)
+        launchWithError(R.string.error_checklist_save) {
+            repo.saveBrewChecklist(brewId, templateId, checkedItems)
+        }
+    }
+
+    fun createChecklistTemplate(name: String, description: String?, texts: List<String>, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_checklist_save) {
+            repo.createChecklistTemplate(name, description, texts)
+            _checklistTemplates.value = runCatching { repo.checklistTemplates() }.getOrDefault(_checklistTemplates.value.orEmpty())
+            onDone()
+        }
+    }
+
+    fun deleteChecklistTemplate(id: Int) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteChecklistTemplate(id)
+            _checklistTemplates.value = repo.checklistTemplates()
+        }
+    }
+
     // ── Historique des mouvements de stock ────────────────────────────────
 
     private val _inventoryHistory = MutableStateFlow<fr.easter.brewhome.data.InventoryHistory?>(null)

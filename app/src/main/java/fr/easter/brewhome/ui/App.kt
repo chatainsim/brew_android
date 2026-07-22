@@ -90,7 +90,8 @@ private fun tabOf(route: String?): String? = when {
         route.startsWith("recipeFromDraft/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
-    route == "brews" || route.startsWith("brew/") || route.startsWith("brewEdit/") -> "brews"
+    route == "brews" || route.startsWith("brew/") || route.startsWith("brewEdit/") ||
+        route.startsWith("brewChecklist/") -> "brews"
     route == "tools" || route.startsWith("tools/") ||
         route == "stats" || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
@@ -251,6 +252,7 @@ fun BrewHomeApp(
                                 stringResource(R.string.title_temps)
                             currentRoute == "kegs" -> stringResource(R.string.title_kegs)
                             currentRoute == "trash" -> stringResource(R.string.title_trash)
+                            currentRoute?.startsWith("brewChecklist/") == true -> stringResource(R.string.checklist_open)
                             currentRoute == "shopping" -> stringResource(R.string.title_shopping)
                             currentRoute == "tools" -> stringResource(R.string.tab_tools)
                             currentRoute?.startsWith("tools/") == true ->
@@ -550,11 +552,18 @@ fun BrewHomeApp(
             composable("brews") { BrewsScreen(vm) { navController.navigate("brew/$it") } }
             composable("brew/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
-                BrewDetailScreen(vm, id) { navController.navigate("recipe/$it") }
+                BrewDetailScreen(
+                    vm, id,
+                    onOpenRecipe = { navController.navigate("recipe/$it") },
+                    onOpenChecklist = { navController.navigate("brewChecklist/$it") },
+                )
             }
             composable("brewEdit/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
                 BrewEditScreen(vm, id) { navController.navigateUp() }
+            }
+            composable("brewChecklist/{id}") { entry ->
+                BrewChecklistScreen(vm, entry.arguments?.getString("id")?.toIntOrNull())
             }
             composable("tools") {
                 ToolsScreen(

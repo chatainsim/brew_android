@@ -36,6 +36,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -148,7 +149,12 @@ private fun BrewCard(brew: Brew, onOpen: (Int) -> Unit, modifier: Modifier = Mod
 }
 
 @Composable
-fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Unit) {
+fun BrewDetailScreen(
+    vm: BrewViewModel,
+    brewId: Int?,
+    onOpenRecipe: (Int) -> Unit,
+    onOpenChecklist: (Int) -> Unit = {},
+) {
     val state by vm.state.collectAsState()
     val brew = state.brews.find { it.id == brewId }
     if (brew == null) {
@@ -304,6 +310,11 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                     },
                 )
                 if (extras.photos.isNotEmpty()) PhotosRow(vm, extras.photos) { viewing = it }
+                // Checklist de brassage (modèle cochable)
+                OutlinedButton(
+                    onClick = { onOpenChecklist(brew.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.checklist_open)) }
                 // Étapes de brassage (checklist) — toujours visible avec bouton +
                 BrewSectionHeader(stringResource(R.string.steps_section)) { showAddStep = true }
                 if (extras.steps.isEmpty()) {
