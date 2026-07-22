@@ -337,6 +337,7 @@
     <string name="catalog_gu">Potentiel GU (points/kg/L)</string>
     <string name="error_catalog_save">Impossible d\'enregistrer l\'ingrédient</string>
     <string name="recipes_reorder_hint">Appui long sur une recette pour la déplacer</string>
+    <string name="error_reorder">Impossible d\'enregistrer le nouvel ordre</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

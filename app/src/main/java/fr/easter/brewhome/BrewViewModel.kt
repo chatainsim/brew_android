@@ -869,6 +869,35 @@ class BrewViewModel(
         }
     }
 
+    /** Persiste le nouvel ordre des bières puis recharge (préserve les archivées). */
+    fun reorderBeers(reordered: List<Beer>) {
+        launchWithError(R.string.error_reorder) {
+            repo.reorderBeers(reordered.map { it.id })
+            _state.value = _state.value.copy(beers = repo.beers())
+        }
+    }
+
+    fun reorderBrews(reordered: List<fr.easter.brewhome.data.Brew>) {
+        launchWithError(R.string.error_reorder) {
+            repo.reorderBrews(reordered.map { it.id })
+            _state.value = _state.value.copy(brews = repo.brews())
+        }
+    }
+
+    fun reorderDrafts(reordered: List<Draft>) {
+        launchWithError(R.string.error_reorder) {
+            repo.reorderDrafts(reordered.map { it.id })
+            _state.value = _state.value.copy(drafts = repo.drafts())
+        }
+    }
+
+    fun reorderKegs(reordered: List<SodaKeg>) {
+        launchWithError(R.string.error_reorder) {
+            repo.reorderSodaKegs(reordered.map { it.id })
+            _sodaKegs.value = repo.sodaKegs()
+        }
+    }
+
     // ── Historique des versions de recette ────────────────────────────────
 
     private val _recipeHistory = MutableStateFlow<List<fr.easter.brewhome.data.RecipeVersion>?>(null)

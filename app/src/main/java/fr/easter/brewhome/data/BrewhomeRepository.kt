@@ -173,8 +173,18 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     /** Enregistre le nouvel ordre des recettes (position = index dans la liste). */
     suspend fun reorderRecipes(orderedIds: List<Int>) {
-        api().reorderRecipes(orderedIds.mapIndexed { i, id -> ReorderEntry(id, i) })
+        api().reorderRecipes(entries(orderedIds))
     }
+
+    suspend fun reorderBeers(orderedIds: List<Int>) { api().reorderBeers(entries(orderedIds)) }
+
+    suspend fun reorderBrews(orderedIds: List<Int>) { api().reorderBrews(entries(orderedIds)) }
+
+    suspend fun reorderDrafts(orderedIds: List<Int>) { api().reorderDrafts(entries(orderedIds)) }
+
+    suspend fun reorderSodaKegs(orderedIds: List<Int>) { api().reorderSodaKegs(entries(orderedIds)) }
+
+    private fun entries(ids: List<Int>) = ids.mapIndexed { i, id -> ReorderEntry(id, i) }
 
     suspend fun recipeHistory(id: Int): List<RecipeVersion> = api().getRecipeHistory(id)
 

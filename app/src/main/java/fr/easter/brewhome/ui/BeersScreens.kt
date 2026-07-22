@@ -73,6 +73,14 @@ fun BeersScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
             }
             if (filtered.isEmpty()) {
                 EmptyHint(stringResource(R.string.no_results, query))
+            } else if (query.isBlank()) {
+                ReorderableColumn(
+                    items = filtered,
+                    key = { it.id },
+                    onReorder = { vm.reorderBeers(it) },
+                ) { beer, itemModifier ->
+                    BeerCard(beer, vm, onOpen, itemModifier)
+                }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(12.dp),

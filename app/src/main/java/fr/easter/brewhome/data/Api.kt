@@ -238,6 +238,18 @@ interface BrewApi {
     @PUT("api/recipes/reorder")
     suspend fun reorderRecipes(@Body body: List<ReorderEntry>): kotlinx.serialization.json.JsonObject
 
+    @PUT("api/beers/reorder")
+    suspend fun reorderBeers(@Body body: List<ReorderEntry>): kotlinx.serialization.json.JsonObject
+
+    @PUT("api/brews/reorder")
+    suspend fun reorderBrews(@Body body: List<ReorderEntry>): kotlinx.serialization.json.JsonObject
+
+    @PUT("api/drafts/reorder")
+    suspend fun reorderDrafts(@Body body: List<ReorderEntry>): kotlinx.serialization.json.JsonObject
+
+    @PUT("api/soda-kegs/reorder")
+    suspend fun reorderSodaKegs(@Body body: List<ReorderEntry>): kotlinx.serialization.json.JsonObject
+
     @GET("api/bjcp")
     suspend fun getBjcpStyles(): List<BjcpStyle>
 

@@ -1,7 +1,13 @@
 package fr.easter.brewhome.ui
 
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -9,9 +15,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
 /**
  * État d'un glisser-déposer de réorganisation sur une [LazyListState].
@@ -86,4 +96,50 @@ fun Modifier.dragContainer(state: DragDropState): Modifier = pointerInput(state)
         onDragEnd = { state.onDragInterrupted() },
         onDragCancel = { state.onDragInterrupted() },
     )
+}
+
+/**
+ * Liste verticale réorganisable par appui long + glisser. La LazyColumn ne doit
+ * contenir que ces éléments (pas d'en-tête) pour que les index restent alignés
+ * avec la liste [items] ; place les libellés d'aide au-dessus, hors de ce bloc.
+ */
+@Composable
+fun <T> ReorderableColumn(
+    items: List<T>,
+    key: (T) -> Any,
+    onReorder: (List<T>) -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize(),
+    contentPadding: PaddingValues = PaddingValues(12.dp),
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(10.dp),
+    itemContent: @Composable (item: T, itemModifier: Modifier) -> Unit,
+) {
+    val ordered = remember(items) { items.toMutableStateList() }
+    val listState = rememberLazyListState()
+    val dragState = rememberDragDropState(
+        lazyListState = listState,
+        onMove = { from, to ->
+            if (from in ordered.indices && to in ordered.indices) {
+                ordered.add(to, ordered.removeAt(from))
+            }
+        },
+        onDrop = { onReorder(ordered.toList()) },
+    )
+    LazyColumn(
+        state = listState,
+        contentPadding = contentPadding,
+        verticalArrangement = verticalArrangement,
+        modifier = modifier.dragContainer(dragState),
+    ) {
+        itemsIndexed(ordered, key = { _, it -> key(it) }) { index, item ->
+            val dragging = index == dragState.draggingItemIndex
+            val itemModifier = if (dragging) {
+                Modifier
+                    .zIndex(1f)
+                    .graphicsLayer { translationY = dragState.draggingItemOffset }
+            } else {
+                Modifier.animateItem()
+            }
+            itemContent(item, itemModifier)
+        }
+    }
 }

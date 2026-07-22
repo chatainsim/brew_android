@@ -113,7 +113,10 @@ fun RecipesScreen(
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                 ) { Text(stringResource(R.string.drafts_seg, state.drafts.size)) }
             }
-            if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft, onNewDraft)
+            if (showDrafts) DraftsList(
+                state.drafts, query, { query = it }, onOpenDraft, onNewDraft,
+                onReorder = { vm.reorderDrafts(it) },
+            )
             else RecipesList(
                 state.recipes, state, query, { query = it }, onOpen, onNewRecipe,
                 onReorder = { vm.reorderRecipes(it) },
@@ -828,6 +831,7 @@ private fun DraftsList(
     onQuery: (String) -> Unit,
     onOpen: (Int) -> Unit,
     onNew: () -> Unit,
+    onReorder: (List<Draft>) -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -841,6 +845,17 @@ private fun DraftsList(
                 SearchField(query, onQuery, stringResource(R.string.drafts_search))
                 if (filtered.isEmpty()) {
                     EmptyHint(stringResource(R.string.no_results, query))
+                } else if (query.isBlank()) {
+                    ReorderableColumn(
+                        items = filtered,
+                        key = { it.id },
+                        onReorder = onReorder,
+                        contentPadding = PaddingValues(
+                            start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp,
+                        ),
+                    ) { draft, itemModifier ->
+                        DraftCard(draft, onOpen, itemModifier)
+                    }
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(

@@ -80,14 +80,13 @@ fun KegsScreen(vm: BrewViewModel) {
                 CircularProgressIndicator()
             }
             kegs!!.none { (it.archived ?: 0) == 0 } -> EmptyHint(stringResource(R.string.kegs_empty), Icons.Outlined.Sports)
-            else -> LazyColumn(
+            else -> ReorderableColumn(
+                items = kegs!!.filter { (it.archived ?: 0) == 0 },
+                key = { it.id },
+                onReorder = { vm.reorderKegs(it) },
                 contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(kegs!!.filter { (it.archived ?: 0) == 0 }, key = { it.id }) { keg ->
-                    KegCard(keg) { editing = keg }
-                }
+            ) { keg, itemModifier ->
+                KegCard(keg, itemModifier) { editing = keg }
             }
         }
         androidx.compose.material3.ExtendedFloatingActionButton(
@@ -291,9 +290,9 @@ private fun KegEditDialog(
 }
 
 @Composable
-private fun KegCard(keg: SodaKeg, onClick: () -> Unit) {
+private fun KegCard(keg: SodaKeg, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {

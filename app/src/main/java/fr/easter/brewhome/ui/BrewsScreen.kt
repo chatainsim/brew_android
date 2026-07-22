@@ -79,14 +79,12 @@ fun BrewsScreen(vm: BrewViewModel, onOpen: (Int) -> Unit) {
             EmptyHint(stringResource(R.string.brews_empty))
             return@RefreshableContent
         }
-        LazyColumn(
-            contentPadding = PaddingValues(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(state.brews, key = { it.id }) { brew ->
-                BrewCard(brew, onOpen, Modifier.animateItem())
-            }
+        ReorderableColumn(
+            items = state.brews,
+            key = { it.id },
+            onReorder = { vm.reorderBrews(it) },
+        ) { brew, itemModifier ->
+            BrewCard(brew, onOpen, itemModifier)
         }
     }
 }
