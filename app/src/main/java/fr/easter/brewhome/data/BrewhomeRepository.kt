@@ -171,6 +171,11 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun trash(): Trash = api().getTrash()
 
+    /** Enregistre le nouvel ordre des recettes (position = index dans la liste). */
+    suspend fun reorderRecipes(orderedIds: List<Int>) {
+        api().reorderRecipes(orderedIds.mapIndexed { i, id -> ReorderEntry(id, i) })
+    }
+
     suspend fun recipeHistory(id: Int): List<RecipeVersion> = api().getRecipeHistory(id)
 
     suspend fun restoreRecipeVersion(id: Int, versionId: Int): Recipe =

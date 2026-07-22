@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,10 +47,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,7 +114,10 @@ fun RecipesScreen(
                 ) { Text(stringResource(R.string.drafts_seg, state.drafts.size)) }
             }
             if (showDrafts) DraftsList(state.drafts, query, { query = it }, onOpenDraft, onNewDraft)
-            else RecipesList(state.recipes, state, query, { query = it }, onOpen, onNewRecipe)
+            else RecipesList(
+                state.recipes, state, query, { query = it }, onOpen, onNewRecipe,
+                onReorder = { vm.reorderRecipes(it) },
+            )
         }
     }
 }
@@ -123,29 +130,35 @@ private fun RecipesList(
     onQuery: (String) -> Unit,
     onOpen: (Int) -> Unit,
     onNew: () -> Unit,
+    onReorder: (List<Recipe>) -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             if (recipes.isEmpty()) {
                 EmptyHint(stringResource(R.string.recipes_empty))
             } else {
-                val filtered = recipes.filter { recipe ->
-                    query.isBlank() || listOfNotNull(recipe.name, recipe.style)
-                        .any { it.contains(query, ignoreCase = true) }
-                }
                 SearchField(query, onQuery, stringResource(R.string.recipes_search))
-                if (filtered.isEmpty()) {
-                    EmptyHint(stringResource(R.string.no_results, query))
+                if (query.isBlank()) {
+                    // Liste complète : réorganisable par appui long + glisser
+                    ReorderableRecipes(recipes, state, onOpen, onReorder)
                 } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        items(filtered, key = { it.id }) { recipe ->
-                            RecipeCard(recipe, state.inventory, onOpen, Modifier.animateItem())
+                    val filtered = recipes.filter { recipe ->
+                        listOfNotNull(recipe.name, recipe.style)
+                            .any { it.contains(query, ignoreCase = true) }
+                    }
+                    if (filtered.isEmpty()) {
+                        EmptyHint(stringResource(R.string.no_results, query))
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = 12.dp, end = 12.dp, top = 12.dp, bottom = 88.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(filtered, key = { it.id }) { recipe ->
+                                RecipeCard(recipe, state.inventory, onOpen, Modifier.animateItem())
+                            }
                         }
                     }
                 }
@@ -158,6 +171,55 @@ private fun RecipesList(
                 .padding(16.dp),
         ) {
             Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.title_recipe_new))
+        }
+    }
+}
+
+/** Liste des recettes réorganisable : appui long sur une carte puis glisser. */
+@Composable
+private fun ReorderableRecipes(
+    recipes: List<Recipe>,
+    state: fr.easter.brewhome.UiState,
+    onOpen: (Int) -> Unit,
+    onReorder: (List<Recipe>) -> Unit,
+) {
+    val ordered = remember(recipes) { recipes.toMutableStateList() }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val dragState = rememberDragDropState(
+        lazyListState = listState,
+        onMove = { from, to ->
+            if (from in ordered.indices && to in ordered.indices) {
+                ordered.add(to, ordered.removeAt(from))
+            }
+        },
+        onDrop = { onReorder(ordered.toList()) },
+    )
+    Column(Modifier.fillMaxSize()) {
+        Text(
+            stringResource(R.string.recipes_reorder_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+        )
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 88.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .dragContainer(dragState),
+        ) {
+            itemsIndexed(ordered, key = { _, r -> r.id }) { index, recipe ->
+            val dragging = index == dragState.draggingItemIndex
+            val cardModifier = if (dragging) {
+                Modifier
+                    .zIndex(1f)
+                    .graphicsLayer { translationY = dragState.draggingItemOffset }
+            } else {
+                Modifier.animateItem()
+            }
+            RecipeCard(recipe, state.inventory, onOpen, cardModifier)
+            }
         }
     }
 }

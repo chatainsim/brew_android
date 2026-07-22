@@ -861,6 +861,14 @@ class BrewViewModel(
         }
     }
 
+    /** Applique le nouvel ordre des recettes (optimiste) et le persiste. */
+    fun reorderRecipes(reordered: List<fr.easter.brewhome.data.Recipe>) {
+        _state.value = _state.value.copy(recipes = reordered)
+        launchWithError(R.string.error_recipe_save) {
+            repo.reorderRecipes(reordered.map { it.id })
+        }
+    }
+
     // ── Historique des versions de recette ────────────────────────────────
 
     private val _recipeHistory = MutableStateFlow<List<fr.easter.brewhome.data.RecipeVersion>?>(null)

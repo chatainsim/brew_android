@@ -148,6 +148,13 @@ data class Trash(
     @SerialName("retention_days") val retentionDays: Int? = null,
 )
 
+/** Entrée du corps PUT /reorder : id et nouvelle position. */
+@Serializable
+data class ReorderEntry(
+    val id: Int,
+    @SerialName("sort_order") val sortOrder: Int,
+)
+
 /** Corps POST/PUT du catalogue d'ingrédients. La catégorie n'est posée qu'à la création. */
 @Serializable
 data class CatalogPost(

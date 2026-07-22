@@ -241,6 +241,7 @@ class BrewViewModelTest {
         override suspend fun createRecipeRaw(body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun updateRecipe(id: Int, body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun getBjcpStyles(): List<BjcpStyle> = throw NotImplementedError()
+        override suspend fun reorderRecipes(body: List<fr.easter.brewhome.data.ReorderEntry>): JsonObject = throw NotImplementedError()
         override suspend fun getRecipeHistory(id: Int): List<fr.easter.brewhome.data.RecipeVersion> = throw NotImplementedError()
         override suspend fun restoreRecipeVersion(id: Int, versionId: Int): Recipe = throw NotImplementedError()
         override suspend fun updateBrew(id: Int, body: BrewPut): JsonObject = throw NotImplementedError()
