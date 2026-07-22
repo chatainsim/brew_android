@@ -375,6 +375,18 @@ class BrewViewModel(
             onDone()
         }
     }
+    fun deleteFermReading(brewId: Int, readingId: Int) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteFermReading(brewId, readingId)
+            reloadBrewExtras(brewId)
+        }
+    }
+    fun deleteBrewLogEntry(brewId: Int, entryId: Int) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteBrewLog(brewId, entryId)
+            reloadBrewExtras(brewId)
+        }
+    }
 
     private val _photoUploading = MutableStateFlow(false)
     /** true pendant l'envoi d'une photo (spinner). */

@@ -210,6 +210,8 @@ class BrewViewModelTest {
         override suspend fun deleteBrewPhoto(id: Int, photoId: Int): JsonObject = throw NotImplementedError()
         override suspend fun addBrewLog(id: Int, body: BrewLogPost): JsonObject = throw NotImplementedError()
         override suspend fun addBrewFermentation(id: Int, body: FermReadingPost): JsonObject = throw NotImplementedError()
+        override suspend fun deleteBrewFermentation(id: Int, readingId: Int): JsonObject = throw NotImplementedError()
+        override suspend fun deleteBrewLog(id: Int, entryId: Int): JsonObject = throw NotImplementedError()
         override suspend fun getBrewSteps(id: Int): List<BrewStep> = throw NotImplementedError()
         override suspend fun addBrewStep(id: Int, body: BrewStepPost): BrewStep = throw NotImplementedError()
         override suspend fun updateBrewStep(stepId: Int, body: BrewStepPut): BrewStep = throw NotImplementedError()

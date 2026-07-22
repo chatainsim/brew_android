@@ -323,10 +323,14 @@ fun BrewDetailScreen(vm: BrewViewModel, brewId: Int?, onOpenRecipe: (Int) -> Uni
                     if (extras.readings.isEmpty()) stringResource(R.string.ferm_section_empty)
                     else stringResource(R.string.ferm_section, extras.readings.size),
                 ) { showAddFerm = true }
-                if (extras.readings.isNotEmpty()) FermentationCard(extras.readings)
+                if (extras.readings.isNotEmpty()) {
+                    FermentationCard(extras.readings) { rid -> vm.deleteFermReading(brew.id, rid) }
+                }
                 // Journal de brassage — bouton + pour ajouter une note
                 BrewSectionHeader(stringResource(R.string.log_section)) { showAddLog = true }
-                if (extras.log.isNotEmpty()) LogCard(extras.log)
+                if (extras.log.isNotEmpty()) {
+                    LogCard(extras.log) { eid -> vm.deleteBrewLogEntry(brew.id, eid) }
+                }
             }
         }
 
@@ -770,7 +774,8 @@ private fun PhotoViewer(vm: BrewViewModel, photo: BrewPhoto, onDelete: () -> Uni
 }
 
 @Composable
-private fun FermentationCard(readings: List<FermReading>) {
+private fun FermentationCard(readings: List<FermReading>, onDelete: (Int) -> Unit) {
+    var confirm by remember { mutableStateOf<FermReading?>(null) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
             val gravities = readings.mapNotNull { it.gravity }
@@ -792,7 +797,47 @@ private fun FermentationCard(readings: List<FermReading>) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
+
+            // Mesures saisies à la main : seules elles sont supprimables côté serveur
+            val manual = readings.filter { it.source == "manual" && it.id != null }
+            if (manual.isNotEmpty()) {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Text(
+                    stringResource(R.string.ferm_manual_readings),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                manual.asReversed().forEach { r ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val line = listOfNotNull(
+                            fmtTimestamp(r.recordedAt),
+                            r.gravity?.let { fmtGravity(it) },
+                            r.temperature?.let { "${fmtQty(it)} °C" },
+                        ).joinToString(" · ")
+                        Text(line, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { confirm = r }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+    confirm?.let { r ->
+        AlertDialog(
+            onDismissRequest = { confirm = null },
+            text = { Text(stringResource(R.string.ferm_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { r.id?.let(onDelete); confirm = null }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 
@@ -893,22 +938,46 @@ private fun Legend(text: String, color: Color) {
 }
 
 @Composable
-private fun LogCard(log: List<BrewLogEntry>) {
+private fun LogCard(log: List<BrewLogEntry>, onDelete: (Int) -> Unit) {
+    var confirm by remember { mutableStateOf<BrewLogEntry?>(null) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
             log.forEachIndexed { i, entry ->
                 if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                val header = listOfNotNull(fmtTimestamp(entry.ts), entry.step).joinToString(" · ")
-                Text(
-                    header,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                if (!entry.note.isNullOrBlank()) {
-                    Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        val header = listOfNotNull(fmtTimestamp(entry.ts), entry.step).joinToString(" · ")
+                        Text(
+                            header,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        if (!entry.note.isNullOrBlank()) {
+                            Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    IconButton(onClick = { confirm = entry }) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    }
                 }
             }
         }
+    }
+    confirm?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { confirm = null },
+            text = { Text(stringResource(R.string.log_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { onDelete(entry.id); confirm = null }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 }
 

@@ -425,6 +425,7 @@ data class BrewPhotoPost(
 /** Mesure de fermentation (manuelle ou densimètre connecté). */
 @Serializable
 data class FermReading(
+    val id: Int? = null,
     @SerialName("recorded_at") val recordedAt: String,
     val gravity: Double? = null,
     val temperature: Double? = null,

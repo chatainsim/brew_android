@@ -303,6 +303,9 @@
     <string name="recipe_history_ingredients">%1$d ingrédients</string>
     <string name="recipe_history_restore">Restaurer</string>
     <string name="recipe_history_restore_confirm">Restaurer la version du %1$s ? La version actuelle sera d\'abord sauvegardée dans l\'historique.</string>
+    <string name="ferm_manual_readings">Mesures saisies à la main</string>
+    <string name="ferm_delete_confirm">Supprimer cette mesure de fermentation ?</string>
+    <string name="log_delete_confirm">Supprimer cette entrée du journal ?</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

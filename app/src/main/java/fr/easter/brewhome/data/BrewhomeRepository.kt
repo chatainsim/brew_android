@@ -68,6 +68,14 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         )
     }
 
+    suspend fun deleteFermReading(brewId: Int, readingId: Int) {
+        api().deleteBrewFermentation(brewId, readingId)
+    }
+
+    suspend fun deleteBrewLog(brewId: Int, entryId: Int) {
+        api().deleteBrewLog(brewId, entryId)
+    }
+
     suspend fun addBrewPhoto(brewId: Int, dataUrl: String, caption: String?) {
         api().addBrewPhoto(brewId, BrewPhotoPost(photo = dataUrl, caption = caption))
     }
