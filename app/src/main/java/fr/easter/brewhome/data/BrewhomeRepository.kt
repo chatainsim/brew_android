@@ -152,6 +152,16 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun deleteDraft(id: Int) { api().deleteDraft(id) }
 
+    suspend fun trash(): Trash = api().getTrash()
+
+    suspend fun restoreRecipe(id: Int) { api().restoreRecipe(id) }
+
+    suspend fun restoreBrew(id: Int) { api().restoreBrew(id) }
+
+    suspend fun restoreBeer(id: Int) { api().restoreBeer(id) }
+
+    suspend fun restoreInventoryItem(id: Int) { api().restoreInventoryItem(id) }
+
     suspend fun drafts(): List<Draft> = api().getDrafts()
 
     suspend fun beers(): List<Beer> = api().getBeers()

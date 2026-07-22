@@ -288,6 +288,16 @@
     <string name="search_hint">Rechercher</string>
     <string name="search_prompt">Tape au moins 2 lettres pour chercher dans les bières, recettes et brassins.</string>
     <string name="search_no_result">Aucun résultat</string>
+    <string name="title_trash">Corbeille</string>
+    <string name="tools_trash_sub">Restaurer un élément supprimé</string>
+    <string name="trash_empty">La corbeille est vide</string>
+    <string name="trash_retention">Purge automatique après %1$d jours</string>
+    <string name="trash_restore">Restaurer</string>
+    <string name="trash_kind_beer">Bière</string>
+    <string name="trash_kind_recipe">Recette</string>
+    <string name="trash_kind_brew">Brassin</string>
+    <string name="trash_kind_inventory">Ingrédient</string>
+    <string name="error_restore">Impossible de restaurer l\'élément</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

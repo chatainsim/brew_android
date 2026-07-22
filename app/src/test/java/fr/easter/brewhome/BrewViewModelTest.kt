@@ -128,6 +128,11 @@ class BrewViewModelTest {
         override suspend fun createBrew(body: BrewCreatePost): Brew = throw NotImplementedError()
         override suspend fun deleteBrew(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun deleteRecipe(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun getTrash(): fr.easter.brewhome.data.Trash = throw NotImplementedError()
+        override suspend fun restoreRecipe(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun restoreBrew(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun restoreBeer(id: Int): JsonObject = throw NotImplementedError()
+        override suspend fun restoreInventoryItem(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun deleteDraft(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getDrafts(): List<Draft> { gate(); return emptyList() }
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }

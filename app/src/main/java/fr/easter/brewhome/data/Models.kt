@@ -122,6 +122,32 @@ data class Recipe(
     val ingredients: List<RecipeIngredient> = emptyList(),
 )
 
+/** Un élément supprimé (corbeille), tous types confondus. */
+@Serializable
+data class TrashItem(
+    val id: Int,
+    val name: String,
+    @SerialName("deleted_at") val deletedAt: String? = null,
+    val style: String? = null,
+    val category: String? = null,
+    val quantity: Double? = null,
+    val unit: String? = null,
+    @SerialName("brew_date") val brewDate: String? = null,
+    val status: String? = null,
+    val type: String? = null,
+    val abv: Double? = null,
+)
+
+/** Contenu de la corbeille (/api/trash) : éléments supprimés restaurables. */
+@Serializable
+data class Trash(
+    val recipes: List<TrashItem> = emptyList(),
+    val inventory: List<TrashItem> = emptyList(),
+    val brews: List<TrashItem> = emptyList(),
+    val beers: List<TrashItem> = emptyList(),
+    @SerialName("retention_days") val retentionDays: Int? = null,
+)
+
 /** Style BJCP (plages cibles affichées sur les jauges d'estimation). */
 @Serializable
 data class BjcpStyle(

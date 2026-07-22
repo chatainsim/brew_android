@@ -30,6 +30,7 @@ import fr.easter.brewhome.data.CustomEventPost
 import fr.easter.brewhome.data.RecipePost
 import fr.easter.brewhome.data.Draft
 import fr.easter.brewhome.data.DraftPut
+import fr.easter.brewhome.data.Trash
 import fr.easter.brewhome.data.DraftsRepository
 import fr.easter.brewhome.data.FermReading
 import fr.easter.brewhome.data.InventoryItem
@@ -749,6 +750,42 @@ class BrewViewModel(
             repo.deleteBrew(id)
             _state.value = _state.value.copy(brews = repo.brews(), error = null)
             onDone()
+        }
+    }
+
+    // ── Corbeille ─────────────────────────────────────────────────────────
+
+    private val _trash = MutableStateFlow<Trash?>(null)
+    val trash: StateFlow<Trash?> = _trash
+
+    fun loadTrash() {
+        viewModelScope.launch {
+            _trash.value = runCatching { repo.trash() }.getOrDefault(Trash())
+        }
+    }
+
+    /** Restaure un élément supprimé puis recharge la corbeille et la liste concernée. */
+    fun restoreFromTrash(kind: String, id: Int) {
+        launchWithError(R.string.error_restore) {
+            when (kind) {
+                "recipe" -> {
+                    repo.restoreRecipe(id)
+                    _state.value = _state.value.copy(recipes = repo.recipes())
+                }
+                "brew" -> {
+                    repo.restoreBrew(id)
+                    _state.value = _state.value.copy(brews = repo.brews())
+                }
+                "beer" -> {
+                    repo.restoreBeer(id)
+                    _state.value = _state.value.copy(beers = repo.beers())
+                }
+                "inventory" -> {
+                    repo.restoreInventoryItem(id)
+                    _state.value = _state.value.copy(inventory = repo.inventory())
+                }
+            }
+            _trash.value = repo.trash()
         }
     }
 

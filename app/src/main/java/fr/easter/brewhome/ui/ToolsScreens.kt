@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Biotech
 import androidx.compose.material.icons.outlined.Bloodtype
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.BubbleChart
 import androidx.compose.material.icons.outlined.Colorize
@@ -86,6 +87,7 @@ fun ToolsScreen(
     onOpenSpindles: () -> Unit,
     onOpenTemps: () -> Unit,
     onOpenKegs: () -> Unit,
+    onOpenTrash: () -> Unit,
     onOpen: (String) -> Unit,
 ) {
     LazyColumn(
@@ -138,12 +140,21 @@ fun ToolsScreen(
                 onClick = onOpenKegs,
             )
         }
+        item(key = "trash") {
+            ToolCard(
+                stringResource(R.string.title_trash),
+                stringResource(R.string.tools_trash_sub),
+                Icons.Outlined.DeleteOutline,
+                accent = toolAccent(5),
+                onClick = onOpenTrash,
+            )
+        }
         itemsIndexed(toolDefs, key = { _, tool -> tool.id }) { i, tool ->
             ToolCard(
                 stringResource(tool.titleRes),
                 stringResource(tool.subtitleRes),
                 tool.icon,
-                accent = toolAccent(i + 5),
+                accent = toolAccent(i + 6),
             ) { onOpen(tool.id) }
         }
     }
