@@ -162,6 +162,15 @@ interface BrewApi {
     @GET("api/catalog")
     suspend fun getCatalog(): List<CatalogItem>
 
+    @POST("api/catalog")
+    suspend fun createCatalogItem(@Body body: CatalogPost): CatalogItem
+
+    @PUT("api/catalog/{id}")
+    suspend fun updateCatalogItem(@Path("id") id: Int, @Body body: CatalogPost): CatalogItem
+
+    @DELETE("api/catalog/{id}")
+    suspend fun deleteCatalogItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
+
     @GET("api/shopping-list")
     suspend fun getShoppingList(): List<ShoppingItem>
 

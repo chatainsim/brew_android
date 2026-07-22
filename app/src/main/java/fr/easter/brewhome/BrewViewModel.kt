@@ -909,6 +909,30 @@ class BrewViewModel(
         }
     }
 
+    /** Crée (id == null) ou met à jour un item du catalogue, puis recharge. */
+    fun saveCatalogItem(id: Int?, post: fr.easter.brewhome.data.CatalogPost, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_catalog_save) {
+            if (id == null) repo.createCatalogItem(post) else repo.updateCatalogItem(id, post)
+            _catalog.value = repo.catalog()
+            onDone()
+        }
+    }
+
+    fun deleteCatalogItem(id: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_delete) {
+            repo.deleteCatalogItem(id)
+            _catalog.value = repo.catalog()
+            onDone()
+        }
+    }
+
+    /** Force le rechargement du catalogue (après une modification). */
+    fun reloadCatalog() {
+        viewModelScope.launch {
+            runCatching { repo.catalog() }.onSuccess { _catalog.value = it }
+        }
+    }
+
     /** Crée (id == null) ou met à jour un brouillon. */
     fun saveDraft(id: Int?, draft: DraftPut, onDone: (Draft) -> Unit = {}) {
         launchWithError(R.string.error_draft_save) {

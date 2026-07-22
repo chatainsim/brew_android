@@ -328,6 +328,14 @@
     <string name="phase_ferment">Fermentation</string>
     <string name="phase_bottling">Embouteillage</string>
     <string name="phase_other">Autre</string>
+    <string name="title_catalog">Catalogue d\'ingrédients</string>
+    <string name="tools_catalog_sub">Gérer les ingrédients de référence</string>
+    <string name="catalog_empty">Catalogue vide</string>
+    <string name="catalog_add">Ajouter au catalogue</string>
+    <string name="catalog_edit">Modifier l\'ingrédient</string>
+    <string name="catalog_subcategory">Sous-catégorie</string>
+    <string name="catalog_gu">Potentiel GU (points/kg/L)</string>
+    <string name="error_catalog_save">Impossible d\'enregistrer l\'ingrédient</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

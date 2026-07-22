@@ -194,6 +194,18 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     // ── Checklists de brassage ────────────────────────────────────────────
 
+    // ── Catalogue d'ingrédients ───────────────────────────────────────────
+
+    suspend fun catalog(): List<CatalogItem> = api().getCatalog()
+
+    suspend fun createCatalogItem(post: CatalogPost): CatalogItem = api().createCatalogItem(post)
+
+    suspend fun updateCatalogItem(id: Int, post: CatalogPost): CatalogItem = api().updateCatalogItem(id, post)
+
+    suspend fun deleteCatalogItem(id: Int) { api().deleteCatalogItem(id) }
+
+    // ── Checklists de brassage ────────────────────────────────────────────
+
     suspend fun checklistTemplates(): List<ChecklistTemplate> = api().getChecklistTemplates()
 
     suspend fun deleteChecklistTemplate(id: Int) { api().deleteChecklistTemplate(id) }

@@ -148,6 +148,17 @@ data class Trash(
     @SerialName("retention_days") val retentionDays: Int? = null,
 )
 
+/** Corps POST/PUT du catalogue d'ingrédients. La catégorie n'est posée qu'à la création. */
+@Serializable
+data class CatalogPost(
+    val name: String,
+    val category: String,
+    val subcategory: String? = null,
+    val ebc: Double? = null,
+    val gu: Double? = null,
+    val alpha: Double? = null,
+)
+
 /** Un item de checklist de brassage : identifiant stable, phase et libellé. */
 @Serializable
 data class ChecklistItem(

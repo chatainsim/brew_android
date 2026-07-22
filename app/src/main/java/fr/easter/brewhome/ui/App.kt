@@ -96,7 +96,7 @@ private fun tabOf(route: String?): String? = when {
         route == "stats" || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
         route == "temps" || route.startsWith("temp/") || route == "kegs" ||
-        route == "trash" -> "tools"
+        route == "trash" || route == "catalog" -> "tools"
     else -> null
 }
 
@@ -252,6 +252,7 @@ fun BrewHomeApp(
                                 stringResource(R.string.title_temps)
                             currentRoute == "kegs" -> stringResource(R.string.title_kegs)
                             currentRoute == "trash" -> stringResource(R.string.title_trash)
+                            currentRoute == "catalog" -> stringResource(R.string.title_catalog)
                             currentRoute?.startsWith("brewChecklist/") == true -> stringResource(R.string.checklist_open)
                             currentRoute == "shopping" -> stringResource(R.string.title_shopping)
                             currentRoute == "tools" -> stringResource(R.string.tab_tools)
@@ -573,11 +574,13 @@ fun BrewHomeApp(
                     onOpenTemps = { navController.navigate("temps") },
                     onOpenKegs = { navController.navigate("kegs") },
                     onOpenTrash = { navController.navigate("trash") },
+                    onOpenCatalog = { navController.navigate("catalog") },
                     onOpen = { navController.navigate("tools/$it") },
                 )
             }
             composable("kegs") { KegsScreen(vm) }
             composable("trash") { TrashScreen(vm) }
+            composable("catalog") { CatalogScreen(vm) }
             composable("spindles") {
                 SpindlesScreen(vm) { navController.navigate("spindle/$it") }
             }
