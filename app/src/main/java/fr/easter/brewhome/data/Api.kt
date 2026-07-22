@@ -187,6 +187,15 @@ interface BrewApi {
     @GET("api/bjcp")
     suspend fun getBjcpStyles(): List<BjcpStyle>
 
+    @GET("api/recipes/{id}/history")
+    suspend fun getRecipeHistory(@Path("id") id: Int): List<RecipeVersion>
+
+    @POST("api/recipes/{id}/history/{versionId}/restore")
+    suspend fun restoreRecipeVersion(
+        @Path("id") id: Int,
+        @Path("versionId") versionId: Int,
+    ): Recipe
+
     @PUT("api/brews/{id}")
     suspend fun updateBrew(@Path("id") id: Int, @Body body: BrewPut): kotlinx.serialization.json.JsonObject
 

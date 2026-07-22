@@ -154,6 +154,11 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun trash(): Trash = api().getTrash()
 
+    suspend fun recipeHistory(id: Int): List<RecipeVersion> = api().getRecipeHistory(id)
+
+    suspend fun restoreRecipeVersion(id: Int, versionId: Int): Recipe =
+        api().restoreRecipeVersion(id, versionId)
+
     suspend fun restoreRecipe(id: Int) { api().restoreRecipe(id) }
 
     suspend fun restoreBrew(id: Int) { api().restoreBrew(id) }

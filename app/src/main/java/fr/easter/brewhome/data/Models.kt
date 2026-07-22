@@ -148,6 +148,17 @@ data class Trash(
     @SerialName("retention_days") val retentionDays: Int? = null,
 )
 
+/** Une version historisée d'une recette (snapshot avant modification). */
+@Serializable
+data class RecipeVersion(
+    val id: Int,
+    @SerialName("saved_at") val savedAt: String? = null,
+    val name: String = "?",
+    val style: String? = null,
+    val volume: Double? = null,
+    @SerialName("n_ingredients") val nIngredients: Int? = null,
+)
+
 /** Style BJCP (plages cibles affichées sur les jauges d'estimation). */
 @Serializable
 data class BjcpStyle(

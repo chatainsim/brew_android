@@ -298,6 +298,11 @@
     <string name="trash_kind_brew">Brassin</string>
     <string name="trash_kind_inventory">Ingrédient</string>
     <string name="error_restore">Impossible de restaurer l\'élément</string>
+    <string name="recipe_history">Historique des versions</string>
+    <string name="recipe_history_empty">Aucune version antérieure enregistrée</string>
+    <string name="recipe_history_ingredients">%1$d ingrédients</string>
+    <string name="recipe_history_restore">Restaurer</string>
+    <string name="recipe_history_restore_confirm">Restaurer la version du %1$s ? La version actuelle sera d\'abord sauvegardée dans l\'historique.</string>
     <string name="settings_appearance">Apparence</string>
     <string name="settings_appearance_help">« Auto » suit le thème clair/sombre du téléphone.</string>
     <string name="theme_auto">Auto</string>

@@ -789,6 +789,28 @@ class BrewViewModel(
         }
     }
 
+    // ── Historique des versions de recette ────────────────────────────────
+
+    private val _recipeHistory = MutableStateFlow<List<fr.easter.brewhome.data.RecipeVersion>?>(null)
+    val recipeHistory: StateFlow<List<fr.easter.brewhome.data.RecipeVersion>?> = _recipeHistory
+
+    fun loadRecipeHistory(id: Int) {
+        _recipeHistory.value = null
+        viewModelScope.launch {
+            _recipeHistory.value = runCatching { repo.recipeHistory(id) }.getOrDefault(emptyList())
+        }
+    }
+
+    /** Restaure une version passée d'une recette puis recharge la liste et l'historique. */
+    fun restoreRecipeVersion(recipeId: Int, versionId: Int, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_restore) {
+            repo.restoreRecipeVersion(recipeId, versionId)
+            _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
+            _recipeHistory.value = repo.recipeHistory(recipeId)
+            onDone()
+        }
+    }
+
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
             if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)

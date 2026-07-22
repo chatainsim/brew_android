@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -309,6 +310,15 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?, onOpenBrew: (Int) -> U
             Text(stringResource(R.string.recipe_export_beerxml), Modifier.padding(start = 8.dp))
         }
 
+        var showHistory by remember { mutableStateOf(false) }
+        OutlinedButton(onClick = { showHistory = true }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.History, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.recipe_history), Modifier.padding(start = 8.dp))
+        }
+        if (showHistory) {
+            RecipeHistoryDialog(vm, recipe.id, onDismiss = { showHistory = false })
+        }
+
         if (stock != null) {
             StockBanner(
                 stock, state.shopping,
@@ -523,6 +533,76 @@ private fun BrewFromRecipeDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+@Composable
+private fun RecipeHistoryDialog(vm: BrewViewModel, recipeId: Int, onDismiss: () -> Unit) {
+    val history by vm.recipeHistory.collectAsState()
+    var confirmRestore by remember { mutableStateOf<fr.easter.brewhome.data.RecipeVersion?>(null) }
+    LaunchedEffect(recipeId) { vm.loadRecipeHistory(recipeId) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipe_history)) },
+        text = {
+            when {
+                history == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
+                history!!.isEmpty() -> Text(stringResource(R.string.recipe_history_empty))
+                else -> Column(
+                    Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    history!!.forEach { v ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { confirmRestore = v }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    v.savedAt?.replace('T', ' ')?.take(16) ?: "?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                val sub = listOfNotNull(
+                                    v.style,
+                                    v.volume?.let { "${fmtQty(it)} L" },
+                                    v.nIngredients?.let { stringResource(R.string.recipe_history_ingredients, it) },
+                                ).joinToString(" · ")
+                                if (sub.isNotEmpty()) {
+                                    Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                                }
+                            }
+                            Icon(
+                                Icons.Outlined.History,
+                                contentDescription = stringResource(R.string.recipe_history_restore),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+    )
+
+    confirmRestore?.let { v ->
+        AlertDialog(
+            onDismissRequest = { confirmRestore = null },
+            text = { Text(stringResource(R.string.recipe_history_restore_confirm, v.savedAt?.replace('T', ' ')?.take(16) ?: "?")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.restoreRecipeVersion(recipeId, v.id)
+                    confirmRestore = null
+                    onDismiss()
+                }) { Text(stringResource(R.string.recipe_history_restore)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
 }
 
 @Composable
