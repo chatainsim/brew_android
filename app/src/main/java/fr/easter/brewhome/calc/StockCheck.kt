@@ -59,9 +59,15 @@ object StockCheck {
         val lines = agg.map { (key, a) ->
             val inv = invMap[key]
             val available = inv?.get(a.base) ?: 0.0
+            // Unité incompatible ≠ stock à zéro : il faut que l'unité demandée soit absente
+            // de l'inventaire ET qu'il reste du stock réel dans une autre famille d'unités.
+            // (un houblon à 0 g pour 60 g requis doit ressortir « insuffisant », pas « unités diff. »)
+            val hasBase = inv?.containsKey(a.base) == true
+            val altBase = if (inv != null && !hasBase) inv.entries.firstOrNull { it.value > 0 }?.key else null
+            val unitMismatch = inv != null && !hasBase && altBase != null
             val status = when {
                 inv == null -> Status.MISSING
-                available == 0.0 -> Status.UNIT_MISMATCH
+                unitMismatch -> Status.UNIT_MISMATCH
                 available >= a.needed -> Status.OK
                 else -> Status.LOW
             }

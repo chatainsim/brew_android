@@ -62,6 +62,19 @@ class StockCheckTest {
     }
 
     @Test
+    fun `stock a zero dans la meme unite reste insuffisant, pas unites diff`() {
+        // Houblon présent en inventaire mais à 0 g, pour 60 g requis : doit être
+        // « insuffisant » (LOW), pas « unités diff. » (même bug que côté web, cf.
+        // le commentaire dans checkRecipeStock()).
+        val res = StockCheck.check(
+            listOf(ing("Citra", 60.0, "g", "houblon")),
+            listOf(inv("Citra", 0.0, "g", "houblon")),
+        )
+        assertEquals(StockCheck.Status.LOW, res.lines[0].status)
+        assertEquals(0.0, res.lines[0].available, 1e-9)
+    }
+
+    @Test
     fun `ingredients de meme nom agreges`() {
         // Cascade à 60 min + Cascade à 5 min = 50 g requis, 40 g dispo
         val res = StockCheck.check(
