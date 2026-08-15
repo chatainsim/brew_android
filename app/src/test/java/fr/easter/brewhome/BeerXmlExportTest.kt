@@ -2,6 +2,7 @@ package fr.easter.brewhome
 
 import fr.easter.brewhome.calc.BeerXmlExport
 import fr.easter.brewhome.data.Recipe
+import fr.easter.brewhome.data.RecipeIngredient
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,5 +55,41 @@ class BeerXmlExportTest {
     @Test
     fun `nom de fichier normalise`() {
         assertEquals("pale-ale-test.xml", BeerXmlExport.fileName(recipe))
+    }
+
+    @Test
+    fun `couleur du malt convertie comme sur le site`() {
+        // Pilsner à 3,5 EBC : le site exporte COLOR = EBC/1.97 (bh-recettes.js)
+        val xml = BeerXmlExport.toBeerXml(recipe)
+        assertTrue("<COLOR>1.777</COLOR>" in xml)
+    }
+
+    @Test
+    fun `houblon whirlpool exporte en Aroma, pas en Boil`() {
+        val whirlpool = RecipeIngredient(
+            id = 3, name = "Citra", category = "houblon",
+            quantity = 20.0, unit = "g", hopType = "whirlpool", hopTime = 15,
+        )
+        val xml = BeerXmlExport.toBeerXml(recipe.copy(ingredients = recipe.ingredients + whirlpool))
+        assertTrue("<NAME>Citra</NAME>" in xml)
+        assertTrue("<USE>Aroma</USE>" in xml)
+    }
+
+    @Test
+    fun `levure exportee avec une quantite, jamais vide`() {
+        val yeastSachet = RecipeIngredient(
+            id = 4, name = "US-05", category = "levure", quantity = 0.0, unit = "sachet",
+        )
+        val yeastGrams = RecipeIngredient(
+            id = 5, name = "S-04", category = "levure", quantity = 11.5, unit = "g",
+        )
+        val xml = BeerXmlExport.toBeerXml(
+            recipe.copy(ingredients = recipe.ingredients + listOf(yeastSachet, yeastGrams))
+        )
+        // Sachet sans quantité renseignée → 1 sachet par défaut ≈ 0,011 kg
+        assertTrue("<AMOUNT>0.011</AMOUNT>" in xml)
+        // 11,5 g convertis en kg (0,0115, arrondi à 3 décimales par fmt())
+        assertTrue("<AMOUNT>0.012</AMOUNT>" in xml)
+        assertTrue("<AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>" in xml)
     }
 }

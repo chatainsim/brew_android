@@ -39,8 +39,8 @@ object BeerXmlExport {
             tag("VERSION", "1", 4)
             tag("TYPE", "Grain", 4)
             tag("AMOUNT", fmt(kg(ferm.quantity, ferm.unit)), 4)
-            // BeerXML attend la couleur en °Lovibond ; conversion approx. depuis l'EBC
-            ferm.ebc?.let { tag("COLOR", fmt(ebcToLovibond(it)), 4) }
+            // Même conversion EBC → COLOR que le site (bh-recettes.js: m.ebc/1.97)
+            tag("COLOR", fmt(ebcToLovibond(ferm.ebc ?: 0.0)), 4)
             appendLine("      </FERMENTABLE>")
         }
         appendLine("    </FERMENTABLES>")
@@ -48,12 +48,14 @@ object BeerXmlExport {
         appendLine("    <HOPS>")
         byCat["houblon"].orEmpty().forEach { hop ->
             val dryHop = hop.hopType?.contains("dry", ignoreCase = true) == true || hop.hopDays != null
+            val whirlpool = !dryHop && hop.hopType?.equals("whirlpool", ignoreCase = true) == true
             appendLine("      <HOP>")
             tag("NAME", hop.name, 4)
             tag("VERSION", "1", 4)
             tag("AMOUNT", fmt(kg(hop.quantity, hop.unit)), 4)
             hop.alpha?.let { tag("ALPHA", fmt(it), 4) }
-            tag("USE", if (dryHop) "Dry Hop" else "Boil", 4)
+            // Même mapping que hopUseMap() côté site : whirlpool → « Aroma », pas « Boil »
+            tag("USE", if (dryHop) "Dry Hop" else if (whirlpool) "Aroma" else "Boil", 4)
             // TIME en minutes : jours × 1440 pour un dry hop
             val time = if (dryHop) (hop.hopDays ?: 0) * 1440 else (hop.hopTime ?: 0)
             tag("TIME", time.toString(), 4)
@@ -68,6 +70,14 @@ object BeerXmlExport {
             tag("VERSION", "1", 4)
             tag("TYPE", "Ale", 4)
             tag("FORM", "Dry", 4)
+            // Même conversion que le site (bh-recettes.js) : un sachet ≈ 0,011 kg
+            val amount = if (yeast.unit.equals("sachet", ignoreCase = true)) {
+                (if (yeast.quantity != 0.0) yeast.quantity else 1.0) * 0.011
+            } else {
+                kg(yeast.quantity, yeast.unit).let { if (it != 0.0) it else 0.011 }
+            }
+            tag("AMOUNT", fmt(amount), 4)
+            tag("AMOUNT_IS_WEIGHT", "TRUE", 4)
             appendLine("      </YEAST>")
         }
         appendLine("    </YEASTS>")
@@ -132,8 +142,8 @@ object BeerXmlExport {
         else -> quantity // sachet, unité… : renvoyé tel quel
     }
 
-    /** EBC → °Lovibond (approximation SRM = EBC/1.97, L = (SRM+0.6)/1.35). */
-    private fun ebcToLovibond(ebc: Double): Double = ((ebc / 1.97) + 0.6) / 1.35
+    /** EBC → COLOR BeerXML : même conversion que le site (bh-recettes.js). */
+    private fun ebcToLovibond(ebc: Double): Double = ebc / 1.97
 
     private fun fmt(v: Double): String {
         val r = (Math.round(v * 1000.0) / 1000.0)
