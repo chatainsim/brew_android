@@ -182,6 +182,10 @@ class BrewViewModel(
     }
 
     fun refreshAll() {
+        // Un rafraîchissement (pull-to-refresh, bouton, chargement initial) est déjà en
+        // cours : ne pas en lancer un second en parallèle, ça rejouerait la queue hors
+        // ligne deux fois (cf. replayPending()).
+        if (_state.value.loading) return
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
             // Premier lancement : afficher tout de suite le dernier instantané
@@ -253,17 +257,20 @@ class BrewViewModel(
         kegLiters = if (dKeg != 0.0) maxOf(0.0, (beer.kegLiters ?: 0.0) + dKeg) else beer.kegLiters,
     )
 
-    /** Rejoue les ajustements de stock faits hors ligne, regroupés par bière. */
+    /**
+     * Rejoue les ajustements de stock faits hors ligne, regroupés par bière. Un op qui
+     * échoue (réseau ou bière pas encore synchronisée localement) reste en file pour un
+     * prochain essai, au lieu d'être perdu : on ne vide jamais la queue à l'aveugle.
+     */
     private suspend fun replayPending() {
         val ops = withContext(io) { pending.load() }
         if (ops.isEmpty()) return
         val beers = repo.beers()
-        PendingQueue.coalesce(ops).forEach { op ->
-            beers.find { it.id == op.beerId }?.let {
-                runCatching { repo.adjustBeerStock(it, op.d33, op.d75, op.dKeg) }
-            }
+        val stillPending = PendingQueue.coalesce(ops).filter { op ->
+            val beer = beers.find { it.id == op.beerId }
+            beer == null || runCatching { repo.adjustBeerStock(beer, op.d33, op.d75, op.dKeg) }.isFailure
         }
-        withContext(io) { pending.clear() }
+        withContext(io) { pending.save(stillPending) }
     }
 
     fun setInventoryQty(item: InventoryItem, newQty: Double) {

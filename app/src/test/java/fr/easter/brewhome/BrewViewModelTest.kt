@@ -114,6 +114,12 @@ class BrewViewModelTest {
         var beers = emptyList<Beer>()
         val shopping = mutableListOf<ShoppingItem>()
         var failCreateFromCall = Int.MAX_VALUE
+        /** Simule un échec réseau ciblé sur une seule bière (rejeu partiellement échoué). */
+        var failPatchForBeerId: Int? = null
+        val patchBeerStockCalls = mutableListOf<Int>()
+        /** Tant que non complété, bloque getBeers() en plein vol (simule un appel réseau en cours). */
+        var getBeersGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+        var getBeersCallCount = 0
         private var createCalls = 0
         private var nextId = 100
 
@@ -121,7 +127,12 @@ class BrewViewModelTest {
             if (down) throw IOException()
         }
 
-        override suspend fun getBeers(): List<Beer> { gate(); return beers }
+        override suspend fun getBeers(): List<Beer> {
+            gate()
+            getBeersCallCount++
+            getBeersGate?.await()
+            return beers
+        }
         override suspend fun getRecipes(): List<Recipe> { gate(); return emptyList() }
         override suspend fun getInventory(): List<InventoryItem> { gate(); return emptyList() }
         override suspend fun getBrews(): List<Brew> { gate(); return emptyList() }
@@ -150,6 +161,8 @@ class BrewViewModelTest {
 
         override suspend fun patchBeerStock(id: Int, body: StockPatch): Beer {
             gate()
+            patchBeerStockCalls += id
+            if (id == failPatchForBeerId) throw IOException("échec réseau ciblé")
             val updated = beers.first { it.id == id }.let {
                 it.copy(
                     stock33 = body.stock33 ?: it.stock33,
@@ -373,6 +386,65 @@ class BrewViewModelTest {
         assertEquals("http://nouveau:5000/", settings.serverUrl.value)
         assertNull(cache.load())
         assertFalse(vm.state.value.loaded)
+    }
+
+    // ── Rejeu de la queue hors ligne ─────────────────────────────────────
+
+    @Test
+    fun `replayPending - un op en echec reste en file, pas de perte silencieuse`() = runTest {
+        api.beers = listOf(Beer(id = 1, name = "A", stock33 = 5), Beer(id = 2, name = "B", stock33 = 5))
+        api.failPatchForBeerId = 2
+        val pending = fr.easter.brewhome.data.PendingQueue(tmp.root)
+        pending.add(fr.easter.brewhome.data.PendingStockOp(beerId = 1, d33 = -1))
+        pending.add(fr.easter.brewhome.data.PendingStockOp(beerId = 2, d33 = -1))
+        val vm = vm()
+
+        vm.refreshAll()
+        advanceUntilIdle()
+
+        // Bière 1 rejouée avec succès sur le serveur
+        assertEquals(4, api.beers.first { it.id == 1 }.stock33)
+        // Bière 2 a échoué : l'op reste en file au lieu d'être perdue
+        val remaining = pending.load()
+        assertEquals(listOf(2), remaining.map { it.beerId })
+        assertEquals(-1, remaining.single().d33)
+    }
+
+    @Test
+    fun `replayPending - bete pas encore synchronisee localement reste en file`() = runTest {
+        api.beers = emptyList() // la bière n'est pas (encore) connue côté client
+        val pending = fr.easter.brewhome.data.PendingQueue(tmp.root)
+        pending.add(fr.easter.brewhome.data.PendingStockOp(beerId = 42, d33 = -1))
+        val vm = vm()
+
+        vm.refreshAll()
+        advanceUntilIdle()
+
+        assertEquals(listOf(42), pending.load().map { it.beerId })
+    }
+
+    @Test
+    fun `refreshAll - un rafraichissement deja en cours n'en relance pas un second`() = runTest {
+        api.beers = listOf(Beer(id = 1, name = "A", stock33 = 5))
+        // Bloque le premier appel réseau en plein vol, comme un aller-retour lent
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        api.getBeersGate = gate
+        val vm = vm()
+
+        vm.refreshAll()
+        // Le premier rafraîchissement est encore en cours (bloqué dans getBeers())
+        assertTrue(vm.state.value.loading)
+        val callsWhileFirstInFlight = api.getBeersCallCount
+        // Sans le garde-fou, ce second appel relancerait un rafraîchissement en parallèle
+        // et rejouerait la queue hors ligne deux fois.
+        vm.refreshAll()
+        assertEquals(callsWhileFirstInFlight, api.getBeersCallCount)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(vm.state.value.loading)
+        assertEquals("A", vm.state.value.beers.single().name)
     }
 
     // ── Ajout des manquants aux courses ───────────────────────────────────

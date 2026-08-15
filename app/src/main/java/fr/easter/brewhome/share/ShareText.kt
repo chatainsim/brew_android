@@ -131,7 +131,7 @@ object ShareText {
             item.ebc?.let { "${fmtQty(it)} EBC" },
             item.notes?.takeIf { it.isNotBlank() },
         ).joinToString(" · ")
-        val lowStock = item.minStock?.takeIf { it > 0 && item.quantity <= it } != null
+        val lowStock = item.minStock?.takeIf { it > 0 && item.quantity < it } != null
         return "- ${item.name} : ${fmtQty(item.quantity)} ${item.unit}" +
             (if (details.isNotEmpty()) " ($details)" else "") +
             (if (lowStock) " ⚠️ stock bas" else "")
