@@ -58,6 +58,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -237,7 +238,16 @@ class BrewViewModelTest {
         override suspend fun updateCatalogItem(id: Int, body: fr.easter.brewhome.data.CatalogPost): CatalogItem = throw NotImplementedError()
         override suspend fun deleteCatalogItem(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getChecklistTemplates(): List<fr.easter.brewhome.data.ChecklistTemplate> = throw NotImplementedError()
-        override suspend fun createChecklistTemplate(body: JsonObject): fr.easter.brewhome.data.ChecklistTemplate = throw NotImplementedError()
+        /** Ids envoyés dans le champ "items" de chaque appel à createChecklistTemplate. */
+        val checklistTemplateItemIds = mutableListOf<List<String>>()
+
+        override suspend fun createChecklistTemplate(body: JsonObject): fr.easter.brewhome.data.ChecklistTemplate {
+            val ids = (body["items"] as kotlinx.serialization.json.JsonArray).map {
+                (it as JsonObject)["id"]!!.jsonPrimitive.content
+            }
+            checklistTemplateItemIds += ids
+            return fr.easter.brewhome.data.ChecklistTemplate(id = checklistTemplateItemIds.size, name = "t")
+        }
         override suspend fun deleteChecklistTemplate(tid: Int): JsonObject = throw NotImplementedError()
         override suspend fun getBrewChecklist(id: Int): fr.easter.brewhome.data.BrewChecklist = throw NotImplementedError()
         override suspend fun saveBrewChecklist(id: Int, body: JsonObject): fr.easter.brewhome.data.BrewChecklist = throw NotImplementedError()
@@ -476,6 +486,26 @@ class BrewViewModelTest {
         val s = vm.state.value
         assertEquals(listOf("Citra"), s.shopping.map { it.name })
         assertNull(s.error)
+    }
+
+    // ── Checklists de brassage ───────────────────────────────────────────
+
+    @Test
+    fun `createChecklistTemplate - les ids d'items ne se chevauchent pas entre deux modeles`() = runTest {
+        val vm = vm()
+
+        vm.createChecklistTemplate("IPA", null, listOf("Empâtage", "Ébullition", "Refroidissement"))
+        advanceUntilIdle()
+        vm.createChecklistTemplate("Stout", null, listOf("Empâtage", "Ébullition"))
+        advanceUntilIdle()
+
+        val (idsIpa, idsStout) = api.checklistTemplateItemIds
+        // Avant le fix, les ids étaient purement positionnels (item_1, item_2...) et se
+        // chevauchaient entre modèles : changer de modèle sur un brassin pouvait alors
+        // conserver à tort des coches d'un autre modèle (BrewChecklistScreen.onSelect).
+        assertTrue(idsIpa.toSet().intersect(idsStout.toSet()).isEmpty())
+        assertEquals(3, idsIpa.toSet().size)
+        assertEquals(2, idsStout.toSet().size)
     }
 
     // ── Widget (SnapshotCache) ───────────────────────────────────────────

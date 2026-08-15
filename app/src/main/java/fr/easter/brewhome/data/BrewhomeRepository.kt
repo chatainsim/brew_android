@@ -234,9 +234,12 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     /** Crée un modèle de checklist à partir d'items simples (une phase « autre »). */
     suspend fun createChecklistTemplate(name: String, description: String?, texts: List<String>): ChecklistTemplate {
         val items = kotlinx.serialization.json.buildJsonArray {
-            texts.forEachIndexed { i, txt ->
+            texts.forEach { txt ->
                 add(kotlinx.serialization.json.buildJsonObject {
-                    put("id", "item_${i + 1}")
+                    // Id unique globalement (pas seulement dans ce modèle) : deux modèles créés
+                    // depuis l'app ne doivent jamais partager un id, sinon changer de modèle sur
+                    // un brassin peut conserver à tort des coches d'un autre modèle (BrewChecklistScreen).
+                    put("id", "item_${java.util.UUID.randomUUID()}")
                     put("phase", "autre")
                     put("text", txt)
                 })
