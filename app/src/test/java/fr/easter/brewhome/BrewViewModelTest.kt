@@ -478,6 +478,24 @@ class BrewViewModelTest {
         assertNull(s.error)
     }
 
+    // ── Widget (SnapshotCache) ───────────────────────────────────────────
+
+    @Test
+    fun `adjustBeerStock - persiste le cache disque pour que le widget ne reste pas perime`() = runTest {
+        api.beers = listOf(Beer(id = 1, name = "Ambrée", stock33 = 4))
+        val vm = vm()
+        vm.refreshAll()
+        advanceUntilIdle()
+
+        vm.adjustBeerStock(vm.state.value.beers.single(), d33 = -1)
+        advanceUntilIdle()
+
+        assertEquals(3, vm.state.value.beers.single().stock33)
+        // Avant le fix, seul un refreshAll() complet touchait SnapshotCache : le widget
+        // (qui lit directement ce cache) restait périmé après un simple ajustement de stock.
+        assertEquals(3, cache.load()!!.snapshot.beers.single().stock33)
+    }
+
     // ── Annulation ────────────────────────────────────────────────────────
 
     @Test

@@ -226,6 +226,19 @@ class BrewViewModel(
         withContext(io) { cache.save(s) }
     }
 
+    /**
+     * Persiste l'état courant (après une modification locale ponctuelle, pas un refresh
+     * complet) dans le cache disque et marque les données comme fraîches, pour que le
+     * widget écran d'accueil — qui lit directement SnapshotCache — ne reste pas périmé.
+     */
+    private suspend fun persistSnapshot() {
+        val s = _state.value
+        _state.value = s.copy(dataAt = System.currentTimeMillis())
+        withContext(io) {
+            cache.save(Snapshot(s.beers, s.recipes, s.inventory, s.brews, s.drafts, s.shopping))
+        }
+    }
+
     private fun uiStateOf(s: Snapshot) = UiState(
         beers = s.beers, recipes = s.recipes, inventory = s.inventory,
         brews = s.brews, drafts = s.drafts, shopping = s.shopping, loaded = true,
@@ -298,18 +311,20 @@ class BrewViewModel(
         }
     }
 
-    private fun replaceBeer(updated: Beer) {
+    private suspend fun replaceBeer(updated: Beer) {
         _state.value = _state.value.copy(
             beers = _state.value.beers.map { if (it.id == updated.id) updated else it },
             error = null,
         )
+        persistSnapshot()
     }
 
-    private fun replaceInventory(updated: InventoryItem) {
+    private suspend fun replaceInventory(updated: InventoryItem) {
         _state.value = _state.value.copy(
             inventory = _state.value.inventory.map { if (it.id == updated.id) updated else it },
             error = null,
         )
+        persistSnapshot()
     }
 
     fun saveTasting(beerId: Int, tasting: TastingPut, onDone: () -> Unit = {}) {

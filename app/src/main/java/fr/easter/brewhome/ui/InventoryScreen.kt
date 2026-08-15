@@ -187,7 +187,8 @@ private fun InventoryItemDialog(
     var alpha by remember { mutableStateOf(item?.alpha?.let { fmtQty(it).replace(',', '.') } ?: "") }
     var origin by remember { mutableStateOf(item?.origin ?: "") }
     var notes by remember { mutableStateOf(item?.notes ?: "") }
-    val qtyOk = qty.replace(',', '.').toDoubleOrNull() != null
+    // Comme min="0" sur le champ équivalent du site (bh-inventaire.js) : pas de quantité négative
+    val qtyOk = qty.replace(',', '.').toDoubleOrNull()?.let { it >= 0.0 } == true
 
     fun num(s: String): Double? = s.trim().replace(',', '.').toDoubleOrNull()
 
