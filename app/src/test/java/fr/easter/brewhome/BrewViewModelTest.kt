@@ -302,6 +302,7 @@ class BrewViewModelTest {
             vpn = VpnController(settings, onTunnelUp),
             cache = cache,
             pending = fr.easter.brewhome.data.PendingQueue(tmp.root),
+            guideStore = fr.easter.brewhome.data.BrewGuideStore(tmp.root),
             strings = { "s$it" },
             io = dispatcher,
         )
@@ -580,5 +581,33 @@ class BrewViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(1), api.undoBuyBodies.single().boughtIds)
         assertEquals(listOf("Pilsner"), vm.state.value.shopping.map { it.name })
+    }
+
+    // ── Guide de brassage ────────────────────────────────────────────────
+
+    @Test
+    fun `loadBrewGuide expose un etat par defaut si rien n'est persiste`() = runTest {
+        val vm = vm()
+        vm.loadBrewGuide("recipe_1")
+        advanceUntilIdle()
+        assertEquals(fr.easter.brewhome.data.BrewGuideState(), vm.brewGuideState.value)
+    }
+
+    @Test
+    fun `updateBrewGuide met a jour l'etat et le persiste via le store`() = runTest {
+        val vm = vm()
+        vm.loadBrewGuide("recipe_1")
+        advanceUntilIdle()
+
+        vm.updateBrewGuide("recipe_1") { it.copy(step = 2, checkedItems = setOf("prep_1")) }
+        advanceUntilIdle()
+
+        assertEquals(2, vm.brewGuideState.value?.step)
+        assertEquals(setOf("prep_1"), vm.brewGuideState.value?.checkedItems)
+
+        // Une nouvelle instance relit bien l'état persisté par le store injecté
+        val reloaded = fr.easter.brewhome.data.BrewGuideStore(tmp.root).load("recipe_1")
+        assertEquals(2, reloaded?.step)
+        assertEquals(setOf("prep_1"), reloaded?.checkedItems)
     }
 }

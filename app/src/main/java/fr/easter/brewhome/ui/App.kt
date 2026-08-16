@@ -87,11 +87,11 @@ private fun tabOf(route: String?): String? = when {
     route == "home" -> "home"
     route == "beers" || route.startsWith("beer/") || route.startsWith("beerEdit/") -> "beers"
     route == "recipes" || route.startsWith("recipe/") || route.startsWith("recipeEdit/") ||
-        route.startsWith("recipeFromDraft/") ||
+        route.startsWith("recipeFromDraft/") || route.startsWith("brewGuide/recipe/") ||
         route.startsWith("draft/") || route.startsWith("draftEdit/") -> "recipes"
     route == "inventory" || route == "shopping" -> "inventory"
     route == "brews" || route.startsWith("brew/") || route.startsWith("brewEdit/") ||
-        route.startsWith("brewChecklist/") -> "brews"
+        route.startsWith("brewChecklist/") || route.startsWith("brewGuide/brew/") -> "brews"
     route == "tools" || route.startsWith("tools/") ||
         route == "stats" || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
@@ -254,6 +254,7 @@ fun BrewHomeApp(
                             currentRoute == "trash" -> stringResource(R.string.title_trash)
                             currentRoute == "catalog" -> stringResource(R.string.title_catalog)
                             currentRoute?.startsWith("brewChecklist/") == true -> stringResource(R.string.checklist_open)
+                            currentRoute?.startsWith("brewGuide/") == true -> stringResource(R.string.guide_title)
                             currentRoute == "shopping" -> stringResource(R.string.title_shopping)
                             currentRoute == "tools" -> stringResource(R.string.tab_tools)
                             currentRoute?.startsWith("tools/") == true ->
@@ -518,7 +519,11 @@ fun BrewHomeApp(
             }
             composable("recipe/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
-                RecipeDetailScreen(vm, id) { brewId -> navController.navigate("brew/$brewId") }
+                RecipeDetailScreen(
+                    vm, id,
+                    onOpenBrew = { brewId -> navController.navigate("brew/$brewId") },
+                    onOpenGuide = { navController.navigate("brewGuide/recipe/$it") },
+                )
             }
             composable("recipeEdit/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null
@@ -557,6 +562,7 @@ fun BrewHomeApp(
                     vm, id,
                     onOpenRecipe = { navController.navigate("recipe/$it") },
                     onOpenChecklist = { navController.navigate("brewChecklist/$it") },
+                    onOpenGuide = { navController.navigate("brewGuide/brew/$it") },
                 )
             }
             composable("brewEdit/{id}") { entry ->
@@ -565,6 +571,22 @@ fun BrewHomeApp(
             }
             composable("brewChecklist/{id}") { entry ->
                 BrewChecklistScreen(vm, entry.arguments?.getString("id")?.toIntOrNull())
+            }
+            composable("brewGuide/recipe/{recipeId}") { entry ->
+                BrewGuideScreen(
+                    vm,
+                    recipeId = entry.arguments?.getString("recipeId")?.toIntOrNull(),
+                    brewId = null,
+                    onOpenPriming = { navController.navigate("tools/priming") },
+                )
+            }
+            composable("brewGuide/brew/{brewId}") { entry ->
+                BrewGuideScreen(
+                    vm,
+                    recipeId = null,
+                    brewId = entry.arguments?.getString("brewId")?.toIntOrNull(),
+                    onOpenPriming = { navController.navigate("tools/priming") },
+                )
             }
             composable("tools") {
                 ToolsScreen(

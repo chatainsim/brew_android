@@ -48,6 +48,11 @@
             android:name=".notif.BrewReminderReceiver"
             android:exported="false" />
 
+        <!-- Reçoit les alarmes du guide de brassage (empâtage/ébullition/houblonnage) -->
+        <receiver
+            android:name=".notif.BrewGuideAlarmReceiver"
+            android:exported="false" />
+
         <!-- Widget écran d'accueil (cave + prochaine échéance) -->
         <receiver
             android:name=".widget.BrewWidgetReceiver"

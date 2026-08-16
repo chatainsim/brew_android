@@ -308,7 +308,12 @@ private fun StockBadge(stock: StockCheck.Result) {
 }
 
 @Composable
-fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?, onOpenBrew: (Int) -> Unit = {}) {
+fun RecipeDetailScreen(
+    vm: BrewViewModel,
+    recipeId: Int?,
+    onOpenBrew: (Int) -> Unit = {},
+    onOpenGuide: (Int) -> Unit = {},
+) {
     val state by vm.state.collectAsState()
     val recipe = state.recipes.find { it.id == recipeId }
     if (recipe == null) {
@@ -355,6 +360,10 @@ fun RecipeDetailScreen(vm: BrewViewModel, recipeId: Int?, onOpenBrew: (Int) -> U
         Button(onClick = { showBrew = true }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Outlined.Science, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(stringResource(R.string.recipe_brew), Modifier.padding(start = 8.dp))
+        }
+
+        OutlinedButton(onClick = { onOpenGuide(recipe.id) }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.guide_open))
         }
 
         val exportContext = androidx.compose.ui.platform.LocalContext.current

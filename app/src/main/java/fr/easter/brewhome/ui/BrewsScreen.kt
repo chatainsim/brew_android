@@ -152,6 +152,7 @@ fun BrewDetailScreen(
     brewId: Int?,
     onOpenRecipe: (Int) -> Unit,
     onOpenChecklist: (Int) -> Unit = {},
+    onOpenGuide: (Int) -> Unit = {},
 ) {
     val state by vm.state.collectAsState()
     val brew = state.brews.find { it.id == brewId }
@@ -313,6 +314,10 @@ fun BrewDetailScreen(
                     onClick = { onOpenChecklist(brew.id) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.checklist_open)) }
+                OutlinedButton(
+                    onClick = { onOpenGuide(brew.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.guide_open)) }
                 // Étapes de brassage (checklist) — toujours visible avec bouton +
                 BrewSectionHeader(stringResource(R.string.steps_section)) { showAddStep = true }
                 if (extras.steps.isEmpty()) {

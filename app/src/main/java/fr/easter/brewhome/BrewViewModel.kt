@@ -107,6 +107,7 @@ class BrewViewModel(
     private val vpn: VpnController,
     private val cache: SnapshotCache,
     private val pending: PendingQueue,
+    private val guideStore: fr.easter.brewhome.data.BrewGuideStore,
     private val strings: (Int) -> String,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
@@ -834,6 +835,29 @@ class BrewViewModel(
         }
     }
 
+    // ── Guide de brassage pas à pas ─────────────────────────────────────────
+
+    private val _brewGuideState = MutableStateFlow<fr.easter.brewhome.data.BrewGuideState?>(null)
+    val brewGuideState: StateFlow<fr.easter.brewhome.data.BrewGuideState?> = _brewGuideState
+
+    /** Charge l'état persisté localement d'une session de guide ("recipe_<id>" ou "brew_<id>"). */
+    fun loadBrewGuide(key: String) {
+        viewModelScope.launch {
+            _brewGuideState.value =
+                withContext(io) { guideStore.load(key) } ?: fr.easter.brewhome.data.BrewGuideState()
+        }
+    }
+
+    /** Modifie et persiste (local uniquement, pas de sync serveur) l'état de la session [key]. */
+    fun updateBrewGuide(
+        key: String,
+        update: (fr.easter.brewhome.data.BrewGuideState) -> fr.easter.brewhome.data.BrewGuideState,
+    ) {
+        val next = update(_brewGuideState.value ?: fr.easter.brewhome.data.BrewGuideState())
+        _brewGuideState.value = next
+        viewModelScope.launch { withContext(io) { guideStore.save(key, next) } }
+    }
+
     // ── Historique des mouvements de stock ────────────────────────────────
 
     private val _inventoryHistory = MutableStateFlow<fr.easter.brewhome.data.InventoryHistory?>(null)
@@ -1142,6 +1166,7 @@ class BrewViewModel(
                     vpn = VpnController(settings, VpnController.broadcaster(app)),
                     cache = SnapshotCache(app.filesDir),
                     pending = PendingQueue(app.filesDir),
+                    guideStore = fr.easter.brewhome.data.BrewGuideStore(app.filesDir),
                     strings = app::getString,
                 )
             }
