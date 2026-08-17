@@ -672,6 +672,16 @@ class BrewViewModel(
         }
     }
 
+    private val _reminderDays = MutableStateFlow(45)
+    /** Délai (jours) des rappels J-N (événements perso + journées mondiales), depuis le serveur. */
+    val reminderDays: StateFlow<Int> = _reminderDays
+
+    fun loadReminderDays() {
+        viewModelScope.launch {
+            runCatching { repo.defaultReminderDays() }.getOrNull()?.let { _reminderDays.value = it }
+        }
+    }
+
     private val _aiSuggesting = MutableStateFlow(false)
     /** true pendant l'appel à l'IA (peut durer plusieurs secondes). */
     val aiSuggesting: StateFlow<Boolean> = _aiSuggesting

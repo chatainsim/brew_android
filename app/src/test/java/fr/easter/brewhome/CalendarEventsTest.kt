@@ -99,4 +99,23 @@ class CalendarEventsTest {
         // Samedi précédant le 22 septembre 2026 (mardi) = 19 septembre
         assertEquals(LocalDate.of(2026, 9, 19), days.single { it.label == "Début Oktoberfest" }.date)
     }
+
+    @Test
+    fun `journee mondiale genere un rappel J-N au delai par defaut`() {
+        val events = agenda()
+        val world = events.single { it.type == CalendarEvents.Type.WORLD && it.label == "Début Oktoberfest" }
+        assertEquals(LocalDate.of(2026, 9, 19), world.date)
+        val remind = events.single { it.type == CalendarEvents.Type.REMIND && it.label == "Début Oktoberfest" }
+        assertEquals(LocalDate.of(2026, 8, 5), remind.date) // J-45 (délai par défaut)
+    }
+
+    @Test
+    fun `le delai de rappel des journees mondiales est parametrable`() {
+        val events = CalendarEvents.agenda(
+            today, today.plusDays(180), emptyList(), emptyMap(), emptyList(), emptyList(), emptyList(),
+            defaultReminderDays = 10,
+        )
+        val remind = events.single { it.type == CalendarEvents.Type.REMIND && it.label == "IPA Day" }
+        assertEquals(LocalDate.of(2026, 7, 27), remind.date) // 6 août - 10j
+    }
 }

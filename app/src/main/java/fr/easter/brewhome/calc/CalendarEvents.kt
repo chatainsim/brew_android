@@ -186,9 +186,13 @@ object CalendarEvents {
             }
         }
 
-        // Journées mondiales de la bière
-        (from.year..to.year).forEach { y ->
-            worldBeerDays(y).forEach { add(it) }
+        // Journées mondiales de la bière + rappel J-N (même délai que les
+        // événements personnalisés, configuré côté serveur)
+        (from.year - 1..to.year).forEach { y ->
+            worldBeerDays(y).forEach { ev ->
+                add(ev)
+                add(Event(ev.date.minusDays(defaultReminderDays.toLong()), Type.REMIND, ev.label, "🔔"))
+            }
         }
 
         return out.sortedBy { it.date }

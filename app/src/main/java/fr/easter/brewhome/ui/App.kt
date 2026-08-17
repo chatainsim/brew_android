@@ -144,11 +144,15 @@ fun BrewHomeApp(
     // données ou le réglage changent (dry hop, fin de fermentation…).
     val notifsEnabled by vm.notifsEnabled.collectAsState()
     val customEvents by vm.customEvents.collectAsState()
+    val reminderDays by vm.reminderDays.collectAsState()
     val appContext = LocalContext.current.applicationContext
     LaunchedEffect(notifsEnabled) {
-        if (notifsEnabled) vm.loadCustomEvents()
+        if (notifsEnabled) {
+            vm.loadCustomEvents()
+            vm.loadReminderDays()
+        }
     }
-    LaunchedEffect(notifsEnabled, state.loaded, state.brews, state.beers, state.drafts, customEvents) {
+    LaunchedEffect(notifsEnabled, state.loaded, state.brews, state.beers, state.drafts, customEvents, reminderDays) {
         if (!notifsEnabled) {
             fr.easter.brewhome.notif.BrewReminders.cancelAll(appContext)
             return@LaunchedEffect
@@ -165,6 +169,7 @@ fun BrewHomeApp(
             beers = state.beers,
             drafts = state.drafts,
             customEvents = customEvents ?: emptyList(),
+            defaultReminderDays = reminderDays,
         )
         fr.easter.brewhome.notif.BrewReminders.schedule(
             appContext,

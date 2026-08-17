@@ -442,6 +442,13 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         )
     }
 
+    /** Délai par défaut (jours) des rappels de calendrier, depuis /api/app-settings (clé default_brew_reminder_days). */
+    suspend fun defaultReminderDays(): Int {
+        val settings = api().getAppSettings()
+        return (settings["default_brew_reminder_days"] as? kotlinx.serialization.json.JsonPrimitive)
+            ?.contentOrNull?.toIntOrNull() ?: 45
+    }
+
     suspend fun createRecipe(post: RecipePost): Recipe = api().createRecipe(post)
 
     /** Duplique une recette sous [newName] en préservant tous ses champs. Renvoie le nouvel id. */

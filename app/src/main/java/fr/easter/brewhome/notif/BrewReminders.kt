@@ -32,6 +32,8 @@ object BrewReminders {
         fr.easter.brewhome.calc.CalendarEvents.Type.REMIND,
         fr.easter.brewhome.calc.CalendarEvents.Type.REFERM,
         fr.easter.brewhome.calc.CalendarEvents.Type.CUSTOM,
+        fr.easter.brewhome.calc.CalendarEvents.Type.BREW,
+        fr.easter.brewhome.calc.CalendarEvents.Type.BOTTLE,
     )
 
     private fun typeTitle(type: fr.easter.brewhome.calc.CalendarEvents.Type): String =
@@ -40,6 +42,8 @@ object BrewReminders {
             fr.easter.brewhome.calc.CalendarEvents.Type.DRYHOP -> "Dry hop à ajouter"
             fr.easter.brewhome.calc.CalendarEvents.Type.REMIND -> "Rappel brassage"
             fr.easter.brewhome.calc.CalendarEvents.Type.REFERM -> "Fin de refermentation"
+            fr.easter.brewhome.calc.CalendarEvents.Type.BREW -> "Brassage prévu"
+            fr.easter.brewhome.calc.CalendarEvents.Type.BOTTLE -> "Mise en bouteille prévue"
             else -> "Rappel"
         }
 
