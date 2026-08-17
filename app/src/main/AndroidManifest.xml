@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Notifications locales des échéances de brassage (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Reprogrammer les rappels/alertes après un redémarrage (AlarmManager efface tout au reboot) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Contrôle du tunnel WireGuard (API « remote control » de l'app officielle) -->
     <uses-permission android:name="com.wireguard.android.permission.CONTROL_TUNNELS" />
 
@@ -52,6 +54,15 @@
         <receiver
             android:name=".notif.BrewGuideAlarmReceiver"
             android:exported="false" />
+
+        <!-- Reprogramme rappels et alertes après un redémarrage du téléphone -->
+        <receiver
+            android:name=".notif.BootCompletedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Widget écran d'accueil (cave + prochaine échéance) -->
         <receiver

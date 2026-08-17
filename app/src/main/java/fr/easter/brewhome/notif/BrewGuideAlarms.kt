@@ -9,6 +9,9 @@ import android.content.Intent
 import android.os.Build
 import fr.easter.brewhome.MainActivity
 import fr.easter.brewhome.R
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Alertes du guide de brassage pas à pas (fin d'empâtage/d'ébullition, ajout
@@ -22,6 +25,10 @@ import fr.easter.brewhome.R
  * la bière), mais setAlarmClock() ne demande aucune permission
  * SCHEDULE_EXACT_ALARM — juste une icône réveil dans la barre de statut tant
  * qu'une alarme est programmée, ce qui est un signal utile ici.
+ *
+ * Chaque alarme active est aussi persistée en JSON (titre/texte embarqués,
+ * comme BrewReminders) pour que [rescheduleAfterBoot] puisse la reprogrammer
+ * après un redémarrage, qui efface tout AlarmManager.
  */
 object BrewGuideAlarms {
     const val CHANNEL_ID = "brew_guide"
@@ -34,6 +41,13 @@ object BrewGuideAlarms {
 
     // Grande marge : aucune recette n'a réellement plus de houblons que ça.
     private const val MAX_HOPS = 30
+
+    private const val PREFS = "brew_guide_alarms"
+    private const val KEY_ALARMS = "scheduled_alarms"
+    private val json = Json { ignoreUnknownKeys = true }
+
+    @Serializable
+    private data class PersistedAlarm(val whenMillis: Long, val title: String, val text: String)
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -83,6 +97,10 @@ object BrewGuideAlarms {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         am.setAlarmClock(AlarmManager.AlarmClockInfo(whenMillis, show), pi)
+        savePersisted(
+            context,
+            loadPersisted(context) + (requestCode.toString() to PersistedAlarm(whenMillis, title, text)),
+        )
     }
 
     private fun cancel(context: Context, requestCode: Int) {
@@ -92,6 +110,29 @@ object BrewGuideAlarms {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         am.cancel(pi)
+        savePersisted(context, loadPersisted(context) - requestCode.toString())
+    }
+
+    /**
+     * Reprogramme les alertes persistées lors du dernier [schedule] : à
+     * appeler au démarrage du téléphone (AlarmManager efface tout au reboot).
+     */
+    fun rescheduleAfterBoot(context: Context) {
+        val now = System.currentTimeMillis()
+        val saved = loadPersisted(context)
+        val stillFuture = saved.filterValues { it.whenMillis > now }
+        if (stillFuture.size != saved.size) savePersisted(context, stillFuture)
+        stillFuture.forEach { (code, a) -> schedule(context, code.toInt(), a.whenMillis, a.title, a.text) }
+    }
+
+    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    private fun loadPersisted(context: Context): Map<String, PersistedAlarm> = runCatching {
+        prefs(context).getString(KEY_ALARMS, null)?.let { json.decodeFromString<Map<String, PersistedAlarm>>(it) }
+    }.getOrNull().orEmpty()
+
+    private fun savePersisted(context: Context, alarms: Map<String, PersistedAlarm>) {
+        runCatching { prefs(context).edit().putString(KEY_ALARMS, json.encodeToString(alarms)).apply() }
     }
 
     private fun fireIntent(context: Context, title: String, text: String, code: Int): Intent =

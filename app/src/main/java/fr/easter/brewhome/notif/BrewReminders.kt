@@ -9,19 +9,29 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.content.ContextCompat
 import fr.easter.brewhome.R
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Notifications locales des échéances de brassage. Les rappels sont programmés
  * via AlarmManager avec leur texte embarqué : au déclenchement, aucun accès
  * réseau n'est nécessaire (le serveur peut être hors de portée).
+ *
+ * Un redémarrage du téléphone efface toutes les alarmes programmées ; la
+ * liste servie à [schedule] est donc aussi persistée en JSON pour que
+ * [rescheduleAfterBoot] puisse les reprogrammer sans réseau ni recalcul.
  */
 object BrewReminders {
     const val CHANNEL_ID = "brew_reminders"
     private const val PREFS = "brew_reminders"
     private const val KEY_CODES = "scheduled_codes"
+    private const val KEY_REMINDERS = "scheduled_reminders"
     private const val BASE_CODE = 20_000
+    private val json = Json { ignoreUnknownKeys = true }
 
     /** Un rappel à programmer : quand (epoch ms), et quoi afficher. */
+    @Serializable
     data class Reminder(val whenMillis: Long, val title: String, val text: String)
 
     // Types d'événements qui méritent une notification (les autres sont
@@ -87,8 +97,9 @@ object BrewReminders {
         ensureChannel(context)
         val am = context.getSystemService(AlarmManager::class.java) ?: return
         val now = System.currentTimeMillis()
+        val future = reminders.filter { it.whenMillis > now }
         val codes = mutableListOf<Int>()
-        reminders.filter { it.whenMillis > now }.forEachIndexed { i, r ->
+        future.forEachIndexed { i, r ->
             val code = BASE_CODE + i
             val pi = PendingIntent.getBroadcast(
                 context, code, fireIntent(context, r.title, r.text, code),
@@ -98,7 +109,10 @@ object BrewReminders {
             am.set(AlarmManager.RTC_WAKEUP, r.whenMillis, pi)
             codes += code
         }
-        prefs(context).edit().putString(KEY_CODES, codes.joinToString(",")).apply()
+        prefs(context).edit()
+            .putString(KEY_CODES, codes.joinToString(","))
+            .putString(KEY_REMINDERS, runCatching { json.encodeToString(future) }.getOrDefault("[]"))
+            .apply()
     }
 
     /** Annule tous les rappels précédemment programmés. */
@@ -111,7 +125,20 @@ object BrewReminders {
             )
             am.cancel(pi)
         }
-        prefs(context).edit().remove(KEY_CODES).apply()
+        prefs(context).edit().remove(KEY_CODES).remove(KEY_REMINDERS).apply()
+    }
+
+    /**
+     * Reprogramme les rappels persistés lors du dernier [schedule] : à appeler
+     * au démarrage du téléphone (AlarmManager efface tout au reboot), sans
+     * réseau ni recalcul de l'agenda.
+     */
+    fun rescheduleAfterBoot(context: Context) {
+        if (!hasPermission(context)) return
+        val saved = runCatching {
+            prefs(context).getString(KEY_REMINDERS, null)?.let { json.decodeFromString<List<Reminder>>(it) }
+        }.getOrNull() ?: return
+        schedule(context, saved)
     }
 
     private fun fireIntent(context: Context, title: String, text: String, code: Int): Intent =
