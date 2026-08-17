@@ -25,6 +25,13 @@ class MainActivity : ComponentActivity() {
         "fr.easter.brewhome.SHORTCUT_SHOPPING" -> "shopping"
         "fr.easter.brewhome.SHORTCUT_INVENTORY" -> "inventory"
         "fr.easter.brewhome.SHORTCUT_STATS" -> "stats"
+        "fr.easter.brewhome.SHORTCUT_BREWS" -> "brews"
+        "fr.easter.brewhome.SHORTCUT_RECIPES" -> "recipes"
+        // Widgets écran d'accueil : tap sur une ligne précise
+        "fr.easter.brewhome.OPEN_BREW" ->
+            intent.getIntExtra("id", -1).takeIf { it >= 0 }?.let { "brew/$it" }
+        "fr.easter.brewhome.OPEN_RECIPE" ->
+            intent.getIntExtra("id", -1).takeIf { it >= 0 }?.let { "recipe/$it" }
         else -> null
     }
 

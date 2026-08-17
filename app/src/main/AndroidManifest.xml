@@ -67,13 +67,53 @@
         <!-- Widget écran d'accueil (cave + prochaine échéance) -->
         <receiver
             android:name=".widget.BrewWidgetReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_label_home">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/brew_widget_info" />
+        </receiver>
+
+        <!-- Widget écran d'accueil : brassins en cours -->
+        <receiver
+            android:name=".widget.ActiveBrewsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/dash_active_brews">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/active_brews_widget_info" />
+        </receiver>
+
+        <!-- Widget écran d'accueil : accès rapide aux recettes -->
+        <receiver
+            android:name=".widget.RecipesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/tab_recipes">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/recipes_widget_info" />
+        </receiver>
+
+        <!-- Widget écran d'accueil : liste de courses cochable -->
+        <receiver
+            android:name=".widget.ShoppingWidgetReceiver"
+            android:exported="true"
+            android:label="@string/title_shopping">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/shopping_widget_info" />
         </receiver>
     </application>
 </manifest>

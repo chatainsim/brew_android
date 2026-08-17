@@ -6,6 +6,7 @@
     <string name="dash_active_brews">Brassins en cours</string>
     <string name="dash_upcoming">Prochaines échéances</string>
     <string name="dash_low_stock">Stock bas</string>
+    <string name="widget_label_home">Cave &amp; échéances</string>
 
     <!-- Onglets -->
     <string name="tab_home">Accueil</string>

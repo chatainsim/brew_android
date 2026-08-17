@@ -177,12 +177,13 @@ fun BrewHomeApp(
         )
     }
 
-    // Rafraîchir le widget écran d'accueil quand de nouvelles données arrivent
+    // Rafraîchir les widgets écran d'accueil quand de nouvelles données arrivent
     LaunchedEffect(state.dataAt) {
         if (state.dataAt != null) {
-            runCatching {
-                fr.easter.brewhome.widget.BrewWidget().updateAll(appContext)
-            }
+            runCatching { fr.easter.brewhome.widget.BrewWidget().updateAll(appContext) }
+            runCatching { fr.easter.brewhome.widget.ActiveBrewsWidget().updateAll(appContext) }
+            runCatching { fr.easter.brewhome.widget.RecipesWidget().updateAll(appContext) }
+            runCatching { fr.easter.brewhome.widget.ShoppingWidget().updateAll(appContext) }
         }
     }
 
