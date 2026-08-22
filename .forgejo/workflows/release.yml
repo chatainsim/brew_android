@@ -58,8 +58,15 @@ jobs:
           TOOLCHAIN="${ANDROID_TOOLCHAIN:-$HOME/android-toolchain}"
           export JAVA_HOME="$TOOLCHAIN/jdk-17.0.11+9"
           echo "sdk.dir=$TOOLCHAIN/sdk" > local.properties
-          # Release = build minifié R8, signé avec la clé BrewHome (secrets)
-          "$TOOLCHAIN/gradle-8.14.3/bin/gradle" -q assembleRelease testDebugUnitTest
+          # Release = build minifié R8, signé avec la clé BrewHome (secrets).
+          # Plafonds mémoire portés ici (GRADLE_OPTS + --no-daemon → le build
+          # tourne dans cette JVM bornée ; Kotlin en in-process pour éviter un
+          # daemon Kotlin non borné) : réglages propres à ce build, sans toucher
+          # à la config Gradle globale du runner partagée avec les autres repos.
+          export GRADLE_OPTS="-Xmx2048m -XX:MaxMetaspaceSize=512m"
+          "$TOOLCHAIN/gradle-8.14.3/bin/gradle" --no-daemon -q \
+            -Pkotlin.compiler.execution.strategy=in-process \
+            assembleRelease testDebugUnitTest
           test -f app/build/outputs/apk/release/app-release.apk
 
           # ── Release Gitea (tags sans préfixe « v », convention existante) ──
