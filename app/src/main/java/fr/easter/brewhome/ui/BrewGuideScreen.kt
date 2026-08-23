@@ -108,6 +108,37 @@ fun BrewGuideScreen(
             3 -> GuideBoilStep(recipe, g, context, now, ::update)
             else -> GuidePitchStep(recipe, g.checkedItems, onOpenPriming) { key -> update { it.toggle(key) } }
         }
+        GuideStepFooter(
+            step = g.step,
+            totalSteps = stepTitleRes.size,
+            onBack = { update { it.copy(step = it.step - 1) } },
+            onNext = { update { it.copy(step = it.step + 1) } },
+        )
+    }
+}
+
+@Composable
+private fun GuideStepFooter(step: Int, totalSteps: Int, onBack: () -> Unit, onNext: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (step > 0) {
+            OutlinedButton(onClick = onBack) { Text(stringResource(R.string.guide_step_back)) }
+        } else {
+            Spacer(Modifier)
+        }
+        Text(
+            stringResource(R.string.guide_step_counter, step + 1, totalSteps),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        if (step < totalSteps - 1) {
+            Button(onClick = onNext) { Text(stringResource(R.string.guide_step_next)) }
+        } else {
+            Spacer(Modifier)
+        }
     }
 }
 
@@ -129,7 +160,7 @@ private fun GuideStepBar(step: Int, onStepClick: (Int) -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (i == step) FontWeight.Bold else FontWeight.Normal,
                     color = if (i <= step) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.clickable(enabled = i <= step) { onStepClick(i) },
+                    modifier = Modifier.clickable { onStepClick(i) },
                 )
             }
         }

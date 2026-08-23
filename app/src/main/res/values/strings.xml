@@ -345,6 +345,9 @@
     <string name="guide_hop_added">Ajouté</string>
     <string name="guide_ferm_temp_target">Température de fermentation cible</string>
     <string name="guide_priming_link">Calculateur de primage</string>
+    <string name="guide_step_back">Retour</string>
+    <string name="guide_step_next">Suivant</string>
+    <string name="guide_step_counter">%1$d / %2$d</string>
     <string name="notif_guide_channel_name">Guide de brassage</string>
     <string name="notif_guide_channel_desc">Fin d\'empâtage/d\'ébullition, ajout d\'un houblon</string>
     <string name="guide_notif_mash_done_title">Empâtage terminé</string>
