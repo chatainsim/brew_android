@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -26,6 +27,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import fr.easter.brewhome.MainActivity
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.SnapshotCache
 import kotlinx.coroutines.Dispatchers
@@ -49,8 +51,8 @@ class RecipesWidget : GlanceAppWidget() {
                 .padding(vertical = 10.dp, horizontal = 14.dp),
         ) {
             Text(
-                "Recettes",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                "📖 Recettes",
+                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 18.sp),
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .clickable(actionStartActivity(openRoute(context, "fr.easter.brewhome.SHORTCUT_RECIPES"))),
@@ -58,11 +60,11 @@ class RecipesWidget : GlanceAppWidget() {
             if (rows.isEmpty()) {
                 Text(
                     "Aucune recette",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                    modifier = GlanceModifier.padding(top = 8.dp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                    modifier = GlanceModifier.padding(top = 10.dp),
                 )
             } else {
-                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 4.dp)) {
+                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 6.dp)) {
                     items(rows, itemId = { it.id.toLong() }) { row -> RecipeRowContent(context, row) }
                 }
             }
@@ -74,7 +76,9 @@ class RecipesWidget : GlanceAppWidget() {
         Column(
             GlanceModifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
+                .padding(vertical = 4.dp)
+                .background(ImageProvider(R.drawable.widget_row_bg))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .clickable(
                     actionStartActivity(
                         openRoute(context, "fr.easter.brewhome.OPEN_RECIPE").putExtra("id", row.id),
@@ -83,11 +87,12 @@ class RecipesWidget : GlanceAppWidget() {
         ) {
             Text(
                 row.name,
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp),
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp),
             )
             Text(
                 row.subtitle,
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                modifier = GlanceModifier.padding(top = 2.dp),
             )
         }
     }

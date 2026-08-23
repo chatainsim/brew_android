@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
@@ -31,6 +32,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import fr.easter.brewhome.MainActivity
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.ApiClient
 import fr.easter.brewhome.data.SettingsRepository
 import fr.easter.brewhome.data.ShoppingItem
@@ -58,8 +60,8 @@ class ShoppingWidget : GlanceAppWidget() {
                 .padding(vertical = 10.dp, horizontal = 14.dp),
         ) {
             Text(
-                "Liste de courses",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                "🛒 Liste de courses",
+                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 18.sp),
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .clickable(actionStartActivity(openRoute(context, "fr.easter.brewhome.SHORTCUT_SHOPPING"))),
@@ -67,18 +69,18 @@ class ShoppingWidget : GlanceAppWidget() {
             if (data.rows.isEmpty()) {
                 Text(
                     "Liste de courses vide 🎉",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                    modifier = GlanceModifier.padding(top = 8.dp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                    modifier = GlanceModifier.padding(top = 10.dp),
                 )
             } else {
-                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 4.dp)) {
+                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 6.dp)) {
                     items(data.rows, itemId = { it.id.toLong() }) { row -> ShoppingRowContent(row) }
                     if (data.moreCount > 0) {
                         item {
                             Text(
                                 "+${data.moreCount} autres",
-                                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
-                                modifier = GlanceModifier.padding(top = 4.dp),
+                                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                                modifier = GlanceModifier.padding(top = 4.dp, start = 12.dp),
                             )
                         }
                     }
@@ -95,8 +97,12 @@ class ShoppingWidget : GlanceAppWidget() {
                 actionParametersOf(ToggleShoppingItemAction.itemIdKey to row.id),
             ),
             text = row.label,
-            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 13.sp),
-            modifier = GlanceModifier.fillMaxWidth().padding(vertical = 3.dp),
+            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 15.sp),
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .padding(vertical = 3.dp)
+                .background(ImageProvider(R.drawable.widget_row_bg))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         )
     }
 }

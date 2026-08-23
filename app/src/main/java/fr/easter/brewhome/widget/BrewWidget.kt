@@ -13,8 +13,12 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -43,31 +47,31 @@ class BrewWidget : GlanceAppWidget() {
     private fun WidgetContent(data: WidgetData) {
         val amber = ColorProvider(Color(0xFFB86E00))
         val ctx = LocalContext.current
-        Column(
+        Box(
             GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .padding(14.dp)
                 .clickable(actionStartActivity(Intent(ctx, MainActivity::class.java))),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(
-                "BrewHome",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 15.sp),
-            )
-            Text(
-                data.cave,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                ),
-                modifier = GlanceModifier.padding(top = 4.dp),
-            )
-            Text(
-                data.next,
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                modifier = GlanceModifier.padding(top = 6.dp),
-            )
+            Row(GlanceModifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+                Text("🍺", style = TextStyle(fontSize = 30.sp))
+                Column(GlanceModifier.padding(start = 10.dp)) {
+                    Text(
+                        data.caveLiters,
+                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 26.sp),
+                    )
+                    Text(
+                        "en cave",
+                        style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                    )
+                    Text(
+                        data.next,
+                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                        modifier = GlanceModifier.padding(top = 4.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -76,7 +80,7 @@ class BrewWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BrewWidget()
 }
 
-private data class WidgetData(val cave: String, val next: String)
+private data class WidgetData(val caveLiters: String, val next: String)
 
 private fun computeWidgetData(context: Context): WidgetData {
     val cached = SnapshotCache(context.filesDir).load()
@@ -87,7 +91,7 @@ private fun computeWidgetData(context: Context): WidgetData {
     val n75 = beers.sumOf { it.stock75 ?: 0 }
     val keg = beers.sumOf { it.kegLiters ?: 0.0 }
     val caveL = n33 * 0.33 + n75 * 0.75 + keg
-    val cave = "${(kotlin.math.round(caveL * 10) / 10)} L en cave"
+    val cave = "${(kotlin.math.round(caveL * 10) / 10)} L"
 
     val today = LocalDate.now()
     val ev = CalendarEvents.agenda(

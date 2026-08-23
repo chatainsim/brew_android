@@ -6,9 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -18,7 +20,9 @@ import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -27,6 +31,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import fr.easter.brewhome.MainActivity
+import fr.easter.brewhome.R
 import fr.easter.brewhome.data.Brew
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.ui.brewStatusLabel
@@ -53,8 +58,8 @@ class ActiveBrewsWidget : GlanceAppWidget() {
                 .padding(vertical = 10.dp, horizontal = 14.dp),
         ) {
             Text(
-                "Brassins en cours",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                "🧪 Brassins en cours",
+                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 18.sp),
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .clickable(actionStartActivity(openRoute(context, "fr.easter.brewhome.SHORTCUT_BREWS"))),
@@ -62,11 +67,11 @@ class ActiveBrewsWidget : GlanceAppWidget() {
             if (rows.isEmpty()) {
                 Text(
                     "Aucun brassin en cours",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                    modifier = GlanceModifier.padding(top = 8.dp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                    modifier = GlanceModifier.padding(top = 10.dp),
                 )
             } else {
-                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 4.dp)) {
+                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 6.dp)) {
                     items(rows, itemId = { it.id.toLong() }) { row -> BrewRowContent(context, row) }
                 }
             }
@@ -75,23 +80,36 @@ class ActiveBrewsWidget : GlanceAppWidget() {
 
     @Composable
     private fun BrewRowContent(context: Context, row: BrewRow) {
-        Column(
+        Row(
             GlanceModifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
+                .padding(vertical = 4.dp)
+                .background(ImageProvider(R.drawable.widget_row_bg))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .clickable(
                     actionStartActivity(
                         openRoute(context, "fr.easter.brewhome.OPEN_BREW").putExtra("id", row.id),
                     ),
                 ),
+            verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
+            Column(GlanceModifier.defaultWeight()) {
+                Text(
+                    row.name,
+                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                )
+                Text(
+                    row.dayLabel,
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                    modifier = GlanceModifier.padding(top = 2.dp),
+                )
+            }
             Text(
-                row.name,
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp),
-            )
-            Text(
-                "${row.statusLabel} · ${row.dayLabel}",
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+                row.statusLabel,
+                style = TextStyle(color = ColorProvider(Color.White), fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                modifier = GlanceModifier
+                    .background(ImageProvider(R.drawable.widget_chip_bg), colorFilter = ColorFilter.tint(ColorProvider(statusChipColor(row.status))))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
             )
         }
     }
@@ -104,7 +122,13 @@ class ActiveBrewsWidgetReceiver : GlanceAppWidgetReceiver() {
 private fun openRoute(context: Context, action: String): Intent =
     Intent(context, MainActivity::class.java).setAction(action)
 
-private data class BrewRow(val id: Int, val name: String, val statusLabel: String, val dayLabel: String)
+/** Couleur de la pastille de statut (teinte appliquée à widget_chip_bg via ColorFilter). */
+private fun statusChipColor(status: String): Color = when (status) {
+    "fermenting" -> Color(0xFF2E7D5B)
+    else -> Color(0xFFB86E00)
+}
+
+private data class BrewRow(val id: Int, val name: String, val status: String, val statusLabel: String, val dayLabel: String)
 
 private val activeStatuses = setOf("in_progress", "fermenting")
 
@@ -114,7 +138,7 @@ private fun computeActiveBrewsData(context: Context): List<BrewRow> {
     return cached.snapshot.brews
         .filter { (it.archived ?: 0) == 0 && it.status in activeStatuses }
         .sortedBy { it.brewDate ?: "" }
-        .map { b -> BrewRow(b.id, b.name, brewStatusLabel(b.status), dayLabelOf(b, today)) }
+        .map { b -> BrewRow(b.id, b.name, b.status ?: "", brewStatusLabel(b.status), dayLabelOf(b, today)) }
 }
 
 private fun dayLabelOf(b: Brew, today: LocalDate): String {
