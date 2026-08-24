@@ -54,21 +54,21 @@ class BrewWidget : GlanceAppWidget() {
                 .clickable(actionStartActivity(Intent(ctx, MainActivity::class.java))),
             contentAlignment = Alignment.Center,
         ) {
-            Row(GlanceModifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Text("🍺", style = TextStyle(fontSize = 30.sp))
-                Column(GlanceModifier.padding(start = 10.dp)) {
+            Row(GlanceModifier.padding(14.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
+                Text("🍺", style = TextStyle(fontSize = 40.sp))
+                Column(GlanceModifier.padding(start = 12.dp)) {
                     Text(
                         data.caveLiters,
-                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 26.sp),
+                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 34.sp),
                     )
                     Text(
                         "en cave",
-                        style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 13.sp),
+                        style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 16.sp),
                     )
                     Text(
                         data.next,
-                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                        modifier = GlanceModifier.padding(top = 4.dp),
+                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                        modifier = GlanceModifier.padding(top = 5.dp),
                     )
                 }
             }
