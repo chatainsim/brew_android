@@ -107,13 +107,13 @@ private fun openRoute(context: Context, action: String): Intent =
 
 private data class RecipeRow(val id: Int, val name: String, val subtitle: String)
 
-private const val MAX_RECIPES = 6
+private const val MAX_RECIPES = 5
 
-/** Meilleures notes d'abord (non notées en dernier), puis les plus récemment créées (id décroissant). */
+/** Les plus récemment créées (id décroissant), sans tri par note. */
 private fun computeRecipesData(context: Context): List<RecipeRow> {
     val cached = SnapshotCache(context.filesDir).load() ?: return emptyList()
     return cached.snapshot.recipes
-        .sortedWith(compareByDescending<Recipe> { it.rating ?: -1 }.thenByDescending { it.id })
+        .sortedByDescending { it.id }
         .take(MAX_RECIPES)
         .map { r -> RecipeRow(r.id, r.name, subtitleOf(r)) }
 }
