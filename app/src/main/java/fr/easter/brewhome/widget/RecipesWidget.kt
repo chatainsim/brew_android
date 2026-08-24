@@ -52,7 +52,7 @@ class RecipesWidget : GlanceAppWidget() {
         ) {
             Text(
                 "📖 Recettes",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 21.sp),
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .clickable(actionStartActivity(openRoute(context, "fr.easter.brewhome.SHORTCUT_RECIPES"))),
@@ -60,7 +60,7 @@ class RecipesWidget : GlanceAppWidget() {
             if (rows.isEmpty()) {
                 Text(
                     "Aucune recette",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 17.sp),
                     modifier = GlanceModifier.padding(top = 10.dp),
                 )
             } else {
@@ -87,11 +87,11 @@ class RecipesWidget : GlanceAppWidget() {
         ) {
             Text(
                 row.name,
-                style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 19.sp),
             )
             Text(
                 row.subtitle,
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
                 modifier = GlanceModifier.padding(top = 2.dp),
             )
         }
