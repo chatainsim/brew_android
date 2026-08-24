@@ -55,19 +55,19 @@ class BrewWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center,
         ) {
             Row(GlanceModifier.padding(14.dp), verticalAlignment = Alignment.Vertical.CenterVertically) {
-                Text("🍺", style = TextStyle(fontSize = 40.sp))
+                Text("🍺", style = TextStyle(fontSize = 48.sp))
                 Column(GlanceModifier.padding(start = 12.dp)) {
                     Text(
                         data.caveLiters,
-                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 34.sp),
+                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 42.sp),
                     )
                     Text(
                         "en cave",
-                        style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                        style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 19.sp),
                     )
                     Text(
                         data.next,
-                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                        style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 17.sp),
                         modifier = GlanceModifier.padding(top = 5.dp),
                     )
                 }
