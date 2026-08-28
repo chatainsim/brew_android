@@ -62,7 +62,13 @@ jobs:
           set -euo pipefail
           VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "Version : $VERSION (commit ${GITHUB_SHA})"
-          ASSET="app/build/outputs/apk/release/app-release.apk#BrewHome-$VERSION.apk"
+          # "gh release upload/create fichier#label" ne renomme PAS l'asset sur
+          # GitHub (le nom réel reste le nom du fichier local, #label n'est
+          # qu'un libellé d'affichage à côté) - copier sous le bon nom avant
+          # plutôt que de compter sur cette syntaxe, sinon on se retrouve avec
+          # un doublon (app-release.apk + BrewHome-X.Y.apk pour le même binaire).
+          ASSET="BrewHome-$VERSION.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$ASSET"
           if gh release view "$VERSION" >/dev/null 2>&1; then
             echo "Release $VERSION existante : remplacement de l'APK"
             gh release upload "$VERSION" "$ASSET" --clobber
