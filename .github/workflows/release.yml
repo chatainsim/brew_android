@@ -21,6 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historique + tags complets : le changelog (ci-dessous) diffe depuis
+          # le tag de la version précédente, le fetch-depth par défaut (1) n'en
+          # contiendrait aucun.
+          fetch-depth: 0
 
       - name: JDK 17
         uses: actions/setup-java@v4
@@ -62,6 +67,26 @@ jobs:
           set -euo pipefail
           VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "Version : $VERSION (commit ${GITHUB_SHA})"
+
+          # ── Changelog : résumé des commits depuis la version précédente ──
+          # git describe (et non un tri par nom de tag) : le tag ANCÊTRE le plus
+          # proche de HEAD, correct même si des tags existent ailleurs dans
+          # l'historique. Repli sur le seul commit courant si aucun tag
+          # antérieur n'est trouvable (ex. toute 1re release).
+          PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null || true)
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty='format:- %s' "${PREV_TAG}..HEAD")
+          else
+            CHANGELOG=$(git log --pretty='format:- %s' -1 HEAD)
+          fi
+          NOTES_FILE="$(mktemp)"
+          {
+            echo "APK compilé par GitHub Actions (commit ${GITHUB_SHA})."
+            echo
+            echo "Changements :"
+            echo "$CHANGELOG"
+          } > "$NOTES_FILE"
+
           # "gh release upload/create fichier#label" ne renomme PAS l'asset sur
           # GitHub (le nom réel reste le nom du fichier local, #label n'est
           # qu'un libellé d'affichage à côté) - copier sous le bon nom avant
@@ -70,11 +95,12 @@ jobs:
           ASSET="BrewHome-$VERSION.apk"
           cp app/build/outputs/apk/release/app-release.apk "$ASSET"
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            echo "Release $VERSION existante : remplacement de l'APK"
+            echo "Release $VERSION existante : mise à jour du changelog + remplacement de l'APK"
+            gh release edit "$VERSION" --notes-file "$NOTES_FILE"
             gh release upload "$VERSION" "$ASSET" --clobber
           else
             gh release create "$VERSION" "$ASSET" \
               --title "BrewHome Android $VERSION" \
-              --notes "APK compilé par GitHub Actions (commit ${GITHUB_SHA})."
+              --notes-file "$NOTES_FILE"
             echo "Release $VERSION créée"
           fi

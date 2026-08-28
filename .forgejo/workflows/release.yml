@@ -43,9 +43,25 @@ jobs:
             "http://oauth2:${TOKEN}@${HOST_PATH}/${GITHUB_REPOSITORY}.git" src
           cd src
           git checkout "${GITHUB_SHA}" || echo "SHA hors de la fenêtre de clone, build du tip de ${GITHUB_REF_NAME}"
+          # Historique complet : le clone --depth 20 peut ne pas remonter jusqu'au
+          # tag de la version précédente (changelog ci-dessous a besoin de tags
+          # antérieurs, pas seulement des commits récents).
+          git fetch --unshallow --tags --quiet 2>/dev/null || git fetch --tags --quiet || true
 
           VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "Version : $VERSION (commit $(git rev-parse --short HEAD))"
+
+          # ── Changelog : résumé des commits depuis la version précédente ──
+          # git describe (et non un tri par nom de tag) : le tag ANCÊTRE le plus
+          # proche de HEAD, correct même si des tags existent ailleurs dans
+          # l'historique. Repli sur le seul commit courant si aucun tag
+          # antérieur n'est trouvable (ex. toute 1re release).
+          PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_SHA}^" 2>/dev/null || true)
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log --pretty='format:- %s' "${PREV_TAG}..HEAD")
+          else
+            CHANGELOG=$(git log --pretty='format:- %s' -1 HEAD)
+          fi
 
           # ── Clé de signature depuis les secrets (indépendant de ~/.gradle) ──
           # Décodée dans le clone éphémère ; ORG_GRADLE_PROJECT_* fournit le reste
@@ -70,18 +86,25 @@ jobs:
           test -f app/build/outputs/apk/release/app-release.apk
 
           # ── Release Gitea (tags sans préfixe « v », convention existante) ──
+          # JSON construit via python3 (échappement sûr : sauts de ligne, guillemets
+          # droits dans un message de commit, etc. - plus fiable qu'une interpolation
+          # de chaîne à la main pour un corps de release multi-lignes).
+          PAYLOAD=$(python3 -c "import json,sys; tag,sha,changelog=sys.argv[1],sys.argv[2],sys.argv[3]; body='APK compilé par la CI (commit %s).\n\nChangements :\n%s' % (sha, changelog); print(json.dumps({'tag_name':tag,'name':'BrewHome Android '+tag,'body':body,'target_commitish':sha}))" \
+            "$VERSION" "$GITHUB_SHA" "$CHANGELOG")
+
           REL_ID=$(curl -s -H "$AUTH" "$API/releases/tags/$VERSION" \
                    | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
 
           if [ -z "$REL_ID" ]; then
             REL_ID=$(curl -sf -X POST -H "$AUTH" -H 'Content-Type: application/json' \
-              -d "{\"tag_name\":\"$VERSION\",\"name\":\"BrewHome Android $VERSION\",
-                   \"body\":\"APK compilé par la CI (commit ${GITHUB_SHA})\",
-                   \"target_commitish\":\"${GITHUB_SHA}\"}" \
+              -d "$PAYLOAD" \
               "$API/releases" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
             echo "Release $VERSION créée (id $REL_ID)"
           else
-            echo "Release $VERSION existante (id $REL_ID) : remplacement de l'APK"
+            echo "Release $VERSION existante (id $REL_ID) : mise à jour du changelog + remplacement de l'APK"
+            curl -sf -X PATCH -H "$AUTH" -H 'Content-Type: application/json' \
+              -d "$PAYLOAD" \
+              "$API/releases/$REL_ID" >/dev/null
             for AID in $(curl -s -H "$AUTH" "$API/releases/$REL_ID/assets" \
                 | python3 -c "import json,sys; [print(a['id']) for a in json.load(sys.stdin) if a['name'].endswith('.apk')]"); do
               curl -sf -X DELETE -H "$AUTH" "$API/releases/$REL_ID/assets/$AID"
