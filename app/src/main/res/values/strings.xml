@@ -384,6 +384,8 @@
     <string name="settings_vpn_tunnel_label">Nom du tunnel WireGuard</string>
     <string name="settings_vpn_tunnel_placeholder">maison</string>
     <string name="settings_version">BrewHome Android %1$s</string>
+    <string name="settings_update_available">🎉 Mise à jour disponible : version %1$s</string>
+    <string name="settings_update_button">Voir sur GitHub</string>
 
     <!-- Cave -->
     <string name="beers_empty">Aucune bière en cave.</string>

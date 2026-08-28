@@ -1,6 +1,8 @@
 package fr.easter.brewhome.ui
 
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.data.UpdateChecker
+import fr.easter.brewhome.data.UpdateStatus
 import fr.easter.brewhome.data.VpnController
 
 private const val WG_PERMISSION = "${VpnController.WIREGUARD_PACKAGE}.permission.CONTROL_TUNNELS"
@@ -296,5 +300,32 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        // Vérification silencieuse à l'ouverture de l'écran - un échec réseau
+        // (pas de connexion, GitHub injoignable) ne montre juste rien, ne
+        // bloque jamais le reste des réglages.
+        var updateStatus by remember { mutableStateOf<UpdateStatus?>(null) }
+        LaunchedEffect(version) {
+            if (version != "?") {
+                updateStatus = UpdateChecker.check(version)
+            }
+        }
+        val update = updateStatus
+        if (update != null && update.updateAvailable) {
+            Text(
+                stringResource(R.string.settings_update_available, update.latestVersion ?: "?"),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = {
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.releaseUrl))) }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_update_button))
+            }
+        }
     }
 }
