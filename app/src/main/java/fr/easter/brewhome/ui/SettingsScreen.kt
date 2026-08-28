@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.data.ApiClient
 import fr.easter.brewhome.data.UpdateChecker
 import fr.easter.brewhome.data.UpdateStatus
 import fr.easter.brewhome.data.VpnController
@@ -53,6 +54,7 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
     val serverUrl by vm.serverUrl.collectAsState()
     var url by remember(serverUrl) { mutableStateOf(serverUrl ?: "") }
     val themeMode by vm.themeMode.collectAsState()
+    val context = LocalContext.current
 
     Column(
         Modifier
@@ -90,6 +92,25 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
+        }
+
+        // La synchro vitrine (GitHub Pages) elle-même reste 100% navigateur
+        // (pushVitrine() dans script_ui.html génère les pages et pousse les
+        // fichiers depuis le JS de l'onglet ouvert - pas d'endpoint serveur
+        // équivalent à appeler directement depuis l'app). Ce bouton ouvre donc
+        // le navigateur directement sur l'onglet GitHub des Réglages web
+        // (deep-link /#settings-github côté serveur) plutôt que de dupliquer
+        // cette logique en Kotlin.
+        if (!serverUrl.isNullOrBlank()) {
+            Button(
+                onClick = {
+                    val target = ApiClient.normalizeUrl(serverUrl ?: "") + "#settings-github"
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(target))) }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_sync_cave_github))
+            }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -177,7 +198,6 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         val wgAuto by vm.wgAuto.collectAsState()
         val wgTunnel by vm.wgTunnel.collectAsState()
         var tunnel by remember(wgTunnel) { mutableStateOf(wgTunnel) }
-        val context = LocalContext.current
         val permissionLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission(),
         ) { granted -> vm.setWgAuto(granted) }

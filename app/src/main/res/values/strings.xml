@@ -259,6 +259,7 @@
     <string name="settings_server_placeholder">http://192.168.1.50:5000</string>
     <string name="settings_save_connect">Enregistrer et se connecter</string>
     <string name="settings_last_sync">Données synchronisées le %1$s</string>
+    <string name="settings_sync_cave_github">🐙 Synchroniser la cave (GitHub)</string>
     <string name="settings_costs_title">Coûts d\'estimation</string>
     <string name="settings_costs_help">Coûts fixes par brassin et formule IBU, utilisés dans l\'estimation de prix des recettes.</string>
     <string name="settings_cost_gas">Gaz par brassin (€)</string>
