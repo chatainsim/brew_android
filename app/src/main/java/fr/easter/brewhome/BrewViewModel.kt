@@ -44,6 +44,8 @@ import fr.easter.brewhome.data.PendingQueue
 import fr.easter.brewhome.data.PendingStockOp
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.data.TastingPut
+import fr.easter.brewhome.data.UpdateChecker
+import fr.easter.brewhome.data.UpdateStatus
 import fr.easter.brewhome.data.VpnController
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -109,11 +111,29 @@ class BrewViewModel(
     private val pending: PendingQueue,
     private val guideStore: fr.easter.brewhome.data.BrewGuideStore,
     private val strings: (Int) -> String,
+    /** versionName local (ex. "1.81") ; "?" si illisible (repli des tests JVM). */
+    private val currentVersion: String = "?",
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val repo = BrewhomeRepository(apiProvider)
     private val draftsRepo = DraftsRepository(apiProvider)
     private val shoppingRepo = ShoppingRepository(apiProvider)
+
+    // ── Mise à jour disponible ───────────────────────────────────────────
+    // Un seul appel réseau au démarrage de l'app (pas seulement à l'ouverture
+    // des Réglages, comme avant) : l'état est partagé ici pour qu'un badge
+    // puisse s'afficher sur l'icône Réglages de la barre du haut, visible sur
+    // tous les écrans - jusqu'ici il fallait ouvrir les Réglages pour savoir
+    // qu'une mise à jour existait. Échec silencieux (pas de connexion...) :
+    // voir UpdateChecker.check(), ne lève jamais.
+    private val _updateStatus = MutableStateFlow<UpdateStatus?>(null)
+    val updateStatus: StateFlow<UpdateStatus?> = _updateStatus
+
+    init {
+        if (currentVersion != "?") {
+            viewModelScope.launch { _updateStatus.value = UpdateChecker.check(currentVersion) }
+        }
+    }
 
     // ── Réglages ──────────────────────────────────────────────────────────
 
@@ -1170,6 +1190,9 @@ class BrewViewModel(
             initializer {
                 val app = checkNotNull(this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY])
                 val settings = SettingsRepository(app)
+                val version = runCatching {
+                    app.packageManager.getPackageInfo(app.packageName, 0).versionName
+                }.getOrNull() ?: "?"
                 BrewViewModel(
                     settings = settings,
                     apiProvider = { ApiClient.api(settings.serverUrl.first()) },
@@ -1178,6 +1201,7 @@ class BrewViewModel(
                     pending = PendingQueue(app.filesDir),
                     guideStore = fr.easter.brewhome.data.BrewGuideStore(app.filesDir),
                     strings = app::getString,
+                    currentVersion = version,
                 )
             }
         }

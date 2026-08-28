@@ -138,6 +138,7 @@
     <string name="cd_share_inventory">Partager le stock</string>
     <string name="cd_edit_draft">Modifier le brouillon</string>
     <string name="cd_open_vitrine">Ouvrir la vitrine de la cave</string>
+    <string name="cd_settings_update_available">Réglages — mise à jour disponible</string>
     <string name="share_subject_recipe">Recette %1$s</string>
     <string name="share_subject_draft">Brouillon %1$s</string>
     <string name="share_subject_inventory">Stock d\'ingrédients de brasserie</string>

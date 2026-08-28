@@ -28,8 +28,6 @@ import androidx.core.content.ContextCompat
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
 import fr.easter.brewhome.data.ApiClient
-import fr.easter.brewhome.data.UpdateChecker
-import fr.easter.brewhome.data.UpdateStatus
 import fr.easter.brewhome.data.VpnController
 
 private const val WG_PERMISSION = "${VpnController.WIREGUARD_PACKAGE}.permission.CONTROL_TUNNELS"
@@ -321,15 +319,11 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // Vérification silencieuse à l'ouverture de l'écran - un échec réseau
-        // (pas de connexion, GitHub injoignable) ne montre juste rien, ne
-        // bloque jamais le reste des réglages.
-        var updateStatus by remember { mutableStateOf<UpdateStatus?>(null) }
-        LaunchedEffect(version) {
-            if (version != "?") {
-                updateStatus = UpdateChecker.check(version)
-            }
-        }
+        // Vérifié une seule fois au démarrage de l'app (BrewViewModel.init),
+        // partagé avec le badge sur l'icône Réglages de la barre du haut - un
+        // échec réseau (pas de connexion, GitHub injoignable) ne montre juste
+        // rien ici, ne bloque jamais le reste des réglages.
+        val updateStatus by vm.updateStatus.collectAsState()
         val update = updateStatus
         if (update != null && update.updateAvailable) {
             Text(

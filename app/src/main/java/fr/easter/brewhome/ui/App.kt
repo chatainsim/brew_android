@@ -30,6 +30,8 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.LocalDrink
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -114,6 +116,7 @@ fun BrewHomeApp(
 ) {
     val serverUrl by vm.serverUrl.collectAsState()
     val state by vm.state.collectAsState()
+    val updateStatus by vm.updateStatus.collectAsState()
     val navController: NavHostController = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
 
@@ -447,10 +450,21 @@ fun BrewHomeApp(
                     }
                     if (currentRoute != "settings") {
                         IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(
-                                Icons.Filled.Settings,
-                                contentDescription = stringResource(R.string.title_settings),
-                            )
+                            // Petit indicateur visible partout dans l'app (pas seulement en
+                            // ouvrant les Réglages) quand une mise à jour est disponible.
+                            if (updateStatus?.updateAvailable == true) {
+                                BadgedBox(badge = { Badge() }) {
+                                    Icon(
+                                        Icons.Filled.Settings,
+                                        contentDescription = stringResource(R.string.cd_settings_update_available),
+                                    )
+                                }
+                            } else {
+                                Icon(
+                                    Icons.Filled.Settings,
+                                    contentDescription = stringResource(R.string.title_settings),
+                                )
+                            }
                         }
                     }
     }
