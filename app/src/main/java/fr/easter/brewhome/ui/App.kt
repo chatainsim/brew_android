@@ -470,7 +470,15 @@ fun BrewHomeApp(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        // Uniquement sur les écrans racines des onglets (MediumTopAppBar,
+        // ci-dessous) : la connexion de scroll imbriqué de scrollBehavior
+        // consomme du défilement vertical en amont du contenu (pour replier
+        // la barre) même quand aucune MediumTopAppBar n'est affichée pour le
+        // montrer - branchée partout, elle « mangeait » du scroll sans
+        // jamais l'appliquer visuellement sur les écrans en TopAppBar
+        // classique (ex. Réglages, bloqué en pratique : impossible de
+        // descendre voir le bas de l'écran).
+        modifier = if (isTabRoot) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier,
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             // Barre plus grande (2 lignes, se replie au scroll) sur les 6 écrans
