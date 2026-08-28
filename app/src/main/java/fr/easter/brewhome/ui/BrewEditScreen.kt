@@ -20,6 +20,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import fr.easter.brewhome.calc.BrewCalc
 import fr.easter.brewhome.data.BrewPut
 
 /** Édition des champs d'un brassin (mesures réelles OG/FG, volume, dates, notes). */
@@ -44,6 +45,18 @@ fun BrewEditScreen(vm: BrewViewModel, brewId: Int?, onSaved: () -> Unit) {
     var saving by remember { mutableStateOf(false) }
 
     fun num(s: String) = s.trim().replace(',', '.').toDoubleOrNull()
+
+    // Recalcule l'ABV (même formule que RecipeEstimator/BrewCalc, cohérente avec le
+    // reste de l'app) dès que DI et DF sont toutes les deux des nombres valides - plus
+    // besoin de le taper à la main. Le champ reste modifiable si une valeur mesurée
+    // autrement doit remplacer le calcul.
+    LaunchedEffect(og, fg) {
+        val ogVal = num(og)
+        val fgVal = num(fg)
+        if (ogVal != null && fgVal != null) {
+            BrewCalc.abv(ogVal, fgVal)?.let { computed -> abv = fmtQty(computed).replace(',', '.') }
+        }
+    }
 
     Column(
         Modifier
