@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -34,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -48,11 +50,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -225,11 +229,17 @@ fun BrewHomeApp(
     val canGoBack = currentRoute != null && currentRoute != startDestination &&
         currentRoute !in tabs.map { it.route }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            TopAppBar(
-                title = {
+    val isTabRoot = currentRoute != null && currentRoute in tabs.map { it.route }
+    // Nouvelle instance de scrollBehavior à chaque changement d'onglet, pour
+    // repartir dépliée plutôt que de garder l'état de repli de l'onglet
+    // précédent (une seule TopAppBar est partagée par toute la navigation).
+    val scrollBehavior = key(currentTab) {
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    }
+    val topBarColors = TopAppBarDefaults.topAppBarColors(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+    )
+    val titleContent: @Composable () -> Unit = {
                     Text(
                         when {
                             currentRoute == "settings" -> stringResource(R.string.title_settings)
@@ -269,11 +279,8 @@ fun BrewHomeApp(
                         },
                         fontWeight = FontWeight.Bold,
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-                navigationIcon = {
+    }
+    val navIconContent: @Composable () -> Unit = {
                     if (canGoBack) {
                         IconButton(onClick = { navController.navigateUp() }) {
                             Icon(
@@ -282,8 +289,8 @@ fun BrewHomeApp(
                             )
                         }
                     }
-                },
-                actions = {
+    }
+    val actionsContent: @Composable RowScope.() -> Unit = {
                     // Partage de la recette ouverte
                     val recipeToShare = if (currentRoute?.startsWith("recipe/") == true) {
                         val id = backStack?.arguments?.getString("id")?.toIntOrNull()
@@ -446,8 +453,31 @@ fun BrewHomeApp(
                             )
                         }
                     }
-                },
-            )
+    }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbar) },
+        topBar = {
+            // Barre plus grande (2 lignes, se replie au scroll) sur les 6 écrans
+            // racines des onglets - ailleurs (détail, édition, réglages…) barre
+            // compacte classique, plus adaptée aux écrans avec bouton retour.
+            if (isTabRoot) {
+                MediumTopAppBar(
+                    title = titleContent,
+                    colors = topBarColors,
+                    navigationIcon = navIconContent,
+                    actions = actionsContent,
+                    scrollBehavior = scrollBehavior,
+                )
+            } else {
+                TopAppBar(
+                    title = titleContent,
+                    colors = topBarColors,
+                    navigationIcon = navIconContent,
+                    actions = actionsContent,
+                )
+            }
         },
         bottomBar = {
             NavigationBar {

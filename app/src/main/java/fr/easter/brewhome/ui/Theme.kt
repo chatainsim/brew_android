@@ -119,5 +119,10 @@ fun BrewHomeTheme(
         darkTheme -> DarkColors
         else -> LightColors
     }
-    MaterialTheme(colorScheme = colorScheme, content = content)
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = BrewHomeTypography,
+        shapes = BrewHomeShapes,
+        content = content,
+    )
 }
