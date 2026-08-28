@@ -1,0 +1,74 @@
+# À chaque push sur main : compile l'APK, lance les tests unitaires, puis crée
+# (ou met à jour) la release GitHub taguée avec versionName et y attache l'APK.
+# Une release par versionName ; re-pousser sans changer la version remplace l'APK.
+#
+# Équivalent GitHub-hébergé de .forgejo/workflows/release.yml (qui tourne sur le
+# runner auto-hébergé « wsl-simon » côté Gitea) - indépendant l'un de l'autre,
+# pour avoir une release publiée même si le runner Forgejo est hors ligne.
+# Runner GitHub-hébergé : toolchain Android/JDK téléchargé à chaque run (pas de
+# cache persistant côté hôte comme sur wsl-simon), donc un peu plus lent.
+name: Release APK
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Installer la plateforme/build-tools nécessaires (compileSdk 36)
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Décoder la clé de signature (secrets de dépôt)
+        env:
+          BREWHOME_KEYSTORE_B64: ${{ secrets.BREWHOME_KEYSTORE_B64 }}
+        run: printf '%s' "$BREWHOME_KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/ci-release.jks"
+
+      - name: Compiler et tester
+        env:
+          ORG_GRADLE_PROJECT_BREWHOME_STORE_FILE: ${{ github.workspace }}/ci-release.jks
+          ORG_GRADLE_PROJECT_BREWHOME_STORE_PASSWORD: ${{ secrets.BREWHOME_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_BREWHOME_KEY_ALIAS: ${{ secrets.BREWHOME_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_BREWHOME_KEY_PASSWORD: ${{ secrets.BREWHOME_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease testDebugUnitTest
+          test -f app/build/outputs/apk/release/app-release.apk
+
+      - name: Supprimer la clé déchiffrée du runner
+        if: always()
+        run: rm -f "$GITHUB_WORKSPACE/ci-release.jks"
+
+      - name: Publier la release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "Version : $VERSION (commit ${GITHUB_SHA})"
+          ASSET="app/build/outputs/apk/release/app-release.apk#BrewHome-$VERSION.apk"
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION existante : remplacement de l'APK"
+            gh release upload "$VERSION" "$ASSET" --clobber
+          else
+            gh release create "$VERSION" "$ASSET" \
+              --title "BrewHome Android $VERSION" \
+              --notes "APK compilé par GitHub Actions (commit ${GITHUB_SHA})."
+            echo "Release $VERSION créée"
+          fi
