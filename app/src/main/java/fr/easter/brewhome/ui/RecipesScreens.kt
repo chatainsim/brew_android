@@ -563,11 +563,10 @@ private fun BrewFromRecipeDialog(
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
+                    DateField(
                         value = date, onValueChange = { date = it },
-                        label = { Text(stringResource(R.string.label_brew_date)) },
-                        placeholder = { Text("2026-08-01") },
-                        singleLine = true, modifier = Modifier.weight(1f),
+                        label = stringResource(R.string.label_brew_date),
+                        modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = volume, onValueChange = { volume = it },

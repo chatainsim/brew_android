@@ -348,13 +348,11 @@ private fun AddEventDialog(onAdd: (CustomEventPost) -> Unit, onDismiss: () -> Un
                         modifier = Modifier.weight(1f),
                     )
                 }
-                OutlinedTextField(
+                DateField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text(stringResource(R.string.cal_date)) },
-                    placeholder = { Text("2026-08-01") },
+                    label = stringResource(R.string.cal_date),
                     isError = !dateOk,
-                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 // Couleur de la pastille

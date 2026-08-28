@@ -153,17 +153,15 @@ fun BeerEditScreen(vm: BrewViewModel, beerId: Int?, onSaved: () -> Unit) {
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
+            DateField(
                 value = brewDate, onValueChange = { brewDate = it },
-                label = { Text(stringResource(R.string.beer_brew_date)) },
-                placeholder = { Text("2026-08-01") },
-                singleLine = true, modifier = Modifier.weight(1f),
+                label = stringResource(R.string.beer_brew_date),
+                modifier = Modifier.weight(1f),
             )
-            OutlinedTextField(
+            DateField(
                 value = bottlingDate, onValueChange = { bottlingDate = it },
-                label = { Text(stringResource(R.string.beer_bottling_date)) },
-                placeholder = { Text("2026-08-15") },
-                singleLine = true, modifier = Modifier.weight(1f),
+                label = stringResource(R.string.beer_bottling_date),
+                modifier = Modifier.weight(1f),
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

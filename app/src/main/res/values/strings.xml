@@ -492,6 +492,7 @@
     <string name="see_recipe">Voir la recette</string>
     <string name="label_brew_date">Brassé le</string>
     <string name="label_bottling_date">Embouteillé le</string>
+    <string name="pick_date">Choisir une date</string>
     <string name="label_volume_brewed">Volume obtenu</string>
     <string name="label_og">Densité initiale</string>
     <string name="label_fg">Densité finale</string>

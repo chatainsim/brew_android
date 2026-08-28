@@ -247,12 +247,10 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
+            DateField(
                 value = targetDate,
                 onValueChange = { targetDate = it },
-                label = { Text(stringResource(R.string.label_target_date)) },
-                placeholder = { Text("2026-08-01") },
-                singleLine = true,
+                label = stringResource(R.string.label_target_date),
                 modifier = Modifier.weight(1f),
             )
             OutlinedTextField(

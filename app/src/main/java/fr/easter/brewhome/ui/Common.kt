@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
@@ -37,6 +38,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,10 +47,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +69,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** Ouvre la feuille de partage Android (mail, Telegram, WhatsApp…) avec un texte. */
@@ -367,3 +379,63 @@ fun StarRating(rating: Int?, max: Int = 5, onSelect: ((Int) -> Unit)? = null) {
         }
     }
 }
+
+/**
+ * Champ de date texte "yyyy-MM-dd" (format déjà utilisé partout dans l'app - voir
+ * CalendarEvents.parseDate) avec une icône calendrier qui ouvre un DatePicker Material3
+ * pour ne pas avoir à taper la date à la main. Le texte reste modifiable directement
+ * (un [isError] existant côté appelant continue de fonctionner sans changement).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        placeholder = { Text("2026-08-01") },
+        singleLine = true,
+        isError = isError,
+        trailingIcon = {
+            IconButton(onClick = { showPicker = true }) {
+                Icon(Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.pick_date))
+            }
+        },
+        modifier = modifier,
+    )
+    if (showPicker) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = isoDateToUtcMillis(value))
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onValueChange(utcMillisToIsoDate(it)) }
+                    showPicker = false
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.cancel)) } },
+        ) {
+            DatePicker(state = state)
+        }
+    }
+}
+
+/** Le picker Material3 raisonne en millis epoch UTC minuit - les dates de l'app sont
+ * stockées/affichées en "yyyy-MM-dd" (fuseau non spécifié), donc la conversion passe
+ * par UTC dans les deux sens pour ne jamais décaler d'un jour selon le fuseau de l'appareil. */
+private fun isoDateToUtcMillis(s: String): Long? =
+    runCatching { LocalDate.parse(s.trim().take(10), DateTimeFormatter.ISO_LOCAL_DATE) }
+        .getOrNull()
+        ?.atStartOfDay(ZoneOffset.UTC)
+        ?.toInstant()
+        ?.toEpochMilli()
+
+private fun utcMillisToIsoDate(millis: Long): String =
+    Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate().format(DateTimeFormatter.ISO_LOCAL_DATE)

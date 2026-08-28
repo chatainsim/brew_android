@@ -631,13 +631,11 @@ private fun AddStepDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
+                DateField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text(stringResource(R.string.step_date)) },
-                    placeholder = { Text("2026-08-01") },
+                    label = stringResource(R.string.step_date),
                     isError = !dateOk,
-                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(

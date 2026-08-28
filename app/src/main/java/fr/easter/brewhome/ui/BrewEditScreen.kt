@@ -58,11 +58,10 @@ fun BrewEditScreen(vm: BrewViewModel, brewId: Int?, onSaved: () -> Unit) {
             singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
+            DateField(
                 value = brewDate, onValueChange = { brewDate = it },
-                label = { Text(stringResource(R.string.label_brew_date)) },
-                placeholder = { Text("2026-08-01") },
-                singleLine = true, modifier = Modifier.weight(1f),
+                label = stringResource(R.string.label_brew_date),
+                modifier = Modifier.weight(1f),
             )
             NumField2(volume, { volume = it }, stringResource(R.string.label_volume_brewed), Modifier.weight(1f))
         }
