@@ -50,9 +50,11 @@ import fr.easter.brewhome.BrewViewModel
 import fr.easter.brewhome.R
 import fr.easter.brewhome.data.ActivityEntry
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 private val activityCategories = listOf("recipe", "brew", "beer", "backup", "import", "system")
 
@@ -95,17 +97,28 @@ private val activityTemplates = mapOf(
 
 private val activityJson = Json { ignoreUnknownKeys = true }
 
+/** Convertit une valeur JSON en texte affichable - certains champs des entrées
+ * de sauvegarde (ex. "repos", "errors" dans act.backup_auto) sont des tableaux,
+ * pas des valeurs simples ; jsonPrimitive plante dessus (IllegalArgumentException
+ * "is not a JsonPrimitive"), d'où ce parcours explicite plutôt qu'un cast direct. */
+private fun jsonElementText(v: JsonElement): String = when (v) {
+    is JsonPrimitive -> v.contentOrNull ?: ""
+    is JsonArray -> v.joinToString(", ") { jsonElementText(it) }
+    is JsonObject -> ""
+}
+
 /** Décode un label d'entrée d'activité - soit un JSON `{"_i18n":"act.x", ...params}`
  * généré côté serveur (web), soit du texte brut déjà lisible (entrées créées
  * directement par cette app, voir BrewViewModel.logActivity). */
 private fun activityLabel(raw: String): String {
     val obj = runCatching { activityJson.parseToJsonElement(raw) as? JsonObject }.getOrNull() ?: return raw
-    val key = obj["_i18n"]?.jsonPrimitive?.contentOrNull ?: return raw
-    var text = activityTemplates[key] ?: return raw
-    obj.forEach { (k, v) ->
-        if (k != "_i18n") text = text.replace("\${$k}", v.jsonPrimitive.contentOrNull ?: "")
-    }
-    return text
+    val key = (obj["_i18n"] as? JsonPrimitive)?.contentOrNull ?: return raw
+    val template = activityTemplates[key] ?: return raw
+    return runCatching {
+        var text = template
+        obj.forEach { (k, v) -> if (k != "_i18n") text = text.replace("\${$k}", jsonElementText(v)) }
+        text
+    }.getOrDefault(raw)
 }
 
 private fun activityAgo(ts: String?): String {
