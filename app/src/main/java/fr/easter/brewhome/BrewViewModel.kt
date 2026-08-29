@@ -18,7 +18,11 @@ import fr.easter.brewhome.data.BrewStep
 import fr.easter.brewhome.data.BrewhomeRepository
 import fr.easter.brewhome.data.CatalogItem
 import fr.easter.brewhome.data.BjcpStyle
+import fr.easter.brewhome.data.ActivityLog
 import fr.easter.brewhome.data.Consumption
+import fr.easter.brewhome.data.DepletionEntry
+import fr.easter.brewhome.data.ScaleGuideMalt
+import fr.easter.brewhome.data.ScaleGuideStatus
 import fr.easter.brewhome.data.CostSettings
 import fr.easter.brewhome.data.SodaKeg
 import fr.easter.brewhome.data.Spindle
@@ -504,6 +508,7 @@ class BrewViewModel(
     fun createBrew(post: fr.easter.brewhome.data.BrewCreatePost, onDone: (Int) -> Unit = {}) {
         launchWithError(R.string.error_brew_create) {
             val created = repo.createBrew(post)
+            logActivity("brew", "created", "Brassin « ${post.name ?: created.name} » lancé", created.id)
             _state.value = _state.value.copy(
                 brews = repo.brews(),
                 inventory = repo.inventory(),
@@ -517,6 +522,7 @@ class BrewViewModel(
     fun setBrewStatus(brew: Brew, status: String) {
         launchWithError(R.string.error_brew_status) {
             repo.setBrewStatus(brew, status)
+            if (status == "completed") logActivity("brew", "completed", "Brassin « ${brew.name} » clôturé", brew.id)
             _state.value = _state.value.copy(brews = repo.brews(), error = null)
         }
     }
@@ -680,6 +686,66 @@ class BrewViewModel(
         }
     }
 
+    private val _depletion = MutableStateFlow<List<DepletionEntry>?>(null)
+    val depletion: StateFlow<List<DepletionEntry>?> = _depletion
+
+    /** Charge l'estimation des dates d'épuisement par bière (écran Statistiques). */
+    fun loadDepletion() {
+        viewModelScope.launch {
+            runCatching { repo.consumptionDepletion() }
+                .onSuccess { _depletion.value = it }
+        }
+    }
+
+    // ── Journal d'activité ───────────────────────────────────────────────
+
+    private val _activity = MutableStateFlow<ActivityLog?>(null)
+    val activity: StateFlow<ActivityLog?> = _activity
+
+    fun loadActivity(category: String? = null, exclude: String? = null) {
+        viewModelScope.launch {
+            runCatching { repo.activity(limit = 100, category = category, exclude = exclude) }
+                .onSuccess { _activity.value = it }
+        }
+    }
+
+    fun clearActivity(category: String? = null, exclude: String? = null, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            runCatching { repo.clearActivity(category, exclude) }
+                .onSuccess { loadActivity(category = category, exclude = exclude); onDone() }
+        }
+    }
+
+    /** Journalise une action locale (créations/modifications/suppressions) - miroir de
+     * `_logActivity()` côté web, pour que le journal reste complet quel que soit
+     * l'appareil utilisé. Best-effort : les échecs sont ignorés (voir Repository). */
+    fun logActivity(category: String, action: String, label: String, entityId: Int? = null) {
+        viewModelScope.launch { repo.logActivity(category, action, label, entityId) }
+    }
+
+    // ── Guide de pesée connecté ──────────────────────────────────────────
+
+    private val _scaleGuide = MutableStateFlow(ScaleGuideStatus())
+    val scaleGuide: StateFlow<ScaleGuideStatus> = _scaleGuide
+
+    suspend fun refreshScaleGuide() {
+        _scaleGuide.value = runCatching { repo.scaleGuideStatus() }.getOrDefault(ScaleGuideStatus())
+    }
+
+    suspend fun startScaleGuide(malts: List<ScaleGuideMalt>, recipeId: Int?, brewName: String?): Boolean {
+        val result = runCatching { repo.startScaleGuide(malts, recipeId, brewName) }.getOrNull()
+        if (result?.ok == true) {
+            refreshScaleGuide()
+            return true
+        }
+        return false
+    }
+
+    suspend fun stopScaleGuide() {
+        runCatching { repo.stopScaleGuide() }
+        _scaleGuide.value = ScaleGuideStatus()
+    }
+
     // ── Calendrier ────────────────────────────────────────────────────────
 
     private val _customEvents = MutableStateFlow<List<CustomEvent>?>(null)
@@ -785,6 +851,7 @@ class BrewViewModel(
             val names = _state.value.recipes.map { it.name }
             val newName = fr.easter.brewhome.calc.RecipeNaming.duplicateName(recipe.name, names)
             val newId = repo.duplicateRecipe(recipe, newName)
+            logActivity("recipe", "forked", "Recette « $newName » dupliquée depuis « ${recipe.name} »", newId)
             _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
             onDone(newId)
         }
@@ -803,7 +870,9 @@ class BrewViewModel(
 
     fun deleteRecipe(id: Int, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_delete) {
+            val name = _state.value.recipes.find { it.id == id }?.name
             repo.deleteRecipe(id)
+            if (name != null) logActivity("recipe", "deleted", "Recette « $name » supprimée", id)
             _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
             onDone()
         }
@@ -819,7 +888,9 @@ class BrewViewModel(
 
     fun deleteBrew(id: Int, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_delete) {
+            val name = _state.value.brews.find { it.id == id }?.name
             repo.deleteBrew(id)
+            if (name != null) logActivity("brew", "deleted", "Brassin « $name » supprimé", id)
             _state.value = _state.value.copy(brews = repo.brews(), error = null)
             onDone()
         }
@@ -1019,7 +1090,13 @@ class BrewViewModel(
 
     fun saveRecipe(id: Int?, post: RecipePost, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_recipe_save) {
-            if (id == null) repo.createRecipe(post) else repo.updateRecipe(id, post)
+            if (id == null) {
+                repo.createRecipe(post)
+                logActivity("recipe", "created", "Recette « ${post.name} » créée")
+            } else {
+                repo.updateRecipe(id, post)
+                logActivity("recipe", "updated", "Recette « ${post.name} » modifiée")
+            }
             // Recharge la liste : le serveur calcule des champs (batch_no, stock…)
             _state.value = _state.value.copy(recipes = repo.recipes(), error = null)
             onDone()

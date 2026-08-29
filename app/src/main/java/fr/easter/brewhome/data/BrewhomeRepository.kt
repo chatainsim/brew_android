@@ -139,6 +139,30 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun consumption(): Consumption = api().getConsumption()
 
+    suspend fun consumptionDepletion(): List<DepletionEntry> = api().getConsumptionDepletion()
+
+    suspend fun activity(limit: Int = 50, offset: Int = 0, category: String? = null, exclude: String? = null): ActivityLog =
+        api().getActivity(limit, offset, category, exclude)
+
+    suspend fun logActivity(category: String, action: String, label: String, entityId: Int? = null) {
+        runCatching { api().postActivity(ActivityPost(category, action, label, entityId)) }
+    }
+
+    suspend fun clearActivity(category: String? = null, exclude: String? = null) {
+        api().deleteActivity(category, exclude)
+    }
+
+    suspend fun scaleGuideStatus(): ScaleGuideStatus = api().getScaleGuide()
+
+    suspend fun startScaleGuide(malts: List<ScaleGuideMalt>, recipeId: Int?, brewName: String?): ScaleGuideStartResult =
+        api().startScaleGuide(ScaleGuideStartPost(malts, recipeId, brewName))
+
+    suspend fun nextScaleGuide(): ScaleGuideStatus = api().nextScaleGuide(kotlinx.serialization.json.JsonObject(emptyMap()))
+
+    suspend fun stopScaleGuide() {
+        api().stopScaleGuide(kotlinx.serialization.json.JsonObject(emptyMap()))
+    }
+
     suspend fun customEvents(): List<CustomEvent> = api().getCustomEvents()
 
     suspend fun aiDraftSuggest(style: String?, notes: String?, volume: Double?): AiSuggestResult =

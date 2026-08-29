@@ -324,6 +324,38 @@ interface BrewApi {
 
     @PUT("api/beers/{id}")
     suspend fun updateBeer(@Path("id") id: Int, @Body body: BeerPut): Beer
+
+    @GET("api/activity")
+    suspend fun getActivity(
+        @retrofit2.http.Query("limit") limit: Int = 50,
+        @retrofit2.http.Query("offset") offset: Int = 0,
+        @retrofit2.http.Query("category") category: String? = null,
+        @retrofit2.http.Query("exclude") exclude: String? = null,
+    ): ActivityLog
+
+    @POST("api/activity")
+    suspend fun postActivity(@Body body: ActivityPost): kotlinx.serialization.json.JsonObject
+
+    @DELETE("api/activity")
+    suspend fun deleteActivity(
+        @retrofit2.http.Query("category") category: String? = null,
+        @retrofit2.http.Query("exclude") exclude: String? = null,
+    ): kotlinx.serialization.json.JsonObject
+
+    @GET("api/consumption/depletion")
+    suspend fun getConsumptionDepletion(): List<DepletionEntry>
+
+    @GET("api/scale-guide")
+    suspend fun getScaleGuide(): ScaleGuideStatus
+
+    @POST("api/scale-guide/start")
+    suspend fun startScaleGuide(@Body body: ScaleGuideStartPost): ScaleGuideStartResult
+
+    @POST("api/scale-guide/next")
+    suspend fun nextScaleGuide(@Body body: kotlinx.serialization.json.JsonObject): ScaleGuideStatus
+
+    @POST("api/scale-guide/stop")
+    suspend fun stopScaleGuide(@Body body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject
 }
 
 object ApiClient {

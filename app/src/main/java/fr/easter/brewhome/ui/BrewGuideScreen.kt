@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -26,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +43,10 @@ import fr.easter.brewhome.calc.RecipeEstimator
 import fr.easter.brewhome.data.BrewGuideState
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredient
+import fr.easter.brewhome.data.ScaleGuideMalt
 import fr.easter.brewhome.notif.BrewGuideAlarms
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val stepTitleRes = listOf(
     R.string.phase_preparation, R.string.phase_crush, R.string.phase_mash,
@@ -103,7 +107,7 @@ fun BrewGuideScreen(
         GuideStepBar(step = g.step, onStepClick = { step -> update { it.copy(step = step) } })
         when (g.step) {
             0 -> GuidePreparationStep(recipe, g.checkedItems) { key -> update { it.toggle(key) } }
-            1 -> GuideCrushStep(recipe, g.checkedItems) { key -> update { it.toggle(key) } }
+            1 -> GuideCrushStep(vm, recipe, brew?.name ?: recipe.name, g.checkedItems) { key -> update { it.toggle(key) } }
             2 -> GuideMashStep(recipe, g, context, now, ::update)
             3 -> GuideBoilStep(recipe, g, context, now, ::update)
             else -> GuidePitchStep(recipe, g.checkedItems, onOpenPriming) { key -> update { it.toggle(key) } }
@@ -233,14 +237,120 @@ private fun GuidePreparationStep(recipe: Recipe, checked: Set<String>, onToggle:
 }
 
 @Composable
-private fun GuideCrushStep(recipe: Recipe, checked: Set<String>, onToggle: (String) -> Unit) {
+private fun GuideCrushStep(
+    vm: BrewViewModel,
+    recipe: Recipe,
+    brewName: String,
+    checked: Set<String>,
+    onToggle: (String) -> Unit,
+) {
+    val malts = remember(recipe) { recipe.ingredients.filter { it.category.lowercase() == "malt" } }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             stringResource(R.string.guide_crush_tip),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
         )
-        IngredientChecklist(recipe.ingredients.filter { it.category.lowercase() == "malt" }, "crush", checked, onToggle)
+        if (malts.isNotEmpty()) {
+            ScaleGuidePanel(vm, recipe.id, brewName, malts, onToggle)
+        }
+        IngredientChecklist(malts, "crush", checked, onToggle)
+    }
+}
+
+/**
+ * Guide de pesée connecté (voir /api/scale-guide côté serveur) : démarre une
+ * session partagée que le web (ou une balance connectée) peut piloter, et
+ * coche automatiquement les malts au fur et à mesure - comme
+ * `_scaleGuidePollFn()` dans script_brassins.html, avec le même sondage
+ * toutes les 2 s tant que la session est active. La session vit côté
+ * serveur (app_settings) : elle survit à la fermeture de cet écran, pour
+ * pouvoir être reprise depuis un autre appareil.
+ */
+@Composable
+private fun ScaleGuidePanel(
+    vm: BrewViewModel,
+    recipeId: Int,
+    brewName: String,
+    malts: List<RecipeIngredient>,
+    onToggle: (String) -> Unit,
+) {
+    var active by remember { mutableStateOf(false) }
+    var lastStep by remember { mutableStateOf(0) }
+    val status by vm.scaleGuide.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    // Reprend le suivi si une session est déjà en cours (démarrée depuis un
+    // autre appareil) plutôt que de forcer un nouveau départ.
+    LaunchedEffect(Unit) {
+        vm.refreshScaleGuide()
+        if (vm.scaleGuide.value.active) {
+            active = true
+            lastStep = ((vm.scaleGuide.value.step ?: 1) - 1).coerceAtLeast(0)
+        }
+    }
+
+    LaunchedEffect(active) {
+        while (active) {
+            delay(2000)
+            vm.refreshScaleGuide()
+            val s = vm.scaleGuide.value
+            if (!s.active) {
+                for (i in lastStep until malts.size) onToggle("crush_${malts[i].id}")
+                active = false
+                continue
+            }
+            val newStep = (s.step ?: 1) - 1
+            if (newStep > lastStep) {
+                for (i in lastStep until newStep) onToggle("crush_${malts[i].id}")
+                lastStep = newStep
+            }
+        }
+    }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.scale_guide_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (active) {
+                    OutlinedButton(onClick = {
+                        active = false
+                        scope.launch { vm.stopScaleGuide() }
+                    }) { Text(stringResource(R.string.scale_guide_stop)) }
+                } else {
+                    Button(onClick = {
+                        scope.launch {
+                            val sgMalts = malts.map { ScaleGuideMalt(it.name, it.quantity, it.unit) }
+                            if (vm.startScaleGuide(sgMalts, recipeId, brewName)) {
+                                lastStep = 0
+                                active = true
+                            }
+                        }
+                    }) { Text(stringResource(R.string.scale_guide_start)) }
+                }
+            }
+            if (active && status.active) {
+                Text(
+                    stringResource(
+                        R.string.scale_guide_active,
+                        status.maltName ?: "?",
+                        fmtQty(status.targetKg),
+                        status.step ?: 1,
+                        status.total ?: malts.size,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
     }
 }
 

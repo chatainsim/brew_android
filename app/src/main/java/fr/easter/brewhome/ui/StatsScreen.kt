@@ -42,7 +42,8 @@ import fr.easter.brewhome.calc.StockCheck
 fun StatsScreen(vm: BrewViewModel) {
     val state by vm.state.collectAsState()
     val consumption by vm.consumption.collectAsState()
-    LaunchedEffect(Unit) { vm.loadConsumption() }
+    val depletion by vm.depletion.collectAsState()
+    LaunchedEffect(Unit) { vm.loadConsumption(); vm.loadDepletion() }
 
     // Comme le site : brassins terminés, non archivés, avec date
     val allDone = state.brews.filter {
@@ -466,6 +467,18 @@ fun StatsScreen(vm: BrewViewModel) {
                     }
                 }
             }
+
+            // Estimation des dates d'épuisement : basée sur le stock actuel + la cadence
+            // de consommation constatée (voir /api/consumption/depletion) - toutes périodes
+            // uniquement, comme le top bières ci-dessus (pas de notion d'"année" ici).
+            if (year == null && !depletion.isNullOrEmpty()) {
+                SectionTitle(stringResource(R.string.stat_depletion_title))
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        depletion!!.forEach { d -> DepletionRow(d) }
+                    }
+                }
+            }
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -503,6 +516,43 @@ private fun StatCard(
                 color = content.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center,
             )
+        }
+    }
+}
+
+@Composable
+private fun DepletionRow(d: fr.easter.brewhome.data.DepletionEntry) {
+    val soon = d.daysRemaining <= 14
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                d.beerName ?: "?",
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                stringResource(R.string.stat_depletion_rate, fmtQty(d.dailyRate), fmtQty(d.currentLiters)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                stringResource(R.string.stat_depletion_days, d.daysRemaining),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (soon) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            )
+            val displayDate = remember(d.depletionDate) {
+                d.depletionDate?.let {
+                    runCatching {
+                        java.time.LocalDate.parse(it, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                            .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                    }.getOrNull()
+                } ?: "—"
+            }
+            Text(displayDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
     }
 }

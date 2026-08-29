@@ -747,6 +747,76 @@ data class StockPatch(
 @Serializable
 data class QtyPatch(val quantity: Double)
 
+/** Une entrée du journal d'activité (voir aussi ActivityLabels.kt pour le rendu localisé du label). */
+@Serializable
+data class ActivityEntry(
+    val id: Int,
+    val ts: String? = null,
+    val category: String = "system",
+    val action: String = "event",
+    val label: String = "",
+    @SerialName("entity_id") val entityId: Int? = null,
+)
+
+@Serializable
+data class ActivityLog(
+    val items: List<ActivityEntry> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class ActivityPost(
+    val category: String,
+    val action: String,
+    val label: String,
+    @SerialName("entity_id") val entityId: Int? = null,
+)
+
+/** Estimation de date d'épuisement d'une bière en cave (voir /api/consumption/depletion). */
+@Serializable
+data class DepletionEntry(
+    @SerialName("beer_id") val beerId: Int,
+    @SerialName("beer_name") val beerName: String? = null,
+    @SerialName("current_liters") val currentLiters: Double = 0.0,
+    @SerialName("daily_rate") val dailyRate: Double = 0.0,
+    @SerialName("days_remaining") val daysRemaining: Int = 0,
+    @SerialName("depletion_date") val depletionDate: String? = null,
+    @SerialName("span_days") val spanDays: Int = 0,
+)
+
+/** État de la session de pesée guidée en cours (voir aussi /api/scale-guide côté serveur). */
+@Serializable
+data class ScaleGuideStatus(
+    val active: Boolean = false,
+    val finished: Boolean = false,
+    @SerialName("brew_name") val brewName: String? = null,
+    val step: Int? = null,
+    val total: Int? = null,
+    @SerialName("malt_name") val maltName: String? = null,
+    @SerialName("target_kg") val targetKg: Double? = null,
+)
+
+@Serializable
+data class ScaleGuideMalt(
+    val name: String,
+    val quantity: Double,
+    val unit: String,
+)
+
+@Serializable
+data class ScaleGuideStartPost(
+    val malts: List<ScaleGuideMalt>,
+    @SerialName("recipe_id") val recipeId: Int? = null,
+    @SerialName("brew_name") val brewName: String? = null,
+)
+
+@Serializable
+data class ScaleGuideStartResult(
+    val ok: Boolean = false,
+    val total: Int? = null,
+    @SerialName("first_malt") val firstMalt: String? = null,
+)
+
 @Serializable
 data class TastingPut(
     @SerialName("taste_appearance") val tasteAppearance: String? = null,

@@ -102,7 +102,7 @@ private fun tabOf(route: String?): String? = when {
         route == "stats" || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
         route == "temps" || route.startsWith("temp/") || route == "kegs" ||
-        route == "trash" || route == "catalog" -> "tools"
+        route == "trash" || route == "catalog" || route == "activity" -> "tools"
     else -> null
 }
 
@@ -272,6 +272,7 @@ fun BrewHomeApp(
                             currentRoute == "kegs" -> stringResource(R.string.title_kegs)
                             currentRoute == "trash" -> stringResource(R.string.title_trash)
                             currentRoute == "catalog" -> stringResource(R.string.title_catalog)
+                            currentRoute == "activity" -> stringResource(R.string.title_activity)
                             currentRoute?.startsWith("brewChecklist/") == true -> stringResource(R.string.checklist_open)
                             currentRoute?.startsWith("brewGuide/") == true -> stringResource(R.string.guide_title)
                             currentRoute == "shopping" -> stringResource(R.string.title_shopping)
@@ -655,12 +656,14 @@ fun BrewHomeApp(
                     onOpenKegs = { navController.navigate("kegs") },
                     onOpenTrash = { navController.navigate("trash") },
                     onOpenCatalog = { navController.navigate("catalog") },
+                    onOpenActivity = { navController.navigate("activity") },
                     onOpen = { navController.navigate("tools/$it") },
                 )
             }
             composable("kegs") { KegsScreen(vm) }
             composable("trash") { TrashScreen(vm) }
             composable("catalog") { CatalogScreen(vm) }
+            composable("activity") { ActivityScreen(vm) }
             composable("spindles") {
                 SpindlesScreen(vm) { navController.navigate("spindle/$it") }
             }

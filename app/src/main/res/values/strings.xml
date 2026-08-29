@@ -336,6 +336,10 @@
     <string name="guide_open">Guide de brassage</string>
     <string name="guide_title">Guide de brassage</string>
     <string name="guide_crush_tip">Concasser les malts juste avant l\'empâtage, pas trop finement (évite le colmatage de la maische).</string>
+    <string name="scale_guide_title">⚖️ Guide de pesée connecté</string>
+    <string name="scale_guide_start">Démarrer la pesée balance</string>
+    <string name="scale_guide_stop">Arrêter la pesée balance</string>
+    <string name="scale_guide_active">%1$s · %2$s kg (%3$d/%4$d)</string>
     <string name="guide_timer_start">Démarrer</string>
     <string name="guide_timer_pause">Pause</string>
     <string name="guide_timer_resume">Reprendre</string>
@@ -360,6 +364,18 @@
     <string name="guide_notif_hop_text">%1$s : à ajouter maintenant.</string>
     <string name="title_catalog">Catalogue d\'ingrédients</string>
     <string name="tools_catalog_sub">Gérer les ingrédients de référence</string>
+    <string name="title_activity">Journal d\'activité</string>
+    <string name="tools_activity_sub">Historique des créations, modifications, sauvegardes…</string>
+    <string name="activity_empty">Aucune activité pour l\'instant</string>
+    <string name="activity_clear">Effacer</string>
+    <string name="activity_clear_confirm">Effacer ce journal d\'activité ? Cette action est irréversible.</string>
+    <string name="activity_cat_all">Tout</string>
+    <string name="activity_cat_recipe">Recettes</string>
+    <string name="activity_cat_brew">Brassins</string>
+    <string name="activity_cat_beer">Cave</string>
+    <string name="activity_cat_backup">Sauvegardes</string>
+    <string name="activity_cat_import">Imports</string>
+    <string name="activity_cat_system">Système</string>
     <string name="catalog_empty">Catalogue vide</string>
     <string name="catalog_add">Ajouter au catalogue</string>
     <string name="catalog_edit">Modifier l\'ingrédient</string>
@@ -557,6 +573,9 @@
     <string name="stat_year_all">Toutes les années</string>
     <string name="stat_from_keg">Au fût</string>
     <string name="stat_top_beers">Bières les plus consommées</string>
+    <string name="stat_depletion_title">Estimation d\'épuisement</string>
+    <string name="stat_depletion_rate">%1$s L/j · %2$s L en cave</string>
+    <string name="stat_depletion_days">%1$d jour(s) restant(s)</string>
 
     <!-- Éditeur de brouillon -->
     <string name="label_title">Titre</string>
