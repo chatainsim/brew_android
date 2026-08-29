@@ -150,6 +150,16 @@ class BrewViewModelTest {
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }
         override suspend fun getAppSettings(): JsonObject { gate(); return JsonObject(emptyMap()) }
         override suspend fun saveAppSettings(body: JsonObject): JsonObject = throw NotImplementedError()
+        override suspend fun getActivity(limit: Int, offset: Int, category: String?, exclude: String?): fr.easter.brewhome.data.ActivityLog =
+            throw NotImplementedError()
+        override suspend fun postActivity(body: fr.easter.brewhome.data.ActivityPost): JsonObject = throw NotImplementedError()
+        override suspend fun deleteActivity(category: String?, exclude: String?): JsonObject = throw NotImplementedError()
+        override suspend fun getConsumptionDepletion(): List<fr.easter.brewhome.data.DepletionEntry> = throw NotImplementedError()
+        override suspend fun getScaleGuide(): fr.easter.brewhome.data.ScaleGuideStatus = throw NotImplementedError()
+        override suspend fun startScaleGuide(body: fr.easter.brewhome.data.ScaleGuideStartPost): fr.easter.brewhome.data.ScaleGuideStartResult =
+            throw NotImplementedError()
+        override suspend fun nextScaleGuide(body: JsonObject): fr.easter.brewhome.data.ScaleGuideStatus = throw NotImplementedError()
+        override suspend fun stopScaleGuide(body: JsonObject): JsonObject = throw NotImplementedError()
 
         override suspend fun createShoppingItem(body: ShoppingPost): ShoppingItem {
             gate()
