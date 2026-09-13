@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -50,16 +51,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
@@ -338,7 +346,7 @@ fun BrewDetailScreen(
                     else stringResource(R.string.ferm_section, extras.readings.size),
                 ) { showAddFerm = true }
                 if (extras.readings.isNotEmpty()) {
-                    FermentationCard(extras.readings) { rid -> vm.deleteFermReading(brew.id, rid) }
+                    FermentationCard(extras.readings, brew.og) { rid -> vm.deleteFermReading(brew.id, rid) }
                 }
                 // Journal de brassage — bouton + pour ajouter une note
                 BrewSectionHeader(stringResource(R.string.log_section)) { showAddLog = true }
@@ -822,7 +830,7 @@ private fun PhotoViewer(
 }
 
 @Composable
-private fun FermentationCard(readings: List<FermReading>, onDelete: (Int) -> Unit) {
+private fun FermentationCard(readings: List<FermReading>, og: Double?, onDelete: (Int) -> Unit) {
     var confirm by remember { mutableStateOf<FermReading?>(null) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp)) {
@@ -845,6 +853,21 @@ private fun FermentationCard(readings: List<FermReading>, onDelete: (Int) -> Uni
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
+            // Estimation "à date" (pas l'ABV final de la fiche, qui n'existe
+            // qu'une fois la DF officielle saisie à la mise en bouteille) -
+            // meme formule que BrewCalc.abv/RecipeEstimator, appliquée à la
+            // dernière densité mesurée plutôt qu'à une DF pas encore connue.
+            if (og != null) {
+                last.gravity?.let { fg ->
+                    BrewCalc.abv(og, fg)?.let { abv ->
+                        Text(
+                            stringResource(R.string.ferm_abv_estimate, fmtQty(kotlin.math.round(abv * 10) / 10)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
 
             // Mesures saisies à la main : seules elles sont supprimables côté serveur
             val manual = readings.filter { it.source == "manual" && it.id != null }
@@ -917,7 +940,9 @@ internal fun timeFractions(timestamps: List<String>): List<Float> {
     }
 }
 
-/** Courbe de densité (et température si dispo) sur toute la fermentation. */
+/** Courbe de densité (et température si dispo) sur toute la fermentation -
+ * taper dessus affiche la mesure la plus proche (repere vertical + bulle de
+ * valeurs), retaper sur le meme point la masque. */
 @Composable
 private fun GravityChart(readings: List<FermReading>) {
     val gravityColor = MaterialTheme.colorScheme.primary
@@ -927,13 +952,45 @@ private fun GravityChart(readings: List<FermReading>) {
     val tempPts = readings.mapIndexedNotNull { i, r -> r.temperature?.let { xs[i] to it } }
     val gravities = gravityPts.map { it.second }
 
+    var selected by remember(readings) { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val guideColor = MaterialTheme.colorScheme.outline
+    val labelStyle = TextStyle(fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+
     Canvas(
         Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(120.dp)
+            .pointerInput(readings) {
+                detectTapGestures { offset ->
+                    val tappedFraction = offset.x / size.width
+                    val nearest = xs.indices.minByOrNull { kotlin.math.abs(xs[it] - tappedFraction) }
+                    selected = if (selected == nearest) null else nearest
+                }
+            },
     ) {
         drawSeries(gravityPts, gravityColor, fill = true)
         if (tempPts.size >= 2) drawSeries(tempPts, tempColor)
+
+        selected?.let { idx ->
+            val r = readings[idx]
+            val x = size.width * xs[idx]
+            drawLine(guideColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = 2f)
+            val label = (
+                listOfNotNull(
+                    r.gravity?.let { fmtGravity(it) },
+                    r.temperature?.let { "${fmtQty(it)} °C" },
+                ).joinToString(" · ").ifEmpty { "—" }
+                ) + " · " + fmtTimestamp(r.recordedAt)
+            val layout = textMeasurer.measure(label, labelStyle)
+            val labelX = (x - layout.size.width / 2f).coerceIn(0f, (size.width - layout.size.width).coerceAtLeast(0f))
+            drawRect(
+                color = Color.Black.copy(alpha = 0.7f),
+                topLeft = Offset(labelX - 4f, 2f),
+                size = Size(layout.size.width + 8f, layout.size.height + 4f),
+            )
+            drawText(textMeasurer, label, topLeft = Offset(labelX, 4f), style = labelStyle)
+        }
     }
     Spacer(Modifier.height(4.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

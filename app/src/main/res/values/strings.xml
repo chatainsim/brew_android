@@ -524,6 +524,7 @@
     <string name="ferm_section">Fermentation (%1$d mesures)</string>
     <string name="log_section">Journal</string>
     <string name="last_reading">Dernière mesure : %1$s</string>
+    <string name="ferm_abv_estimate">≈ %1$s %% ABV à date</string>
     <string name="legend_gravity">Densité %1$s → %2$s</string>
     <string name="legend_temp">Temp. %1$s–%2$s °C</string>
 
