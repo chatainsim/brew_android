@@ -79,8 +79,6 @@ private fun categoryLabelRes(category: String): Int = when (category) {
 
 // Mêmes gabarits que script_locales.html (clé "act.<action>") - un journal partagé
 // avec le web, donc les entrées créées depuis le site doivent s'afficher pareil ici.
-// "act.recipe_forked" n'a pas de traduction côté web non plus (gabarit non défini
-// dans script_locales.html) ; ajouté ici uniquement pour compléter l'affichage mobile.
 private val activityTemplates = mapOf(
     "act.recipe_created" to "Recette « \${name} » créée",
     "act.recipe_updated" to "Recette « \${name} » modifiée",
@@ -93,6 +91,7 @@ private val activityTemplates = mapOf(
     "act.backup_auto" to "Backup auto : \${n} fichier(s) → \${repos}",
     "act.backup_auto_err" to "Backup auto : \${n} fichier(s) → \${repos} (\${e} erreur(s))",
     "act.backup_manual" to "Backup manuel : \${n} fichier(s)",
+    "act.ferm_purge" to "\${n} relevé(s) de fermentation supprimé(s)",
 )
 
 private val activityJson = Json { ignoreUnknownKeys = true }
