@@ -35,6 +35,11 @@ jobs:
 
       - name: SDK Android
         uses: android-actions/setup-android@v3
+        with:
+          # Par défaut l'action installe aussi « tools », paquet retiré des
+          # cmdline-tools récentes (16.0 sur les runners GitHub) : sdkmanager
+          # échoue avec « Failed to find package 'tools' ».
+          packages: 'platform-tools'
 
       - name: Installer la plateforme/build-tools nécessaires (compileSdk 36)
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
