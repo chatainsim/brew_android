@@ -749,6 +749,7 @@ fun additionLabel(type: String): String = when (type) {
     "ebullition" -> stringResource(R.string.hop_boil)
     "flameout" -> stringResource(R.string.add_flameout)
     "whirlpool" -> stringResource(R.string.hop_whirlpool)
+    "hopstand" -> stringResource(R.string.hop_hopstand)
     "dryhop" -> stringResource(R.string.hop_dryhop)
     "fermentation" -> stringResource(R.string.add_fermentation)
     "packaging" -> stringResource(R.string.add_packaging)

@@ -92,4 +92,13 @@ class RecipeEstimatorTest {
         assertEquals(0.03 * 29.5, cost.water!!, 1e-9)
         assertEquals(12.5 + 0.03 * 29.5 + 3.5 + 0.2, cost.total, 1e-9)
     }
+
+    @Test
+    fun `ibu hop stand compte 5 min d'ebullition, comme sur le site`() {
+        val base = listOf(malt("Pilsen", 5.0, gu = 384.0))
+        val stand = RecipeEstimator.estimates(base + hop(50.0, 10.0, 30, type = "hopstand"), 20.0, 72.0)
+        val cinqMin = RecipeEstimator.estimates(base + hop(50.0, 10.0, 5), 20.0, 72.0)
+        // La durée saisie (30 min de repos) ne compte pas comme de l'ébullition
+        assertEquals(cinqMin.ibu!!, stand.ibu!!, 1e-9)
+    }
 }

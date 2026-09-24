@@ -300,19 +300,24 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun bjcpStyles(): List<BjcpStyle> = api().getBjcpStyles()
 
-    /** Enregistre les coûts fixes et la formule IBU (clés water/energy = JSON string). */
+    /**
+     * Enregistre les coûts fixes et la formule IBU (clés water/energy = JSON string).
+     * Relit d'abord les valeurs du serveur : ces objets portent aussi des champs
+     * saisis sur le site (profil d'eau, eau de refroidissement) à conserver.
+     */
     suspend fun saveCostSettings(cs: CostSettings) {
-        val water = kotlinx.serialization.json.buildJsonObject {
-            cs.waterPricePerL?.let { put("price", it) }
-        }
-        val energy = kotlinx.serialization.json.buildJsonObject {
-            put("gas_per_brew", cs.gasPerBrew)
-            put("elec_per_brew", cs.elecPerBrew)
-            put("ibu_formula", cs.ibuFormula)
-        }
+        val current = api().getAppSettings()
+        val water = mergeJsonSetting(current["water"], mapOf(
+            "price" to cs.waterPricePerL?.let { kotlinx.serialization.json.JsonPrimitive(it) },
+        ))
+        val energy = mergeJsonSetting(current["energy"], mapOf(
+            "gas_per_brew" to kotlinx.serialization.json.JsonPrimitive(cs.gasPerBrew),
+            "elec_per_brew" to kotlinx.serialization.json.JsonPrimitive(cs.elecPerBrew),
+            "ibu_formula" to kotlinx.serialization.json.JsonPrimitive(cs.ibuFormula),
+        ))
         val body = kotlinx.serialization.json.buildJsonObject {
-            put("water", water.toString())
-            put("energy", energy.toString())
+            put("water", water)
+            put("energy", energy)
         }
         api().saveAppSettings(body)
     }
@@ -465,6 +470,15 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
                 ?.contentOrNull ?: "tinseth",
         )
     }
+
+    /**
+     * Fonctions IA activées (case « Activer les fonctions IA » des paramètres du
+     * site, clé ai_enabled). Désactivées tant que le serveur ne dit pas « true »,
+     * comme sur le site : le serveur refuse alors les suggestions.
+     */
+    suspend fun aiEnabled(): Boolean =
+        (api().getAppSettings()["ai_enabled"] as? kotlinx.serialization.json.JsonPrimitive)
+            ?.contentOrNull == "true"
 
     /** Délai par défaut (jours) des rappels de calendrier, depuis /api/app-settings (clé default_brew_reminder_days). */
     suspend fun defaultReminderDays(): Int {

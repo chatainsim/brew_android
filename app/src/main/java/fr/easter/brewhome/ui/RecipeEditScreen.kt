@@ -40,19 +40,20 @@ import fr.easter.brewhome.data.RecipePost
 import fr.easter.brewhome.data.parsedIngredients
 
 // Types d'ajout du houblon, mêmes valeurs que le site
-private val hopTypes = listOf("ebullition", "whirlpool", "dryhop")
+private val hopTypes = listOf("ebullition", "whirlpool", "hopstand", "dryhop")
 
 // Moments d'ajout d'un ingrédient « autre » (sucre, miel, épices…)
 private val otherTypes =
     listOf("empatage", "sparge", "ebullition", "whirlpool", "flameout", "fermentation", "packaging")
 
 /** Ces moments demandent une durée (minutes restantes d'ébullition). */
-private fun needsMinutes(type: String) = type == "ebullition" || type == "whirlpool"
+private fun needsMinutes(type: String) = type == "ebullition" || type == "whirlpool" || type == "hopstand"
 
 @Composable
 private fun hopTypeLabel(type: String): String = stringResource(
     when (type) {
         "whirlpool" -> R.string.hop_whirlpool
+        "hopstand" -> R.string.hop_hopstand
         "dryhop" -> R.string.hop_dryhop
         else -> R.string.hop_boil
     },

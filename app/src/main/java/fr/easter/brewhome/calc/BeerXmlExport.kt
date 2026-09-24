@@ -48,13 +48,14 @@ object BeerXmlExport {
         appendLine("    <HOPS>")
         byCat["houblon"].orEmpty().forEach { hop ->
             val dryHop = hop.hopType?.contains("dry", ignoreCase = true) == true || hop.hopDays != null
-            val whirlpool = !dryHop && hop.hopType?.equals("whirlpool", ignoreCase = true) == true
+            val whirlpool = !dryHop && (hop.hopType.equals("whirlpool", ignoreCase = true) ||
+                hop.hopType.equals("hopstand", ignoreCase = true))
             appendLine("      <HOP>")
             tag("NAME", hop.name, 4)
             tag("VERSION", "1", 4)
             tag("AMOUNT", fmt(kg(hop.quantity, hop.unit)), 4)
             hop.alpha?.let { tag("ALPHA", fmt(it), 4) }
-            // Même mapping que hopUseMap() côté site : whirlpool → « Aroma », pas « Boil »
+            // Même mapping que hopUseMap() côté site : whirlpool/hop stand → « Aroma », pas « Boil »
             tag("USE", if (dryHop) "Dry Hop" else if (whirlpool) "Aroma" else "Boil", 4)
             // TIME en minutes : jours × 1440 pour un dry hop
             val time = if (dryHop) (hop.hopDays ?: 0) * 1440 else (hop.hopTime ?: 0)

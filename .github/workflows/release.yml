@@ -20,7 +20,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Historique + tags complets : le changelog (ci-dessous) diffe depuis
           # le tag de la version précédente, le fetch-depth par défaut (1) n'en
@@ -28,17 +28,17 @@ jobs:
           fetch-depth: 0
 
       - name: JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
 
       - name: SDK Android
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          # Par défaut l'action installe aussi « tools », paquet retiré des
-          # cmdline-tools récentes (16.0 sur les runners GitHub) : sdkmanager
-          # échoue avec « Failed to find package 'tools' ».
+          # La v3 installait aussi « tools », paquet retiré des cmdline-tools
+          # récentes (« Failed to find package 'tools' ») ; la v4 ne le demande
+          # plus, gardé explicite pour ne pas en dépendre.
           packages: 'platform-tools'
 
       - name: Installer la plateforme/build-tools nécessaires (compileSdk 36)

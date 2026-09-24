@@ -7,9 +7,10 @@ import fr.easter.brewhome.data.RecipeIngredient
  * à pas : à quel instant écoulé (depuis le début du minuteur d'ébullition,
  * en millisecondes) chaque houblon doit être ajouté.
  *
- * Mêmes trois types que ceux proposés à la saisie (RecipeEditScreen.kt,
+ * Mêmes types que ceux proposés à la saisie (RecipeEditScreen.kt,
  * `hopTypes`) : "ebullition" (par défaut) ajouté à T = durée - hopTime,
- * "whirlpool" ajouté à la toute fin (flamme éteinte), "dryhop" exclu — ajouté
+ * "whirlpool" et "hopstand" ajoutés à la toute fin (flamme éteinte, leur
+ * durée est celle du repos qui suit), "dryhop" exclu — ajouté
  * après refroidissement/ensemencement, une autre étape du guide.
  */
 object BrewGuideSchedule {
@@ -24,7 +25,7 @@ object BrewGuideSchedule {
             .mapNotNull { hop ->
                 val type = hop.hopType ?: "ebullition"
                 if (type == "dryhop") return@mapNotNull null
-                val elapsed = if (type == "whirlpool") {
+                val elapsed = if (type == "whirlpool" || type == "hopstand") {
                     boilMs
                 } else {
                     boilMs - (hop.hopTime ?: 60) * 60_000L

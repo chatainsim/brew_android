@@ -81,7 +81,8 @@ object RecipeEstimator {
             val alpha = h.alpha ?: return@forEach
             val ht = h.hopType ?: "ebullition"
             if (ht == "dryhop") return@forEach
-            val mins = if (ht == "whirlpool") 15.0 else (h.hopTime ?: 60).toDouble()
+            // Même équivalence que le site : whirlpool = 15 min d'ébullition, hop stand = 5
+            val mins = when (ht) { "whirlpool" -> 15.0; "hopstand" -> 5.0; else -> (h.hopTime ?: 60).toDouble() }
             val g = if (h.unit == "kg") h.quantity * 1000 else h.quantity
             ibuTotal += if (ibuFormula == "rager") {
                 val util = 18.11 + 13.86 * tanh((mins - 31.32) / 18.27)

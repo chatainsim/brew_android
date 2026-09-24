@@ -92,4 +92,15 @@ class BeerXmlExportTest {
         assertTrue("<AMOUNT>0.012</AMOUNT>" in xml)
         assertTrue("<AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>" in xml)
     }
+
+    @Test
+    fun `houblon hop stand exporte en Aroma, pas en Boil`() {
+        val stand = RecipeIngredient(
+            id = 6, name = "Mosaic", category = "houblon",
+            quantity = 30.0, unit = "g", hopType = "hopstand", hopTime = 20,
+        )
+        val xml = BeerXmlExport.toBeerXml(recipe.copy(ingredients = listOf(stand)))
+        assertTrue("<USE>Aroma</USE>" in xml)
+        assertTrue("<USE>Boil</USE>" !in xml)
+    }
 }

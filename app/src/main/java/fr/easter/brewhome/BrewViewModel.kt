@@ -768,6 +768,16 @@ class BrewViewModel(
         }
     }
 
+    private val _aiEnabled = MutableStateFlow(false)
+    /** Fonctions IA activées côté site ; faux par défaut et si le serveur est injoignable. */
+    val aiEnabled: StateFlow<Boolean> = _aiEnabled
+
+    fun loadAiEnabled() {
+        viewModelScope.launch {
+            _aiEnabled.value = runCatching { repo.aiEnabled() }.getOrDefault(false)
+        }
+    }
+
     private val _aiSuggesting = MutableStateFlow(false)
     /** true pendant l'appel à l'IA (peut durer plusieurs secondes). */
     val aiSuggesting: StateFlow<Boolean> = _aiSuggesting

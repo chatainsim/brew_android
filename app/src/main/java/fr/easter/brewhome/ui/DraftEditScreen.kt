@@ -171,9 +171,10 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
     var saving by remember { mutableStateOf(false) }
     var showAi by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { vm.loadCatalog() }
+    LaunchedEffect(Unit) { vm.loadCatalog(); vm.loadAiEnabled() }
     val catalog by vm.catalog.collectAsState()
     val aiSuggesting by vm.aiSuggesting.collectAsState()
+    val aiEnabled by vm.aiEnabled.collectAsState()
 
     if (showAi) {
         AiSuggestDialog(
@@ -209,9 +210,12 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedButton(onClick = { showAi = true }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-            Text(stringResource(R.string.ai_suggest), Modifier.padding(start = 8.dp))
+        // Masqué quand les fonctions IA sont désactivées dans les paramètres du site
+        if (aiEnabled) {
+            OutlinedButton(onClick = { showAi = true }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.ai_suggest), Modifier.padding(start = 8.dp))
+            }
         }
         OutlinedTextField(
             value = title,

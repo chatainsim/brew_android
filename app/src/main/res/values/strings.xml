@@ -102,6 +102,7 @@
     <string name="recipe_ferm_time">Ferm. jours</string>
     <string name="hop_boil">Ébullition</string>
     <string name="hop_whirlpool">Whirlpool</string>
+    <string name="hop_hopstand">Hop stand</string>
     <string name="hop_dryhop">Dry hop</string>
     <string name="hop_minutes">min</string>
     <string name="hop_days">jours</string>

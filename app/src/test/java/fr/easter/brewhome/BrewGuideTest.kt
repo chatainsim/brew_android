@@ -113,4 +113,13 @@ class BrewGuideTest {
         assertEquals(3, store.load("brew_5")?.step)
     }
 
+    @Test
+    fun `hop stand ajoute flamme eteinte, comme le whirlpool`() {
+        val schedule = BrewGuideSchedule.boilSchedule(
+            listOf(hop(1, "Magnum", hopTime = 60), hop(2, "Citra", hopTime = 20, hopType = "hopstand")),
+            boilMinutes = 60,
+        )
+        assertEquals(listOf(0L, 60 * 60_000L), schedule.map { it.elapsedMs })
+        assertEquals("Citra", schedule.last().name)
+    }
 }
