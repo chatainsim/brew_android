@@ -686,6 +686,29 @@ class BrewViewModel(
         }
     }
 
+    /** Bilan annuel « Wrapped » : chargement, résultat, ou erreur (serveur trop ancien). */
+    sealed interface WrappedState {
+        data object Loading : WrappedState
+        data class Ready(val data: fr.easter.brewhome.data.Wrapped) : WrappedState
+        data class Failed(val serverTooOld: Boolean) : WrappedState
+    }
+
+    private val _wrapped = MutableStateFlow<WrappedState>(WrappedState.Loading)
+    val wrapped: StateFlow<WrappedState> = _wrapped
+
+    fun loadWrapped(year: Int) {
+        _wrapped.value = WrappedState.Loading
+        viewModelScope.launch {
+            runCatching { repo.wrapped(year) }
+                .onSuccess { _wrapped.value = WrappedState.Ready(it) }
+                .onFailure {
+                    // 404 : la route /api/wrapped n'existe qu'à partir du serveur 0.1.23
+                    val tooOld = (it as? retrofit2.HttpException)?.code() == 404
+                    _wrapped.value = WrappedState.Failed(tooOld)
+                }
+        }
+    }
+
     private val _depletion = MutableStateFlow<List<DepletionEntry>?>(null)
     val depletion: StateFlow<List<DepletionEntry>?> = _depletion
 

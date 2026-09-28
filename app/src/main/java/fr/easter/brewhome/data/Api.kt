@@ -354,6 +354,9 @@ interface BrewApi {
     @POST("api/scale-guide/next")
     suspend fun nextScaleGuide(@Body body: kotlinx.serialization.json.JsonObject): ScaleGuideStatus
 
+    @GET("api/wrapped")
+    suspend fun getWrapped(@retrofit2.http.Query("year") year: Int): Wrapped
+
     @POST("api/scale-guide/stop")
     suspend fun stopScaleGuide(@Body body: kotlinx.serialization.json.JsonObject): kotlinx.serialization.json.JsonObject
 }

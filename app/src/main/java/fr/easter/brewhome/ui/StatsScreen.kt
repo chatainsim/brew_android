@@ -39,7 +39,7 @@ import fr.easter.brewhome.calc.StockCheck
 
 /** Statistiques de brasserie — même esprit que la page Stats du site. */
 @Composable
-fun StatsScreen(vm: BrewViewModel) {
+fun StatsScreen(vm: BrewViewModel, onOpenWrapped: (Int) -> Unit = {}) {
     val state by vm.state.collectAsState()
     val consumption by vm.consumption.collectAsState()
     val depletion by vm.depletion.collectAsState()
@@ -82,6 +82,12 @@ fun StatsScreen(vm: BrewViewModel) {
                 }
             }
         }
+        // ── Bilan annuel « Wrapped » ──
+        val wrappedYear = year?.toIntOrNull() ?: java.time.LocalDate.now().year
+        androidx.compose.material3.FilledTonalButton(
+            onClick = { onOpenWrapped(wrappedYear) },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.wrap_open, wrappedYear)) }
         // ── Grands chiffres ──
         val totalVol = done.sumOf { it.volumeBrewed ?: 0.0 }
         val abvs = done.mapNotNull { it.abv }

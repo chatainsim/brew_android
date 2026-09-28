@@ -99,7 +99,7 @@ private fun tabOf(route: String?): String? = when {
     route == "brews" || route.startsWith("brew/") || route.startsWith("brewEdit/") ||
         route.startsWith("brewChecklist/") || route.startsWith("brewGuide/brew/") -> "brews"
     route == "tools" || route.startsWith("tools/") ||
-        route == "stats" || route == "calendar" ||
+        route == "stats" || route.startsWith("wrapped/") || route == "calendar" ||
         route == "spindles" || route.startsWith("spindle/") ||
         route == "temps" || route.startsWith("temp/") || route == "kegs" ||
         route == "trash" || route == "catalog" || route == "activity" -> "tools"
@@ -264,6 +264,7 @@ fun BrewHomeApp(
                                     stringResource(R.string.title_draft_new)
                                 else stringResource(R.string.title_draft_edit)
                             currentRoute == "stats" -> stringResource(R.string.title_stats)
+                            currentRoute?.startsWith("wrapped/") == true -> stringResource(R.string.title_wrapped)
                             currentRoute == "calendar" -> stringResource(R.string.title_calendar)
                             currentRoute == "spindles" || currentRoute?.startsWith("spindle/") == true ->
                                 stringResource(R.string.title_spindles)
@@ -686,7 +687,11 @@ fun BrewHomeApp(
             composable("tools/{id}") { entry ->
                 ToolScreen(entry.arguments?.getString("id"))
             }
-            composable("stats") { StatsScreen(vm) }
+            composable("stats") { StatsScreen(vm) { y -> navController.navigate("wrapped/$y") } }
+            composable("wrapped/{year}") { entry ->
+                val y = entry.arguments?.getString("year")?.toIntOrNull() ?: java.time.LocalDate.now().year
+                WrappedScreen(vm, y)
+            }
             composable("settings") {
                 SettingsScreen(vm) {
                     navController.navigate("home") { popUpTo("settings") { inclusive = true } }

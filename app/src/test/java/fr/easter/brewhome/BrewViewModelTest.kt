@@ -67,6 +67,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
@@ -266,6 +267,11 @@ class BrewViewModelTest {
         override suspend fun aiDraftSuggest(body: AiSuggestPost): AiSuggestResult = throw NotImplementedError()
         override suspend fun importBeerXml(body: okhttp3.RequestBody): JsonObject = throw NotImplementedError()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
+        /** Réponse de /api/wrapped ; lève par défaut (serveur sans la route). */
+        var wrapped: (Int) -> fr.easter.brewhome.data.Wrapped = {
+            throw retrofit2.HttpException(retrofit2.Response.error<Any>(404, "".toResponseBody(null)))
+        }
+        override suspend fun getWrapped(year: Int): fr.easter.brewhome.data.Wrapped = wrapped(year)
         override suspend fun getCustomEvents(): List<CustomEvent> = throw NotImplementedError()
         override suspend fun createCustomEvent(body: CustomEventPost): CustomEvent = throw NotImplementedError()
         override suspend fun deleteCustomEvent(id: Int): JsonObject = throw NotImplementedError()
@@ -323,6 +329,32 @@ class BrewViewModelTest {
         recipes = emptyList(), inventory = emptyList(),
         brews = emptyList(), drafts = emptyList(), shopping = emptyList(),
     )
+
+    // ── Bilan Wrapped ─────────────────────────────────────────────────────
+
+    @Test
+    fun `wrapped - donnees de l'annee demandee`() = runTest {
+        api.wrapped = { y -> fr.easter.brewhome.data.Wrapped(year = y, brews = 3) }
+        val vm = vm()
+        vm.loadWrapped(2025)
+        advanceUntilIdle()
+        val s = vm.wrapped.value as BrewViewModel.WrappedState.Ready
+        assertEquals(2025, s.data.year)
+        assertEquals(3, s.data.brews)
+    }
+
+    @Test
+    fun `wrapped - serveur trop ancien (404) signale`() = runTest {
+        val vm = vm()
+        vm.loadWrapped(2025)
+        advanceUntilIdle()
+        assertEquals(BrewViewModel.WrappedState.Failed(serverTooOld = true), vm.wrapped.value)
+
+        api.wrapped = { throw java.io.IOException("réseau") }
+        vm.loadWrapped(2025)
+        advanceUntilIdle()
+        assertEquals(BrewViewModel.WrappedState.Failed(serverTooOld = false), vm.wrapped.value)
+    }
 
     // ── refreshAll ────────────────────────────────────────────────────────
 

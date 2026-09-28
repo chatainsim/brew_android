@@ -139,6 +139,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun consumption(): Consumption = api().getConsumption()
 
+    suspend fun wrapped(year: Int): Wrapped = api().getWrapped(year)
+
     suspend fun consumptionDepletion(): List<DepletionEntry> = api().getConsumptionDepletion()
 
     suspend fun activity(limit: Int = 50, offset: Int = 0, category: String? = null, exclude: String? = null): ActivityLog =

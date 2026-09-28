@@ -835,3 +835,73 @@ data class TastingPut(
     @SerialName("taste_score_mouthfeel") val tasteScoreMouthfeel: Int? = null,
     @SerialName("taste_score_finish") val tasteScoreFinish: Int? = null,
 )
+
+// ── Bilan annuel « Wrapped » (GET /api/wrapped?year=, serveur ≥ 0.1.23) ──
+
+@Serializable
+data class WrappedNamedDate(val name: String = "", val date: String = "")
+
+@Serializable
+data class WrappedStyle(val name: String = "", val count: Int = 0)
+
+@Serializable
+data class WrappedRecipe(val name: String = "", val count: Int = 0)
+
+@Serializable
+data class WrappedHop(val name: String = "", val grams: Double = 0.0)
+
+@Serializable
+data class WrappedAbv(val name: String = "", val abv: Double = 0.0)
+
+@Serializable
+data class WrappedBeerLiters(val name: String = "", val liters: Double = 0.0)
+
+@Serializable
+data class WrappedRating(val name: String = "", val rating: Int = 0)
+
+@Serializable
+data class Wrapped(
+    val year: Int,
+    val empty: Boolean = false,
+    @SerialName("in_progress") val inProgress: Boolean = false,
+    val until: String? = null,
+    val years: List<Int> = emptyList(),
+    val brews: Int = 0,
+    val liters: Double = 0.0,
+    val pints: Int = 0,
+    @SerialName("prev_year") val prevYear: Int? = null,
+    @SerialName("prev_liters") val prevLiters: Double = 0.0,
+    @SerialName("prev_same_date") val prevSameDate: Boolean = false,
+    @SerialName("evolution_pct") val evolutionPct: Int? = null,
+    @SerialName("first_brew") val firstBrew: WrappedNamedDate? = null,
+    @SerialName("last_brew") val lastBrew: WrappedNamedDate? = null,
+    @SerialName("by_month") val byMonth: List<Double> = emptyList(),
+    @SerialName("best_month") val bestMonth: Int? = null,
+    @SerialName("months_active") val monthsActive: Int = 0,
+    @SerialName("month_streak") val monthStreak: Int = 0,
+    @SerialName("fav_weekday") val favWeekday: Int? = null,
+    val styles: List<WrappedStyle> = emptyList(),
+    @SerialName("n_styles") val nStyles: Int = 0,
+    @SerialName("top_recipe") val topRecipe: WrappedRecipe? = null,
+    @SerialName("new_recipes") val newRecipes: Int = 0,
+    @SerialName("malt_kg") val maltKg: Double = 0.0,
+    @SerialName("hops_g") val hopsG: Double = 0.0,
+    @SerialName("hops_per_liter") val hopsPerLiter: Double? = null,
+    @SerialName("top_malt") val topMalt: String? = null,
+    @SerialName("top_hops") val topHops: List<WrappedHop> = emptyList(),
+    @SerialName("top_yeast") val topYeast: String? = null,
+    @SerialName("avg_abv") val avgAbv: Double? = null,
+    val strongest: WrappedAbv? = null,
+    @SerialName("avg_efficiency") val avgEfficiency: Double? = null,
+    val cost: Double? = null,
+    @SerialName("cost_per_liter") val costPerLiter: Double? = null,
+    @SerialName("bottled_beers") val bottledBeers: Int = 0,
+    val bottles: Int = 0,
+    @SerialName("bottled_liters") val bottledLiters: Double = 0.0,
+    @SerialName("drunk_liters") val drunkLiters: Double = 0.0,
+    @SerialName("drunk_bottles") val drunkBottles: Int = 0,
+    @SerialName("fav_beer") val favBeer: WrappedBeerLiters? = null,
+    @SerialName("best_tasted") val bestTasted: WrappedRating? = null,
+    val readings: Int = 0,
+    val profile: String = "passion",
+)

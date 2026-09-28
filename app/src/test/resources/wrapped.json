@@ -1,0 +1,110 @@
+{
+ "avg_abv": 6.0,
+ "avg_efficiency": 73.6,
+ "best_month": 3,
+ "best_tasted": {
+  "name": "Session Pale #12",
+  "rating": 5
+ },
+ "bottled_beers": 12,
+ "bottled_liters": 212.4,
+ "bottles": 552,
+ "brews": 12,
+ "by_month": [
+  20.0,
+  19.0,
+  20.0,
+  39.0,
+  20.0,
+  21.0,
+  19.0,
+  0.0,
+  20.0,
+  20.0,
+  21.0,
+  21.0
+ ],
+ "cost": 592,
+ "cost_per_liter": 2.47,
+ "drunk_bottles": 222,
+ "drunk_liters": 90.1,
+ "empty": false,
+ "evolution_pct": null,
+ "fav_beer": {
+  "liters": 9.7,
+  "name": "Blanche de Printemps #6"
+ },
+ "fav_weekday": 5,
+ "first_brew": {
+  "date": "2025-01-18",
+  "name": "Hop Rocket #1"
+ },
+ "hops_g": 1670,
+ "hops_per_liter": 7.0,
+ "in_progress": false,
+ "last_brew": {
+  "date": "2025-12-06",
+  "name": "Session Pale #12"
+ },
+ "liters": 240.0,
+ "malt_kg": 54.4,
+ "month_streak": 7,
+ "months_active": 11,
+ "n_styles": 4,
+ "new_recipes": 5,
+ "pints": 480,
+ "prev_brews": 0,
+ "prev_liters": 0,
+ "prev_same_date": false,
+ "prev_year": 2024,
+ "profile": "brewery",
+ "readings": 0,
+ "strongest": {
+  "abv": 9.0,
+  "name": "Triple du Moine #5"
+ },
+ "styles": [
+  {
+   "count": 6,
+   "name": "American IPA"
+  },
+  {
+   "count": 4,
+   "name": "American Pale Ale"
+  },
+  {
+   "count": 1,
+   "name": "Belgian Tripel"
+  },
+  {
+   "count": 1,
+   "name": "Witbier"
+  }
+ ],
+ "top_hops": [
+  {
+   "grams": 720,
+   "name": "Citra"
+  },
+  {
+   "grams": 480,
+   "name": "Mosaic"
+  },
+  {
+   "grams": 364,
+   "name": "Cascade"
+  }
+ ],
+ "top_malt": "Pale Ale",
+ "top_recipe": {
+  "count": 6,
+  "name": "Hop Rocket"
+ },
+ "top_yeast": "US-05",
+ "until": "2025-12-31",
+ "year": 2025,
+ "years": [
+  2026,
+  2025
+ ]
+}
