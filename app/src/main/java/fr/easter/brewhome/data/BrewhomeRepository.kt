@@ -466,6 +466,7 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         val energy = nested("energy")
         return CostSettings(
             waterPricePerL = num(water, "price"),
+            coolingWaterL = num(water, "cooling") ?: 0.0,
             gasPerBrew = num(energy, "gas_per_brew") ?: 0.0,
             elecPerBrew = num(energy, "elec_per_brew") ?: 0.0,
             ibuFormula = (energy?.get("ibu_formula") as? kotlinx.serialization.json.JsonPrimitive)

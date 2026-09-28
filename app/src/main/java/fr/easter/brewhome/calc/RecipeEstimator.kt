@@ -50,6 +50,9 @@ object RecipeEstimator {
         val water: Double?,
         val gas: Double,
         val elec: Double,
+        /** Détail de l'eau facturée : eau du brassin et eau de refroidissement (L). */
+        val waterBrewL: Double = 0.0,
+        val waterCoolingL: Double = 0.0,
     ) {
         val total: Double get() = ingredients + (water ?: 0.0) + gas + elec
     }
@@ -168,6 +171,7 @@ object RecipeEstimator {
         totalWaterL: Double?,
         gasPerBrew: Double,
         elecPerBrew: Double,
+        coolingWaterL: Double = 0.0,
     ): Cost? {
         val byCat = linkedMapOf<String, Double>()
         var ingTotal = 0.0
@@ -185,11 +189,19 @@ object RecipeEstimator {
             byCat.merge(ing.category, c, Double::plus)
             has = true
         }
+        // Eau facturée = eau du brassin + eau de refroidissement, comme le site :
+        // le refroidissement est une moyenne par brassin (Paramètres › Eau du
+        // site), non mise à l'échelle du volume de la recette.
+        val cooling = coolingWaterL.coerceAtLeast(0.0)
         val water = if (waterPricePerL != null && waterPricePerL > 0 &&
             totalWaterL != null && totalWaterL > 0
-        ) waterPricePerL * totalWaterL else null
+        ) waterPricePerL * (totalWaterL + cooling) else null
         if (water != null || gasPerBrew > 0 || elecPerBrew > 0) has = true
         if (!has) return null
-        return Cost(byCat, ingTotal, water, gasPerBrew, elecPerBrew)
+        return Cost(
+            byCat, ingTotal, water, gasPerBrew, elecPerBrew,
+            waterBrewL = if (water != null) totalWaterL!! else 0.0,
+            waterCoolingL = if (water != null) cooling else 0.0,
+        )
     }
 }

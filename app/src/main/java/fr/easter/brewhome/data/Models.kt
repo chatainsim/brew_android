@@ -249,6 +249,8 @@ data class BjcpStyle(
 /** Coûts fixes et formule IBU, extraits de /api/app-settings (clés water/energy). */
 data class CostSettings(
     val waterPricePerL: Double? = null,
+    /** Eau de refroidissement moyenne par brassin (L), réglée sur le site. */
+    val coolingWaterL: Double = 0.0,
     val gasPerBrew: Double = 0.0,
     val elecPerBrew: Double = 0.0,
     val ibuFormula: String = "tinseth",

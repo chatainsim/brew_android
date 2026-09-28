@@ -91,6 +91,19 @@ class RecipeEstimatorTest {
         assertEquals(12.5, cost.ingredients, 1e-9)
         assertEquals(0.03 * 29.5, cost.water!!, 1e-9)
         assertEquals(12.5 + 0.03 * 29.5 + 3.5 + 0.2, cost.total, 1e-9)
+        assertEquals(29.5, cost.waterBrewL, 1e-9)
+        assertEquals(0.0, cost.waterCoolingL, 1e-9)
+    }
+
+    @Test
+    fun `cout de l'eau - brassin plus refroidissement, comme sur le site`() {
+        val cost = RecipeEstimator.cost(emptyList(), emptyList(), 0.004, 27.0, 0.0, 0.0, coolingWaterL = 60.0)!!
+        assertEquals(0.004 * (27.0 + 60.0), cost.water!!, 1e-9)
+        assertEquals(27.0, cost.waterBrewL, 1e-9)
+        assertEquals(60.0, cost.waterCoolingL, 1e-9)
+        assertEquals(cost.water!!, cost.total, 1e-9)
+        // Sans prix de l'eau : pas de ligne eau, même avec du refroidissement
+        assertEquals(null, RecipeEstimator.cost(emptyList(), emptyList(), null, 27.0, 1.0, 0.0, coolingWaterL = 60.0)!!.water)
     }
 
     @Test

@@ -116,7 +116,8 @@
     <string name="est_color_morey_label">Couleur Morey</string>
     <string name="est_water">Eau empâtage %1$s L · Rinçage %2$s L · Pré-ébullition %3$s L · Total %4$s L</string>
     <string name="est_cost_title">Coût matières estimé</string>
-    <string name="est_cost_water">Eau</string>
+    <string name="est_cost_water_detail">Eau : brassin %1$s L + refroidissement %2$s L</string>
+    <string name="est_cost_water_brew_only">Eau du brassin : %1$s L (refroidissement non renseigné)</string>
     <string name="est_cost_gas">Gaz</string>
     <string name="est_cost_elec">Électricité</string>
     <string name="est_water_mash">Empâtage</string>

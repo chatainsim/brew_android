@@ -424,6 +424,7 @@ fun RecipeDetailScreen(
                     estIngs, state.inventory,
                     settings?.waterPricePerL, waterPlan?.total,
                     settings?.gasPerBrew ?: 0.0, settings?.elecPerBrew ?: 0.0,
+                    settings?.coolingWaterL ?: 0.0,
                 )
             }
             RecipeEstimatesCard(
