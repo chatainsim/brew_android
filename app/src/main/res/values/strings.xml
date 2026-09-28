@@ -112,7 +112,8 @@
     <string name="recipe_notes_hint">Procédé, remarques, ajustements…</string>
     <string name="est_title">Estimations</string>
     <string name="est_ibu_formula">IBU : %1$s</string>
-    <string name="est_color_morey">EBC %1$d · SRM %2$d · Couleur Morey</string>
+    <string name="est_color_values">EBC %1$d · SRM %2$d</string>
+    <string name="est_color_morey_label">Couleur Morey</string>
     <string name="est_water">Eau empâtage %1$s L · Rinçage %2$s L · Pré-ébullition %3$s L · Total %4$s L</string>
     <string name="est_cost_title">Coût matières estimé</string>
     <string name="est_cost_water">Eau</string>

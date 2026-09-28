@@ -169,19 +169,28 @@ fun StatusChip(label: String, container: Color, content: Color, modifier: Modifi
     }
 }
 
-// Nuancier SRM 1..40 (référence brassicole standard), du blond paille au noir.
-private val SrmColors = intArrayOf(
-    0xFFE699, 0xFFD878, 0xFFCA5A, 0xFFBF42, 0xFBB123, 0xF8A600, 0xF39C00, 0xEA8F00,
-    0xE58500, 0xDE7C00, 0xD77200, 0xCF6900, 0xCB6200, 0xC35900, 0xBB5100, 0xB54C00,
-    0xB04500, 0xA63E00, 0xA13700, 0x9B3200, 0x952D00, 0x8E2900, 0x882300, 0x821E00,
-    0x7B1A00, 0x771900, 0x701400, 0x6A0E00, 0x660D00, 0x5E0B00, 0x5A0A02, 0x560A05,
-    0x520907, 0x4C0505, 0x470606, 0x440607, 0x3F0708, 0x3B0607, 0x3A070B, 0x36080A,
-)
-
-/** Couleur réelle d'un malt / d'une bière d'après sa valeur EBC. */
+/**
+ * Couleur réelle d'un malt / d'une bière d'après sa valeur EBC — même nuancier
+ * par paliers SRM que le site (ebcToColor dans script_recettes.html), pour que
+ * la pastille ait la même teinte des deux côtés.
+ */
 fun ebcColor(ebc: Double): Color {
-    val srm = (ebc / 1.97).toInt().coerceIn(1, SrmColors.size)
-    return Color(0xFF000000.toInt() or SrmColors[srm - 1])
+    val srm = ebc / 1.97
+    val rgb = when {
+        srm < 2 -> 0xFFE699
+        srm < 4 -> 0xFFD878
+        srm < 6 -> 0xFFCA5A
+        srm < 9 -> 0xFFC033
+        srm < 12 -> 0xEBB008
+        srm < 15 -> 0xD98000
+        srm < 18 -> 0xCB6E00
+        srm < 22 -> 0xBE5C00
+        srm < 28 -> 0xA95200
+        srm < 35 -> 0x8D4C00
+        srm < 44 -> 0x6B3A00
+        else -> 0x3D1F00
+    }
+    return Color(0xFF000000.toInt() or rgb)
 }
 
 /** Rond de couleur EBC : montre la teinte du malt d'un coup d'œil. */
