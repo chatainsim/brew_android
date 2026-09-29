@@ -245,6 +245,7 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
         var gas by remember(costs) { mutableStateOf(costs?.gasPerBrew?.let { fmtNum(it) } ?: "") }
         var elec by remember(costs) { mutableStateOf(costs?.elecPerBrew?.let { fmtNum(it) } ?: "") }
         var water by remember(costs) { mutableStateOf(costs?.waterPricePerL?.let { fmtNum(it) } ?: "") }
+        var cooling by remember(costs) { mutableStateOf(costs?.coolingWaterL?.takeIf { it > 0 }?.let { fmtNum(it) } ?: "") }
         var ibuFormula by remember(costs) { mutableStateOf(costs?.ibuFormula ?: "tinseth") }
         OutlinedTextField(
             value = gas,
@@ -276,6 +277,17 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
             ),
             modifier = Modifier.fillMaxWidth(),
         )
+        OutlinedTextField(
+            value = cooling,
+            onValueChange = { cooling = it },
+            label = { Text(stringResource(R.string.settings_cost_cooling)) },
+            supportingText = { Text(stringResource(R.string.settings_cost_cooling_help)) },
+            singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
         Text(
             stringResource(R.string.settings_ibu_formula),
             style = MaterialTheme.typography.bodyMedium,
@@ -294,6 +306,7 @@ fun SettingsScreen(vm: BrewViewModel, onSaved: () -> Unit) {
                 vm.saveCostSettings(
                     fr.easter.brewhome.data.CostSettings(
                         waterPricePerL = water.replace(',', '.').toDoubleOrNull(),
+                        coolingWaterL = cooling.replace(',', '.').toDoubleOrNull()?.coerceAtLeast(0.0) ?: 0.0,
                         gasPerBrew = gas.replace(',', '.').toDoubleOrNull() ?: 0.0,
                         elecPerBrew = elec.replace(',', '.').toDoubleOrNull() ?: 0.0,
                         ibuFormula = ibuFormula,

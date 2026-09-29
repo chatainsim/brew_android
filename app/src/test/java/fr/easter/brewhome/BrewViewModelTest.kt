@@ -158,8 +158,13 @@ class BrewViewModelTest {
             return importDrafts(buf.readUtf8())
         }
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }
-        override suspend fun getAppSettings(): JsonObject { gate(); return JsonObject(emptyMap()) }
-        override suspend fun saveAppSettings(body: JsonObject): JsonObject = throw NotImplementedError()
+        /** Réglages du site : les clés « water » / « energy » sont du JSON en chaîne. */
+        var appSettings = JsonObject(emptyMap())
+        override suspend fun getAppSettings(): JsonObject { gate(); return appSettings }
+        override suspend fun saveAppSettings(body: JsonObject): JsonObject {
+            appSettings = JsonObject(appSettings + body)
+            return appSettings
+        }
         override suspend fun getActivity(limit: Int, offset: Int, category: String?, exclude: String?): fr.easter.brewhome.data.ActivityLog =
             throw NotImplementedError()
         override suspend fun postActivity(body: fr.easter.brewhome.data.ActivityPost): JsonObject = throw NotImplementedError()
@@ -369,6 +374,32 @@ class BrewViewModelTest {
         vm.loadWrapped(2025)
         advanceUntilIdle()
         assertEquals(BrewViewModel.WrappedState.Failed(serverTooOld = false), vm.wrapped.value)
+    }
+
+    // ── Coûts : eau de refroidissement ────────────────────────────────────
+
+    private fun waterSetting(api: FakeApi) = kotlinx.serialization.json.Json.parseToJsonElement(
+        (api.appSettings["water"] as kotlinx.serialization.json.JsonPrimitive).content,
+    ) as JsonObject
+
+    @Test
+    fun `eau de refroidissement enregistree sans toucher au profil d'eau du site`() = runTest {
+        api.appSettings = JsonObject(mapOf("water" to kotlinx.serialization.json.JsonPrimitive(
+            """{"price":0.004,"ph":7.2,"ca":80}""")))
+        val vm = vm()
+        vm.saveCostSettings(fr.easter.brewhome.data.CostSettings(waterPricePerL = 0.004, coolingWaterL = 60.0))
+        advanceUntilIdle()
+        val water = waterSetting(api)
+        assertEquals("60.0", water["cooling"].toString())
+        assertEquals("7.2", water["ph"].toString())                    // profil d'eau conservé
+        assertEquals("80", water["ca"].toString())
+        assertEquals(60.0, vm.costSettings.value!!.coolingWaterL, 1e-9)  // relu depuis le serveur
+
+        // Vidé → clé retirée, comme sur le site
+        vm.saveCostSettings(fr.easter.brewhome.data.CostSettings(waterPricePerL = 0.004, coolingWaterL = 0.0))
+        advanceUntilIdle()
+        assertNull(waterSetting(api)["cooling"])
+        assertEquals(0.0, vm.costSettings.value!!.coolingWaterL, 1e-9)
     }
 
     // ── Import BeerXML ────────────────────────────────────────────────────

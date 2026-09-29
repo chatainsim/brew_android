@@ -212,10 +212,14 @@ fun RecipeEstimatesCard(
                 // Coûts fixes : eau, gaz, électricité
                 listOfNotNull(
                     cost.water?.takeIf { it > 0 }?.let {
-                        stringResource(
-                            if (cost.waterCoolingL > 0) R.string.est_cost_water_detail else R.string.est_cost_water_brew_only,
-                            estFmt(cost.waterBrewL, 1), estFmt(cost.waterCoolingL, 0),
+                        // Prix au litre retrouvé depuis le montant : eau facturée = brassin + refroidissement
+                        val liters = cost.waterBrewL + cost.waterCoolingL
+                        val price = if (liters > 0) estFmt(it / liters, 4) else "–"
+                        if (cost.waterCoolingL > 0) stringResource(
+                            R.string.est_cost_water_detail,
+                            estFmt(cost.waterBrewL, 1), estFmt(cost.waterCoolingL, 0), price,
                         ) to it
+                        else stringResource(R.string.est_cost_water_brew_only, estFmt(cost.waterBrewL, 1), price) to it
                     },
                     cost.gas.takeIf { it > 0 }?.let { stringResource(R.string.est_cost_gas) to it },
                     cost.elec.takeIf { it > 0 }?.let { stringResource(R.string.est_cost_elec) to it },

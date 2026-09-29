@@ -329,6 +329,8 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         val current = api().getAppSettings()
         val water = mergeJsonSetting(current["water"], mapOf(
             "price" to cs.waterPricePerL?.let { kotlinx.serialization.json.JsonPrimitive(it) },
+            // Eau de refroidissement : 0 ou vide = clé retirée, comme un champ vidé sur le site
+            "cooling" to cs.coolingWaterL.takeIf { it > 0 }?.let { kotlinx.serialization.json.JsonPrimitive(it) },
         ))
         val energy = mergeJsonSetting(current["energy"], mapOf(
             "gas_per_brew" to kotlinx.serialization.json.JsonPrimitive(cs.gasPerBrew),
