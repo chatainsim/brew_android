@@ -49,10 +49,12 @@ class MainActivity : ComponentActivity() {
             val mode by vm.themeMode.collectAsState()
             val dynamic by vm.dynamicColor.collectAsState()
             val dark = isDarkTheme(mode)
-            // Icônes des barres système lisibles quand le thème est forcé
-            LaunchedEffect(dark) {
+            // Icônes des barres système lisibles quand le thème est forcé. La barre
+            // du haut est sombre dans les deux thèmes (comme l'en-tête du site) :
+            // icônes claires en haut, sauf avec les couleurs Material You en clair.
+            LaunchedEffect(dark, dynamic) {
                 enableEdgeToEdge(
-                    statusBarStyle = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
+                    statusBarStyle = if (dark || !dynamic) SystemBarStyle.dark(Color.TRANSPARENT)
                         else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
                     navigationBarStyle = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
                         else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),

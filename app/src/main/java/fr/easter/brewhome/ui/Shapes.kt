@@ -4,14 +4,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-// Formes plus généreusement arrondies que les valeurs par défaut de Material 3
-// (4/8/12/16/28dp), pour un rendu plus chaleureux et actuel cohérent avec la
-// palette ambre - surtout visible sur les cartes (recettes, brassins, stock)
-// et les feuilles/dialogues.
+// Arrondis du site : 9 px pour les champs et boutons, 14 px pour les cartes
+// (.card), un peu plus pour les feuilles et dialogues.
 val BrewHomeShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
+    extraSmall = RoundedCornerShape(9.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(18.dp),
+    extraLarge = RoundedCornerShape(22.dp),
 )

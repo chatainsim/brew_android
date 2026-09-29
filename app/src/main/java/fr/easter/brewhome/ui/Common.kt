@@ -150,10 +150,11 @@ fun brewStatusColors(status: String?): Pair<Color, Color> = MaterialTheme.colorS
 /** Couleur d'accent d'une catégorie d'ingrédients (malt, houblon, levure…). */
 @Composable
 fun categoryColor(cat: String): Color = when (cat.lowercase()) {
-    "malt" -> MaterialTheme.colorScheme.primary
-    "houblon" -> MaterialTheme.colorScheme.tertiary
-    "levure" -> MaterialTheme.colorScheme.secondary
-    else -> MaterialTheme.colorScheme.outline
+    // Couleurs fixes du site (--malt, --hop, --yeast, --other), quel que soit le thème
+    "malt" -> Color(0xFFD97706)
+    "houblon" -> Color(0xFF10B981)
+    "levure" -> Color(0xFFEC4899)
+    else -> Color(0xFF8B5CF6)
 }
 
 /** Petite pastille remplie et arrondie : statut d'un brassin ou d'un brouillon. */

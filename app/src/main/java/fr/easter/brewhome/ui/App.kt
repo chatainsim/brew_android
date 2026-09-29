@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -242,9 +243,22 @@ fun BrewHomeApp(
     val scrollBehavior = key(currentTab) {
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     }
-    val topBarColors = TopAppBarDefaults.topAppBarColors(
+    // Comme l'en-tête du site : barre sombre dans les deux thèmes, titre ambre.
+    // Avec les couleurs Material You, on garde la teinte dynamique.
+    val dynamicColors by vm.dynamicColor.collectAsState()
+    val themeMode by vm.themeMode.collectAsState()
+    val topBarColors = if (dynamicColors) TopAppBarDefaults.topAppBarColors(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
-    )
+    ) else {
+        val headerBg = if (isDarkTheme(themeMode)) Color(0xFF141414) else Color(0xFF1C1712)   // --nav-bg
+        TopAppBarDefaults.topAppBarColors(
+            containerColor = headerBg,
+            scrolledContainerColor = headerBg,
+            titleContentColor = Color(0xFFFF9500),                                           // --amber
+            navigationIconContentColor = Color(0xFFE5E5E5),
+            actionIconContentColor = Color(0xFFE5E5E5),
+        )
+    }
     val titleContent: @Composable () -> Unit = {
                     Text(
                         when {
