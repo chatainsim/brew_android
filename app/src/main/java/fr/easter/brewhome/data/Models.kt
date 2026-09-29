@@ -625,13 +625,64 @@ data class DraftPut(
     val images: String? = null,
 )
 
+/**
+ * Ingrédient de brouillon. Au-delà des quatre champs saisis dans l'appli, un
+ * brouillon importé en BeerXML (serveur ≥ 0.1.22) porte le détail des
+ * houblons et des autres ingrédients : il faut le relire et le renvoyer tel
+ * quel, sinon une simple modification sur le téléphone l'efface, et « Créer
+ * la recette » le reprend.
+ */
 @Serializable
 data class DraftIngredient(
     val name: String = "",
     val category: String = "autre",
     val quantity: Double? = null,
     val unit: String? = null,
+    // Nombres en Double : « 60 » comme « 60.0 » doivent passer, sinon toute la
+    // liste d'ingrédients échoue au décodage et disparaît de l'écran.
+    @SerialName("hop_type") val hopType: String? = null,
+    @SerialName("hop_time") val hopTime: Double? = null,
+    @SerialName("hop_days") val hopDays: Double? = null,
+    val alpha: Double? = null,
+    val ebc: Double? = null,
+    @SerialName("other_type") val otherType: String? = null,
+    @SerialName("other_time") val otherTime: Double? = null,
+) {
+    /** Même ingrédient sans son détail (saisi à la main, ou catégorie changée). */
+    fun withoutDetails() = DraftIngredient(name, category, quantity, unit)
+}
+
+/** Réponse de POST /api/import/beerxml/drafts : un brouillon par recette du fichier. */
+@Serializable
+data class DraftImportResult(
+    val imported: Int = 0,
+    val drafts: List<Draft> = emptyList(),
+    /** Des « & » non échappés ont été corrigés par le serveur (≥ 0.1.26). */
+    val repaired: Boolean = false,
 )
+
+/**
+ * Message lisible d'un import BeerXML refusé (corps JSON de l'erreur 400) :
+ * XML invalide avec ligne, colonne et extrait (serveur ≥ 0.1.26), entités
+ * interdites, ou null si le corps ne décrit pas une erreur XML.
+ */
+fun beerXmlErrorMessage(body: String?): String? {
+    val obj = runCatching {
+        Json.parseToJsonElement(body ?: return null) as? kotlinx.serialization.json.JsonObject
+    }.getOrNull() ?: return null
+    fun str(k: String) = (obj[k] as? kotlinx.serialization.json.JsonPrimitive)?.content
+    return when (str("error")) {
+        "xml_forbidden" -> "fichier refusé : il déclare des entités XML (DOCTYPE)"
+        "xml_parse_error" -> {
+            val line = str("line")
+            val where = if (line != null) "ligne $line, colonne ${str("column")}" else null
+            val excerpt = str("excerpt")?.takeIf { it.isNotBlank() }
+            listOfNotNull("XML invalide", where, excerpt?.let { "« $it »" }).joinToString(" · ")
+        }
+        "no_data" -> "fichier vide"
+        else -> null
+    }
+}
 
 /** Corps de POST /api/ai/draft-suggest (suggestion de recette par IA). */
 @Serializable

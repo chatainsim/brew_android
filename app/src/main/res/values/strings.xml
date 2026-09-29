@@ -219,6 +219,10 @@
     <string name="error_import">Échec de l\'import BeerXML</string>
     <string name="import_none">Aucune recette importée (fichier BeerXML valide ?)</string>
     <string name="recipe_import">Importer un BeerXML</string>
+    <string name="draft_import">Importer un BeerXML en brouillons</string>
+    <string name="import_none_drafts">Aucun brouillon créé (fichier BeerXML valide ?)</string>
+    <string name="import_drafts_done">%d brouillon(s) importé(s) depuis BeerXML</string>
+    <string name="import_repaired">(« &amp; » non échappés corrigés)</string>
     <string name="ai_suggest">Suggérer (IA)</string>
     <string name="ai_suggest_title">Suggestion de recette (IA)</string>
     <string name="ai_suggest_style">Style souhaité</string>

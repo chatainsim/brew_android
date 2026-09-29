@@ -345,7 +345,11 @@ private fun draftNotes(draft: Draft): String {
         .joinToString("\n\n")
 }
 
-/** Ingrédients du brouillon → lignes d'édition (houblons en ébullition par défaut). */
+/**
+ * Ingrédients du brouillon → lignes d'édition. Le détail d'un brouillon
+ * importé en BeerXML (type et durée des houblons, alpha, EBC, étape des
+ * autres ingrédients) est repris ; sinon houblons en ébullition par défaut.
+ */
 private fun MutableList<EditRecipeIng>.seedFromDraft(draft: Draft?) {
     draft?.parsedIngredients()?.filter { it.name.isNotBlank() }?.forEach {
         val cat = it.category.lowercase().takeIf { c -> c in draftCategories } ?: "autre"
@@ -354,6 +358,13 @@ private fun MutableList<EditRecipeIng>.seedFromDraft(draft: Draft?) {
             category = cat,
             quantity = it.quantity?.let(::numToField) ?: "",
             unit = it.unit ?: unitsByCategory.getValue(cat).first(),
+            hopTime = it.hopTime?.let(::numToField) ?: "",
+            hopType = it.hopType ?: "ebullition",
+            hopDays = it.hopDays?.let(::numToField) ?: "",
+            otherType = it.otherType ?: "ebullition",
+            otherTime = it.otherTime?.let(::numToField) ?: "",
+            ebc = it.ebc,
+            alpha = it.alpha,
         ))
     }
 }

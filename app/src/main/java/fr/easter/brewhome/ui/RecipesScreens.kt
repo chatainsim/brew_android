@@ -93,7 +93,8 @@ fun RecipesScreen(
 ) {
     val state by vm.state.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
-    var showDrafts by rememberSaveable { mutableStateOf(false) }
+    // Porté par le ViewModel : le bouton d'import de la barre du haut en dépend
+    val showDrafts by vm.showDrafts.collectAsState()
 
     RefreshableContent(vm) {
         Column(Modifier.fillMaxSize()) {
@@ -104,12 +105,12 @@ fun RecipesScreen(
             ) {
                 SegmentedButton(
                     selected = !showDrafts,
-                    onClick = { showDrafts = false },
+                    onClick = { vm.setShowDrafts(false) },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                 ) { Text(stringResource(R.string.recipes_seg, state.recipes.size)) }
                 SegmentedButton(
                     selected = showDrafts,
-                    onClick = { showDrafts = true },
+                    onClick = { vm.setShowDrafts(true) },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                 ) { Text(stringResource(R.string.drafts_seg, state.drafts.size)) }
             }
@@ -930,6 +931,28 @@ private fun DraftCard(draft: Draft, onOpen: (Int) -> Unit, modifier: Modifier = 
     }
 }
 
+/** Détail d'un ingrédient de brouillon importé : « whirlpool 20 min », « dry hop 4 j · 12 % AA »… */
+internal fun draftIngDetail(ing: fr.easter.brewhome.data.DraftIngredient): String? {
+    val parts = mutableListOf<String>()
+    when (ing.category.lowercase()) {
+        "houblon" -> when (ing.hopType) {
+            "dryhop" -> parts += "dry hop" + (ing.hopDays?.let { " ${fmtQty(it)} j" } ?: "")
+            "whirlpool", "hopstand" -> parts += ing.hopType + (ing.hopTime?.let { " ${fmtQty(it)} min" } ?: "")
+            "ebullition", null -> ing.hopTime?.let { parts += "ébullition ${fmtQty(it)} min" }
+            else -> parts += ing.hopType
+        }
+        "autre" -> ing.otherType?.let { t ->
+            val label = mapOf("empatage" to "empâtage", "ebullition" to "ébullition", "fermentation" to "fermentation",
+                "packaging" to "embouteillage", "sparge" to "rinçage", "flameout" to "fin d'ébullition",
+                "whirlpool" to "whirlpool", "dryhop" to "dry hop")[t] ?: t
+            parts += label + (ing.otherTime?.let { " ${fmtQty(it)} min" } ?: "")
+        }
+    }
+    ing.alpha?.let { parts += "${fmtQty(it)} % AA" }
+    ing.ebc?.let { parts += "EBC ${fmtQty(it)}" }
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+}
+
 @Composable
 fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Unit = {}) {
     val state by vm.state.collectAsState()
@@ -1020,11 +1043,16 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Uni
                         grouped.getValue(cat).forEachIndexed { i, ing ->
                             if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    ing.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(ing.name, style = MaterialTheme.typography.bodyLarge)
+                                    draftIngDetail(ing)?.let {
+                                        Text(
+                                            it,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    }
+                                }
                                 if (ing.quantity != null) {
                                     Text(
                                         "${fmtQty(ing.quantity)} ${ing.unit ?: ""}".trim(),

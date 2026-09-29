@@ -890,6 +890,34 @@ class BrewViewModel(
         }
     }
 
+    /** Liste affichée dans l'onglet Recettes : recettes ou brouillons (décide où va l'import BeerXML). */
+    private val _showDrafts = MutableStateFlow(false)
+    val showDrafts: StateFlow<Boolean> = _showDrafts
+    fun setShowDrafts(value: Boolean) { _showDrafts.value = value }
+
+    /**
+     * Crée un brouillon par recette du fichier BeerXML, avec « Annuler » (qui
+     * supprime les brouillons créés). Nécessite le serveur ≥ 0.1.22.
+     */
+    fun importBeerXmlDrafts(xml: String) {
+        launchWithError(R.string.error_import) {
+            val res = repo.importBeerXmlDrafts(xml)
+            _state.value = _state.value.copy(
+                drafts = repo.drafts(),
+                error = if (res.imported == 0) strings(R.string.import_none_drafts) else null,
+            )
+            if (res.imported > 0) {
+                val ids = res.drafts.map { it.id }
+                val msg = strings(R.string.import_drafts_done).replace("%d", res.imported.toString()) +
+                    if (res.repaired) " " + strings(R.string.import_repaired) else ""
+                pushUndo(null, msg) {
+                    ids.forEach { repo.deleteDraft(it) }
+                    _state.value = _state.value.copy(drafts = repo.drafts())
+                }
+            }
+        }
+    }
+
     /** Importe des recettes depuis du BeerXML puis recharge la liste. */
     fun importBeerXml(xml: String) {
         launchWithError(R.string.error_import) {

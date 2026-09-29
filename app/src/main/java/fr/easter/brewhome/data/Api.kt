@@ -206,6 +206,13 @@ interface BrewApi {
     @POST("api/import/beerxml")
     suspend fun importBeerXml(@Body body: okhttp3.RequestBody): kotlinx.serialization.json.JsonObject
 
+    /** Un brouillon par recette du fichier (serveur ≥ 0.1.22 ; 404 avant). */
+    @POST("api/import/beerxml/drafts")
+    suspend fun importBeerXmlDrafts(
+        @retrofit2.http.Query("lang") lang: String,
+        @Body body: okhttp3.RequestBody,
+    ): DraftImportResult
+
     @GET("api/consumption")
     suspend fun getConsumption(): Consumption
 

@@ -216,7 +216,10 @@ fun BrewHomeApp(
             val xml = runCatching {
                 appContext.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
             }.getOrNull()
-            if (!xml.isNullOrBlank()) vm.importBeerXml(xml)
+            // Sous « Brouillons », le fichier devient des brouillons ; sinon des recettes
+            if (!xml.isNullOrBlank()) {
+                if (vm.showDrafts.value) vm.importBeerXmlDrafts(xml) else vm.importBeerXml(xml)
+            }
         }
     }
 
@@ -407,10 +410,13 @@ fun BrewHomeApp(
                     }
                     // Import BeerXML depuis la liste des recettes
                     if (currentRoute == "recipes") {
+                        val showDrafts by vm.showDrafts.collectAsState()
                         IconButton(onClick = { importLauncher.launch("*/*") }) {
                             Icon(
                                 Icons.Filled.FileUpload,
-                                contentDescription = stringResource(R.string.recipe_import),
+                                contentDescription = stringResource(
+                                    if (showDrafts) R.string.draft_import else R.string.recipe_import,
+                                ),
                             )
                         }
                     }

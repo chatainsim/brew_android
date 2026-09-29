@@ -173,9 +173,27 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     /** Importe une ou plusieurs recettes depuis du BeerXML. Renvoie le nombre importé. */
     suspend fun importBeerXml(xml: String): Int {
         val body = xml.toByteArray().toRequestBody("application/xml".toMediaType())
-        val res = api().importBeerXml(body)
+        val res = beerXmlCall { api().importBeerXml(body) }
         return (res["imported"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() ?: 0
     }
+
+    /** Crée un brouillon par recette du fichier BeerXML (les recettes ne sont pas touchées). */
+    suspend fun importBeerXmlDrafts(xml: String): DraftImportResult {
+        val body = xml.toByteArray().toRequestBody("application/xml".toMediaType())
+        return beerXmlCall(tooOldIf404 = true) { api().importBeerXmlDrafts("fr", body) }
+    }
+
+    /** Traduit un refus du serveur en message lisible (XML invalide situé, serveur trop ancien). */
+    private suspend fun <T> beerXmlCall(tooOldIf404: Boolean = false, block: suspend () -> T): T =
+        try {
+            block()
+        } catch (e: retrofit2.HttpException) {
+            if (tooOldIf404 && e.code() == 404) {
+                throw BeerXmlImportException("serveur BrewHome trop ancien (0.1.22 minimum pour importer en brouillons)")
+            }
+            val detail = beerXmlErrorMessage(runCatching { e.response()?.errorBody()?.string() }.getOrNull())
+            throw if (detail != null) BeerXmlImportException(detail) else e
+        }
 
     suspend fun addCustomEvent(post: CustomEventPost): CustomEvent = api().createCustomEvent(post)
 
@@ -561,6 +579,9 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 }
 
 /** Brouillons de recettes et catalogue d'ingrédients (autocomplétion). */
+/** Import BeerXML refusé, avec un message à montrer tel quel. */
+class BeerXmlImportException(message: String) : Exception(message)
+
 class DraftsRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun save(id: Int?, draft: DraftPut): Draft =

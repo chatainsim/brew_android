@@ -146,8 +146,17 @@ class BrewViewModelTest {
         override suspend fun restoreBrew(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun restoreBeer(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun restoreInventoryItem(id: Int): JsonObject = throw NotImplementedError()
-        override suspend fun deleteDraft(id: Int): JsonObject = throw NotImplementedError()
-        override suspend fun getDrafts(): List<Draft> { gate(); return emptyList() }
+        val drafts = mutableListOf<Draft>()
+        override suspend fun deleteDraft(id: Int): JsonObject { drafts.removeAll { it.id == id }; return JsonObject(emptyMap()) }
+        override suspend fun getDrafts(): List<Draft> { gate(); return drafts.toList() }
+        /** Réponse de l'import BeerXML en brouillons ; lève par défaut (serveur sans la route). */
+        var importDrafts: (String) -> fr.easter.brewhome.data.DraftImportResult = {
+            throw retrofit2.HttpException(retrofit2.Response.error<Any>(404, "".toResponseBody(null)))
+        }
+        override suspend fun importBeerXmlDrafts(lang: String, body: okhttp3.RequestBody): fr.easter.brewhome.data.DraftImportResult {
+            val buf = okio.Buffer(); body.writeTo(buf)
+            return importDrafts(buf.readUtf8())
+        }
         override suspend fun getShoppingList(): List<ShoppingItem> { gate(); return shopping.toList() }
         override suspend fun getAppSettings(): JsonObject { gate(); return JsonObject(emptyMap()) }
         override suspend fun saveAppSettings(body: JsonObject): JsonObject = throw NotImplementedError()
@@ -265,7 +274,13 @@ class BrewViewModelTest {
         override suspend fun createDraft(body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun updateDraft(id: Int, body: DraftPut): Draft = throw NotImplementedError()
         override suspend fun aiDraftSuggest(body: AiSuggestPost): AiSuggestResult = throw NotImplementedError()
-        override suspend fun importBeerXml(body: okhttp3.RequestBody): JsonObject = throw NotImplementedError()
+        /** Import BeerXML de recettes : 400 « XML invalide » par défaut. */
+        var importRecipes: () -> JsonObject = {
+            throw retrofit2.HttpException(retrofit2.Response.error<Any>(400,
+                """{"error":"xml_parse_error","detail":"not well-formed","line":4,"column":43,"excerpt":"<NAME>A & B</NAME>"}"""
+                    .toResponseBody(null)))
+        }
+        override suspend fun importBeerXml(body: okhttp3.RequestBody): JsonObject = importRecipes()
         override suspend fun getConsumption(): Consumption = throw NotImplementedError()
         /** Réponse de /api/wrapped ; lève par défaut (serveur sans la route). */
         var wrapped: (Int) -> fr.easter.brewhome.data.Wrapped = {
@@ -354,6 +369,58 @@ class BrewViewModelTest {
         vm.loadWrapped(2025)
         advanceUntilIdle()
         assertEquals(BrewViewModel.WrappedState.Failed(serverTooOld = false), vm.wrapped.value)
+    }
+
+    // ── Import BeerXML ────────────────────────────────────────────────────
+
+    @Test
+    fun `import beerxml en brouillons - liste rechargee et annulation`() = runTest {
+        var sent = ""
+        api.importDrafts = { xml ->
+            sent = xml
+            val d1 = Draft(id = 41, title = "IPA Hibiscus")
+            val d2 = Draft(id = 42, title = "Stout")
+            api.drafts += listOf(d1, d2)
+            fr.easter.brewhome.data.DraftImportResult(imported = 2, drafts = listOf(d1, d2), repaired = true)
+        }
+        val vm = vm()
+        vm.importBeerXmlDrafts("<RECIPES/>")
+        advanceUntilIdle()
+        assertEquals("<RECIPES/>", sent)
+        assertEquals(listOf(41, 42), vm.state.value.drafts.map { it.id })
+        assertNull(vm.state.value.error)
+        val notice = vm.undo.value!!
+        assertTrue(notice.message.startsWith("s${R.string.import_drafts_done}"))
+        assertTrue(notice.message.contains("s${R.string.import_repaired}"))
+        // Annuler supprime les brouillons créés
+        vm.performUndo(notice)
+        advanceUntilIdle()
+        assertEquals(emptyList<Int>(), vm.state.value.drafts.map { it.id })
+    }
+
+    @Test
+    fun `import beerxml en brouillons - aucun, serveur trop ancien`() = runTest {
+        api.importDrafts = { fr.easter.brewhome.data.DraftImportResult(imported = 0) }
+        val vm = vm()
+        vm.importBeerXmlDrafts("<RECIPES/>")
+        advanceUntilIdle()
+        assertEquals("s${R.string.import_none_drafts}", vm.state.value.error)
+        assertNull(vm.undo.value)
+
+        api.importDrafts = { throw retrofit2.HttpException(retrofit2.Response.error<Any>(404, "".toResponseBody(null))) }
+        vm.importBeerXmlDrafts("<RECIPES/>")
+        advanceUntilIdle()
+        assertTrue(vm.state.value.error!!.contains("trop ancien"))
+    }
+
+    @Test
+    fun `import beerxml - erreur xml situee au lieu du code http`() = runTest {
+        val vm = vm()
+        vm.importBeerXml("<RECIPES>")
+        advanceUntilIdle()
+        val err = vm.state.value.error!!
+        assertTrue(err, err.contains("ligne 4, colonne 43"))
+        assertTrue(err, err.contains("<NAME>A & B</NAME>"))
     }
 
     // ── refreshAll ────────────────────────────────────────────────────────

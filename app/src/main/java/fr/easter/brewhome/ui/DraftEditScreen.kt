@@ -64,6 +64,8 @@ private data class EditIng(
     val category: String,
     val quantity: String,
     val unit: String,
+    /** Détail d'origine (import BeerXML) : remis tel quel à l'enregistrement. */
+    val details: DraftIngredient? = null,
 )
 
 internal fun numToField(v: Double): String =
@@ -137,7 +139,8 @@ fun ingredientSuggestions(
     return (fromCatalog + fromInventory).distinctBy { it.lowercase() }
 }
 
-private val putJson = Json { encodeDefaults = true }
+// explicitNulls = false : pas de « "hop_type": null » pour chaque ingrédient saisi à la main
+private val putJson = Json { encodeDefaults = true; explicitNulls = false }
 
 /** Éditeur de brouillon : draftId == null → création. */
 @Composable
@@ -164,6 +167,7 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
                     it.category.takeIf { c -> c in draftCategories } ?: "autre",
                     it.quantity?.let(::numToField) ?: "",
                     it.unit ?: unitsByCategory.getValue(it.category.takeIf { c -> c in draftCategories } ?: "autre").first(),
+                    details = it,
                 ))
             }
         }
@@ -295,7 +299,10 @@ fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) 
             onClick = {
                 saving = true
                 val kept = ings.filter { it.name.isNotBlank() }.map {
-                    DraftIngredient(
+                    // Détail importé conservé tant que la catégorie n'a pas changé
+                    val base = it.details?.takeIf { d -> d.category == it.category }
+                        ?: DraftIngredient()
+                    base.copy(
                         name = it.name.trim(),
                         category = it.category,
                         quantity = it.quantity.trim().replace(',', '.').toDoubleOrNull(),
