@@ -148,7 +148,23 @@ class BrewViewModelTest {
         override suspend fun restoreInventoryItem(id: Int): JsonObject = throw NotImplementedError()
         val drafts = mutableListOf<Draft>()
         override suspend fun deleteDraft(id: Int): JsonObject { drafts.removeAll { it.id == id }; return JsonObject(emptyMap()) }
-        override suspend fun getDrafts(): List<Draft> { gate(); return drafts.toList() }
+        /** Serveur antérieur à l'archivage : filtre ignoré, route d'archivage absente. */
+        var draftsArchiveSupported = true
+        override suspend fun getDrafts(archived: String?): List<Draft> {
+            gate()
+            return when {
+                !draftsArchiveSupported -> drafts.toList()
+                archived == "1" -> drafts.filter { it.archived == 1 }
+                else -> drafts.filter { it.archived != 1 }
+            }
+        }
+        override suspend fun archiveDraft(id: Int, body: fr.easter.brewhome.data.DraftArchivePut): Draft {
+            gate()
+            if (!draftsArchiveSupported) throw retrofit2.HttpException(retrofit2.Response.error<Any>(404, "".toResponseBody(null)))
+            val i = drafts.indexOfFirst { it.id == id }
+            drafts[i] = drafts[i].copy(archived = if (body.archived) 1 else 0)
+            return drafts[i]
+        }
         /** Réponse de l'import BeerXML en brouillons ; lève par défaut (serveur sans la route). */
         var importDrafts: (String) -> fr.easter.brewhome.data.DraftImportResult = {
             throw retrofit2.HttpException(retrofit2.Response.error<Any>(404, "".toResponseBody(null)))
@@ -427,6 +443,51 @@ class BrewViewModelTest {
         vm.performUndo(notice)
         advanceUntilIdle()
         assertEquals(emptyList<Int>(), vm.state.value.drafts.map { it.id })
+    }
+
+    // ── Archivage des brouillons ─────────────────────────────────────────
+
+    @Test
+    fun `archiver un brouillon - quitte la liste, visible dans les archives, puis desarchive`() = runTest {
+        api.drafts += listOf(Draft(id = 1, title = "A"), Draft(id = 2, title = "B"))
+        val vm = vm()
+        vm.refreshAll()
+        advanceUntilIdle()
+        vm.loadArchivedDrafts()
+        advanceUntilIdle()
+        assertEquals(emptyList<Int>(), vm.state.value.archivedDrafts!!.map { it.id })
+
+        var done = false
+        vm.setDraftArchived(1, true) { done = true }
+        advanceUntilIdle()
+        assertTrue(done)
+        assertEquals(listOf(2), vm.state.value.drafts.map { it.id })
+        assertEquals(listOf(1), vm.state.value.archivedDrafts!!.map { it.id })
+        // Toujours consultable (fiche, édition) depuis les archives
+        assertEquals("A", vm.state.value.draftById(1)?.title)
+
+        vm.setDraftArchived(1, false)
+        advanceUntilIdle()
+        assertEquals(listOf(1, 2), vm.state.value.drafts.map { it.id })
+        assertEquals(emptyList<Int>(), vm.state.value.archivedDrafts!!.map { it.id })
+        assertNull(vm.state.value.error)
+    }
+
+    @Test
+    fun `archiver un brouillon - site trop ancien`() = runTest {
+        api.draftsArchiveSupported = false
+        api.drafts += Draft(id = 1, title = "A")
+        val vm = vm()
+        vm.refreshAll()
+        advanceUntilIdle()
+        // Filtre ignoré par l'ancien site : aucun brouillon actif pris pour un archivé
+        vm.loadArchivedDrafts()
+        advanceUntilIdle()
+        assertEquals(emptyList<Int>(), vm.state.value.archivedDrafts!!.map { it.id })
+        vm.setDraftArchived(1, true)
+        advanceUntilIdle()
+        assertEquals(listOf(1), vm.state.value.drafts.map { it.id })
+        assertTrue(vm.state.value.error!!.contains("s${R.string.draft_archive_unsupported}"))
     }
 
     @Test

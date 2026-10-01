@@ -251,6 +251,12 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
 
     suspend fun drafts(): List<Draft> = api().getDrafts()
 
+    /** Brouillons archivés. Un site plus ancien ignore le filtre et renvoie les
+     *  brouillons actifs, sans champ archived : le filtre les écarte. */
+    suspend fun archivedDrafts(): List<Draft> = api().getDrafts("1").filter { it.archived == 1 }
+
+    suspend fun archiveDraft(id: Int, archived: Boolean): Draft = api().archiveDraft(id, DraftArchivePut(archived))
+
     suspend fun beers(): List<Beer> = api().getBeers()
 
     suspend fun inventory(): List<InventoryItem> = api().getInventory()

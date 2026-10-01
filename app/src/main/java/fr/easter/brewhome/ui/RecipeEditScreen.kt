@@ -1,5 +1,6 @@
 package fr.easter.brewhome.ui
 
+import fr.easter.brewhome.draftById
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -95,7 +96,7 @@ fun RecipeEditScreen(
         return
     }
     val fromDraft = remember(fromDraftId) {
-        fromDraftId?.let { id -> state.drafts.find { it.id == id } }
+        fromDraftId?.let { id -> state.draftById(id) }
     }
 
     var name by rememberSaveable { mutableStateOf(existing?.name ?: fromDraft?.title ?: "") }

@@ -1,5 +1,6 @@
 package fr.easter.brewhome.ui
 
+import fr.easter.brewhome.draftById
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.glance.appwidget.updateAll
 import android.content.Intent
@@ -354,7 +355,7 @@ fun BrewHomeApp(
                     // Partage du brouillon ouvert
                     val draftToShare = if (currentRoute?.startsWith("draft/") == true) {
                         val id = backStack?.arguments?.getString("id")?.toIntOrNull()
-                        state.drafts.find { it.id == id }
+                        state.draftById(id)
                     } else null
                     if (draftToShare != null) {
                         val context = LocalContext.current
@@ -618,7 +619,11 @@ fun BrewHomeApp(
             }
             composable("draft/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull()
-                DraftDetailScreen(vm, id) { navController.navigate("recipeFromDraft/$it") }
+                DraftDetailScreen(
+                    vm, id,
+                    onToRecipe = { navController.navigate("recipeFromDraft/$it") },
+                    onArchived = { navController.navigateUp() },
+                )
             }
             composable("draftEdit/{id}") { entry ->
                 val id = entry.arguments?.getString("id")?.toIntOrNull() // "new" → null

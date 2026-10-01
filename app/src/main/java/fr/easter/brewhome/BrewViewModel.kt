@@ -69,6 +69,8 @@ data class UiState(
     val inventory: List<InventoryItem> = emptyList(),
     val brews: List<Brew> = emptyList(),
     val drafts: List<Draft> = emptyList(),
+    /** Brouillons archivés, chargés à la première ouverture du filtre (null = pas encore chargés). */
+    val archivedDrafts: List<Draft>? = null,
     val shopping: List<ShoppingItem> = emptyList(),
     val loaded: Boolean = false,
     /** Serveur injoignable : les données affichées viennent du cache disque. */
@@ -76,6 +78,10 @@ data class UiState(
     /** Date (epoch ms) des données affichées, pour le bandeau hors ligne. */
     val dataAt: Long? = null,
 )
+
+/** Brouillon actif ou archivé. */
+fun UiState.draftById(id: Int?): Draft? =
+    id?.let { drafts.find { d -> d.id == it } ?: archivedDrafts?.find { d -> d.id == it } }
 
 /** Données complémentaires d'un brassin, chargées à l'ouverture de sa fiche. */
 data class BrewExtras(
@@ -942,7 +948,43 @@ class BrewViewModel(
     fun deleteDraft(id: Int, onDone: () -> Unit = {}) {
         launchWithError(R.string.error_delete) {
             repo.deleteDraft(id)
-            _state.value = _state.value.copy(drafts = repo.drafts(), error = null)
+            _state.value = _state.value.copy(
+                drafts = repo.drafts(),
+                archivedDrafts = _state.value.archivedDrafts?.filter { it.id != id },
+                error = null,
+            )
+            onDone()
+        }
+    }
+
+    /** Charge les brouillons archivés (filtre « Archivés » de la liste). */
+    fun loadArchivedDrafts() {
+        launchWithError(R.string.error_draft_archive) {
+            _state.value = _state.value.copy(archivedDrafts = repo.archivedDrafts())
+        }
+    }
+
+    /**
+     * Archive ou désarchive un brouillon : il quitte la liste (et le calendrier)
+     * sans être supprimé. Même route que le site ; le contenu n'est pas modifié.
+     */
+    fun setDraftArchived(id: Int, archived: Boolean, onDone: () -> Unit = {}) {
+        launchWithError(R.string.error_draft_archive) {
+            val updated = try {
+                repo.archiveDraft(id, archived)
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 404 || e.code() == 405) throw IllegalStateException(strings(R.string.draft_archive_unsupported))
+                throw e
+            }
+            val s = _state.value
+            _state.value = s.copy(
+                // Ordre du serveur pour les actifs (position d'origine retrouvée)
+                drafts = if (archived) s.drafts.filter { it.id != id } else repo.drafts(),
+                archivedDrafts = s.archivedDrafts?.let { list ->
+                    if (archived) listOf(updated) + list.filter { it.id != id } else list.filter { it.id != id }
+                },
+                error = null,
+            )
             onDone()
         }
     }
@@ -1212,6 +1254,7 @@ class BrewViewModel(
             _state.value = _state.value.copy(
                 drafts = if (id == null) listOf(saved) + _state.value.drafts
                     else _state.value.drafts.map { if (it.id == saved.id) saved else it },
+                archivedDrafts = _state.value.archivedDrafts?.map { if (it.id == saved.id) saved else it },
                 error = null,
             )
             onDone(saved)

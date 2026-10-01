@@ -21,7 +21,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material3.AlertDialog
@@ -60,6 +62,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.BrewViewModel
+import fr.easter.brewhome.draftById
 import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.RecipeEstimator
 import fr.easter.brewhome.calc.StockCheck
@@ -95,6 +98,11 @@ fun RecipesScreen(
     var query by rememberSaveable { mutableStateOf("") }
     // Porté par le ViewModel : le bouton d'import de la barre du haut en dépend
     val showDrafts by vm.showDrafts.collectAsState()
+    var showArchived by rememberSaveable { mutableStateOf(false) }
+    // Liste des archivés rechargée si l'écran revient avec le filtre déjà actif
+    LaunchedEffect(showDrafts, showArchived) {
+        if (showDrafts && showArchived && state.archivedDrafts == null) vm.loadArchivedDrafts()
+    }
 
     RefreshableContent(vm) {
         Column(Modifier.fillMaxSize()) {
@@ -117,6 +125,12 @@ fun RecipesScreen(
             if (showDrafts) DraftsList(
                 state.drafts, query, { query = it }, onOpenDraft, onNewDraft,
                 onReorder = { vm.reorderDrafts(it) },
+                archived = state.archivedDrafts,
+                showArchived = showArchived,
+                onShowArchived = {
+                    showArchived = it
+                    if (it && state.archivedDrafts == null) vm.loadArchivedDrafts()
+                },
             )
             else RecipesList(
                 state.recipes, state, query, { query = it }, onOpen, onNewRecipe,
@@ -843,10 +857,51 @@ private fun DraftsList(
     onOpen: (Int) -> Unit,
     onNew: () -> Unit,
     onReorder: (List<Draft>) -> Unit,
+    archived: List<Draft>?,
+    showArchived: Boolean,
+    onShowArchived: (Boolean) -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            if (drafts.isEmpty()) {
+            // Filtre Archivés : brouillons retirés de la liste sans être supprimés
+            Row(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = showArchived,
+                    onClick = { onShowArchived(!showArchived) },
+                    leadingIcon = { Icon(Icons.Outlined.Archive, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    label = {
+                        Text(
+                            archived?.let { stringResource(R.string.drafts_archived_n, it.size) }
+                                ?: stringResource(R.string.drafts_archived),
+                        )
+                    },
+                )
+            }
+            if (showArchived) {
+                when {
+                    archived == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        androidx.compose.material3.CircularProgressIndicator()
+                    }
+                    archived.isEmpty() -> EmptyHint(stringResource(R.string.drafts_archived_empty))
+                    else -> {
+                        val filtered = archived.filter { d ->
+                            query.isBlank() || listOfNotNull(d.title, d.style, d.eventLabel)
+                                .any { it.contains(query, ignoreCase = true) }
+                        }
+                        SearchField(query, onQuery, stringResource(R.string.drafts_search))
+                        // Pas de glisser-déposer : l'ordre ne compte que pour les actifs
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(filtered, key = { it.id }) { draft ->
+                                DraftCard(draft, onOpen, Modifier.animateItem())
+                            }
+                        }
+                    }
+                }
+            } else if (drafts.isEmpty()) {
                 EmptyHint(stringResource(R.string.drafts_empty))
             } else {
                 val filtered = drafts.filter { d ->
@@ -882,13 +937,15 @@ private fun DraftsList(
                 }
             }
         }
-        FloatingActionButton(
-            onClick = onNew,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.title_draft_new))
+        if (!showArchived) {
+            FloatingActionButton(
+                onClick = onNew,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.title_draft_new))
+            }
         }
     }
 }
@@ -954,9 +1011,14 @@ internal fun draftIngDetail(ing: fr.easter.brewhome.data.DraftIngredient): Strin
 }
 
 @Composable
-fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Unit = {}) {
+fun DraftDetailScreen(
+    vm: BrewViewModel,
+    draftId: Int?,
+    onToRecipe: (Int) -> Unit = {},
+    onArchived: () -> Unit = {},
+) {
     val state by vm.state.collectAsState()
-    val draft = state.drafts.find { it.id == draftId }
+    val draft = state.draftById(draftId)
     if (draft == null) {
         EmptyHint(stringResource(R.string.draft_not_found))
         return
@@ -1018,6 +1080,23 @@ fun DraftDetailScreen(vm: BrewViewModel, draftId: Int?, onToRecipe: (Int) -> Uni
                 modifier = Modifier.size(18.dp),
             )
             Text(stringResource(R.string.draft_to_recipe), Modifier.padding(start = 8.dp))
+        }
+
+        // Archiver : retire le brouillon de la liste sans le supprimer (filtre « Archivés »)
+        val isArchived = draft.archived == 1
+        OutlinedButton(
+            onClick = { vm.setDraftArchived(draft.id, !isArchived) { if (!isArchived) onArchived() } },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                if (isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                stringResource(if (isArchived) R.string.draft_unarchive else R.string.draft_archive),
+                Modifier.padding(start = 8.dp),
+            )
         }
 
         InfoCard {

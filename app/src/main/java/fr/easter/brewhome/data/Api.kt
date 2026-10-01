@@ -191,8 +191,12 @@ interface BrewApi {
     @DELETE("api/shopping-list/{id}")
     suspend fun deleteShoppingItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
 
+    /** Sans paramètre : brouillons actifs. archived = "1" : archivés seulement (site ≥ 0.1.27). */
     @GET("api/drafts")
-    suspend fun getDrafts(): List<Draft>
+    suspend fun getDrafts(@retrofit2.http.Query("archived") archived: String? = null): List<Draft>
+
+    @PUT("api/drafts/{id}/archive")
+    suspend fun archiveDraft(@Path("id") id: Int, @Body body: DraftArchivePut): Draft
 
     @POST("api/drafts")
     suspend fun createDraft(@Body body: DraftPut): Draft

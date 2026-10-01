@@ -476,6 +476,13 @@
     <string name="stock_all_listed">Les manquants sont déjà dans la liste de courses.</string>
 
     <!-- Brouillons -->
+    <string name="drafts_archived">Archivés</string>
+    <string name="drafts_archived_n">Archivés (%1$d)</string>
+    <string name="drafts_archived_empty">Aucun brouillon archivé</string>
+    <string name="draft_archive">Archiver</string>
+    <string name="draft_unarchive">Désarchiver</string>
+    <string name="error_draft_archive">Échec de l\'archivage du brouillon</string>
+    <string name="draft_archive_unsupported">le site doit être en version 0.1.27 ou plus</string>
     <string name="drafts_empty">Aucun brouillon. Crée le premier avec le bouton +.</string>
     <string name="drafts_search">Rechercher un brouillon…</string>
     <string name="draft_not_found">Brouillon introuvable.</string>

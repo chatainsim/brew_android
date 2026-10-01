@@ -604,7 +604,13 @@ data class Draft(
     /** JSON : liste d'URLs des photos — à renvoyer telle quelle en PUT sinon elles sont supprimées. */
     val images: String? = null,
     val color: String? = null,
+    /** 1 = archivé (masqué de la liste, site ≥ 0.1.27). */
+    val archived: Int? = null,
 )
+
+/** Corps de PUT /api/drafts/{id}/archive. */
+@Serializable
+data class DraftArchivePut(val archived: Boolean)
 
 /**
  * Corps de POST/PUT /api/drafts. Le PUT écrase toutes les colonnes : toujours

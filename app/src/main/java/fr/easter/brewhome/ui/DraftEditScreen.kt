@@ -1,5 +1,6 @@
 package fr.easter.brewhome.ui
 
+import fr.easter.brewhome.draftById
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -146,7 +147,7 @@ private val putJson = Json { encodeDefaults = true; explicitNulls = false }
 @Composable
 fun DraftEditScreen(vm: BrewViewModel, draftId: Int?, onSaved: (Draft) -> Unit) {
     val state by vm.state.collectAsState()
-    val existing = draftId?.let { id -> state.drafts.find { it.id == id } }
+    val existing = draftId?.let { id -> state.draftById(id) }
     if (draftId != null && existing == null) {
         EmptyHint(stringResource(R.string.draft_not_found))
         return
