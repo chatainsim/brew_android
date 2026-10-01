@@ -1,5 +1,8 @@
 package fr.easter.brewhome.ui
 
+import androidx.compose.material.icons.filled.Autorenew
+import fr.easter.brewhome.calc.refermStatus
+import fr.easter.brewhome.calc.RefermStatus
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -145,6 +148,10 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modif
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                refermStatus(beer)?.let {
+                    Spacer(Modifier.height(5.dp))
+                    RefermBadge(it)
+                }
                 beer.tasteRating?.takeIf { it > 0 }?.let {
                     Spacer(Modifier.height(5.dp))
                     RatingPill(it)
@@ -286,6 +293,38 @@ private fun BeerHero(beer: Beer, vm: BrewViewModel) {
 }
 
 /** Note de dégustation compacte : étoile + valeur sur pastille. */
+/** Badge de refermentation : bleu tant qu'elle court, vert une fois la bière prête (comme le site). */
+@Composable
+private fun RefermBadge(status: RefermStatus) {
+    val ready = status is RefermStatus.ReadyToday || status is RefermStatus.ReadySince
+    val tint = if (ready) Color(0xFF10B981) else Color(0xFF60A5FA)
+    val label = when (status) {
+        RefermStatus.InProgress -> stringResource(R.string.referm_in_progress)
+        is RefermStatus.ReadyIn -> stringResource(R.string.referm_ready_in, status.days.toInt())
+        is RefermStatus.ReadyToday -> stringResource(R.string.referm_ready_today)
+        is RefermStatus.ReadySince -> stringResource(R.string.referm_ready_since, status.days.toInt())
+    }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = tint.copy(alpha = if (status is RefermStatus.ReadyToday) 0.22f else 0.12f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tint.copy(alpha = 0.4f)),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Filled.Autorenew,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = tint)
+        }
+    }
+}
+
 @Composable
 private fun RatingPill(rating: Int) {
     Surface(
@@ -411,11 +450,19 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
         val subtitle = listOfNotNull(beer.type, beer.abv?.let { "${fmtQty(it)}% alc." }, beer.origin)
             .joinToString(" · ")
         if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.outline)
+        val referm = refermStatus(beer)
+        referm?.let { RefermBadge(it) }
 
         InfoCard {
             InfoLine(stringResource(R.string.label_recipe), beer.recipeName)
             InfoLine(stringResource(R.string.label_brewed_on_f), beer.brewDate)
             InfoLine(stringResource(R.string.label_bottled_on_f), beer.bottlingDate)
+            InfoLine(stringResource(R.string.label_referm_end), when (referm) {
+                is RefermStatus.ReadyIn -> referm.end.toString()
+                is RefermStatus.ReadyToday -> referm.end.toString()
+                is RefermStatus.ReadySince -> referm.end.toString()
+                else -> null
+            })
             InfoLine(stringResource(R.string.label_stock_33), (beer.stock33 ?: 0).toString())
             InfoLine(stringResource(R.string.label_stock_75), (beer.stock75 ?: 0).toString())
             InfoLine(stringResource(R.string.label_stock_25), beer.stock25?.takeIf { it > 0 }?.toString())

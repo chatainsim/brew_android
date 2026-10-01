@@ -435,6 +435,11 @@
     <string name="label_bottled_on_f">Embouteillée le</string>
     <string name="label_stock_33">Stock 33 cl</string>
     <string name="label_stock_75">Stock 75 cl</string>
+    <string name="referm_in_progress">Refermentation en cours</string>
+    <string name="referm_ready_in">Prête dans %1$d j</string>
+    <string name="referm_ready_today">Prête aujourd\'hui !</string>
+    <string name="referm_ready_since">Prête depuis %1$d j</string>
+    <string name="label_referm_end">Fin de refermentation</string>
     <string name="label_stock_25">Stock 25 cl</string>
     <string name="label_stock_50">Stock 50 cl</string>
     <string name="label_description">Description</string>
