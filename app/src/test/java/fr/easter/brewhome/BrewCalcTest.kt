@@ -117,4 +117,18 @@ class BrewCalcTest {
         val two = BrewCalc.starter(180, 100.0, 25.0, 1.080, 1.5, stirPlate = true, twoSteps = true)
         assertEquals(2, two.steps.size)
     }
+
+    @Test
+    fun `carbonatation forcee - memes valeurs que le site et les tables`() {
+        // 4 °C, 2,5 vol : 11,9 psi = 0,82 bar (calculateur du site)
+        val psi = BrewCalc.carbPressurePsi(4.0, 2.5)
+        assertEquals(11.9, psi, 0.05)
+        assertEquals(0.82, psi * BrewCalc.PSI_TO_BAR, 0.005)
+        // 2 °C, 3,5 vol (weizen) : 20,0 psi = 1,38 bar
+        assertEquals(1.38, BrewCalc.carbPressurePsi(2.0, 3.5) * BrewCalc.PSI_TO_BAR, 0.005)
+        // Plus chaud = plus de pression pour le même CO₂
+        assertTrue(BrewCalc.carbPressurePsi(12.0, 2.5) > BrewCalc.carbPressurePsi(4.0, 2.5))
+        // CO₂ très bas au froid : aucune pression nécessaire
+        assertTrue(BrewCalc.carbPressurePsi(1.0, 1.0) <= 0.0)
+    }
 }

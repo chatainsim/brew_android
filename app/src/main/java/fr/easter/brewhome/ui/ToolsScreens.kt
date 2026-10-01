@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Colorize
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Liquor
 import androidx.compose.material.icons.outlined.Percent
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Sports
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material3.Card
@@ -64,6 +65,7 @@ val toolDefs = listOf(
     ToolDef("bottles", R.string.tool_bottles_title, R.string.tool_bottles_sub, Icons.Outlined.Liquor),
     ToolDef("priming", R.string.tool_priming_title, R.string.tool_priming_sub, Icons.Outlined.BubbleChart),
     ToolDef("starter", R.string.tool_starter_title, R.string.tool_starter_sub, Icons.Outlined.Biotech),
+    ToolDef("carb", R.string.tool_carb_title, R.string.tool_carb_sub, Icons.Outlined.Speed),
 )
 
 @Composable
@@ -241,6 +243,7 @@ fun ToolScreen(toolId: String?) {
         "bottles" -> BottlesCalcScreen()
         "priming" -> PrimingCalcScreen()
         "starter" -> StarterCalcScreen()
+        "carb" -> CarbCalcScreen()
         else -> EmptyHint(stringResource(R.string.tool_not_found))
     }
 }

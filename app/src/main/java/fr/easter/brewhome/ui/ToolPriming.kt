@@ -9,7 +9,8 @@ import androidx.compose.ui.res.stringResource
 import fr.easter.brewhome.R
 import fr.easter.brewhome.calc.BrewCalc
 
-private val primingStyles = listOf<Pair<Int, Double?>>(
+/** Styles de référence et CO₂ visé, partagés avec la carbonatation forcée. */
+internal val primingStyles = listOf<Pair<Int, Double?>>(
     R.string.priming_style_none to null,
     R.string.priming_style_uk to 1.7,
     R.string.priming_style_us to 2.5,

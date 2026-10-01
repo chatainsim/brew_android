@@ -624,6 +624,15 @@
     <string name="tool_bottles_sub">Répartir un volume en 33 / 75 cl</string>
     <string name="tool_priming_title">Primage</string>
     <string name="tool_priming_sub">Sucre de refermentation en bouteille</string>
+    <string name="tool_carb_title">Carbonatation forcée</string>
+    <string name="tool_carb_sub">Pression du fût selon température et CO₂</string>
+    <string name="hint_carb">Pression à régler sur le détendeur pour atteindre le CO₂ visé, fût au froid.</string>
+    <string name="field_keg_temp">Temp. du fût (°C)</string>
+    <string name="res_carb_pressure">pression à régler</string>
+    <string name="res_carb_psi">soit</string>
+    <string name="carb_table">Pression (bar) pour %1$s vol selon la température du fût</string>
+    <string name="note_carb_info">Régler le détendeur à cette pression, fût au froid, et laisser 5 à 7 jours : la bière atteint le CO₂ visé sans risque de surcarbonatation. Pression relative (lue au manomètre).</string>
+    <string name="note_carb_low">À cette température, ce volume de CO₂ ne demande aucune pression : la bière est déjà assez carbonatée.</string>
     <string name="tool_starter_title">Starter de levure</string>
     <string name="tool_starter_sub">Viabilité et taille du starter</string>
     <string name="hint_abv">Alcool et atténuation apparente à partir des densités (SG).</string>

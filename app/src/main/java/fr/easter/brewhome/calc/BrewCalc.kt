@@ -155,6 +155,21 @@ object BrewCalc {
         )
     }
 
+    // ── Carbonatation forcée (fût) ────────────────────────────────────────────
+
+    const val PSI_TO_BAR = 0.0689476
+
+    /**
+     * Pression manométrique (psi) d'équilibre pour [vols] volumes de CO₂ dans
+     * un fût à [tempC] — même formule (table Zahm & Nagel) que le calculateur
+     * du site. Négative ou nulle : la bière est déjà assez carbonatée.
+     */
+    fun carbPressurePsi(tempC: Double, vols: Double): Double {
+        val t = tempC * 9 / 5 + 32
+        return -16.6999 - 0.0101059 * t + 0.00116512 * t * t +
+            0.173354 * t * vols + 4.24267 * vols - 0.0684226 * vols * vols
+    }
+
     // ── Starter de levure ─────────────────────────────────────────────────────
 
     /** Viabilité (0–1) d'un paquet de levure liquide selon son âge (Mr. Malty). */
