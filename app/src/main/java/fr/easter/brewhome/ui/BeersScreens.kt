@@ -165,6 +165,27 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modif
                     onDecrement = { vm.adjustBeerStock(beer, d75 = -1) },
                     onIncrement = { vm.adjustBeerStock(beer, d75 = 1) },
                 )
+                // 25 / 50 cl : formats optionnels du site, affichés quand la bière en a
+                if ((beer.stock25 ?: 0) > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Stepper(
+                        stringResource(R.string.unit_25), (beer.stock25 ?: 0).toDouble(),
+                        format = { it.toInt().toString() },
+                        canDecrement = true,
+                        onDecrement = { vm.adjustBeerStock(beer, d25 = -1) },
+                        onIncrement = { vm.adjustBeerStock(beer, d25 = 1) },
+                    )
+                }
+                if ((beer.stock50 ?: 0) > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Stepper(
+                        stringResource(R.string.unit_50), (beer.stock50 ?: 0).toDouble(),
+                        format = { it.toInt().toString() },
+                        canDecrement = true,
+                        onDecrement = { vm.adjustBeerStock(beer, d50 = -1) },
+                        onIncrement = { vm.adjustBeerStock(beer, d50 = 1) },
+                    )
+                }
                 if (hasKeg) {
                     Spacer(Modifier.height(6.dp))
                     Stepper(
@@ -185,7 +206,7 @@ private fun BeerCard(beer: Beer, vm: BrewViewModel, onOpen: (Int) -> Unit, modif
 @Composable
 private fun BeerHero(beer: Beer, vm: BrewViewModel) {
     val photoUrl = vm.photoUrl(beer.photo)
-    val totalBottles = (beer.stock33 ?: 0) + (beer.stock75 ?: 0)
+    val totalBottles = (beer.stock33 ?: 0) + (beer.stock75 ?: 0) + (beer.stock25 ?: 0) + (beer.stock50 ?: 0)
     Box(
         Modifier
             .width(104.dp)
@@ -397,6 +418,8 @@ fun BeerDetailScreen(vm: BrewViewModel, beerId: Int?) {
             InfoLine(stringResource(R.string.label_bottled_on_f), beer.bottlingDate)
             InfoLine(stringResource(R.string.label_stock_33), (beer.stock33 ?: 0).toString())
             InfoLine(stringResource(R.string.label_stock_75), (beer.stock75 ?: 0).toString())
+            InfoLine(stringResource(R.string.label_stock_25), beer.stock25?.takeIf { it > 0 }?.toString())
+            InfoLine(stringResource(R.string.label_stock_50), beer.stock50?.takeIf { it > 0 }?.toString())
             if ((beer.kegLiters ?: 0.0) > 0.0)
                 InfoLine(stringResource(R.string.keg), "${fmtQty(beer.kegLiters)} L")
         }

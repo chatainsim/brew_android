@@ -111,22 +111,28 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     private fun nowTimestamp(): String = java.time.LocalDateTime.now()
         .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
-    suspend fun adjustBeerStock(beer: Beer, d33: Int, d75: Int, dKeg: Double): Beer {
+    suspend fun adjustBeerStock(beer: Beer, d33: Int, d75: Int, dKeg: Double, d25: Int = 0, d50: Int = 0): Beer {
         val patch = StockPatch(
             stock33 = if (d33 != 0) maxOf(0, (beer.stock33 ?: 0) + d33) else null,
             stock75 = if (d75 != 0) maxOf(0, (beer.stock75 ?: 0) + d75) else null,
+            stock25 = if (d25 != 0) maxOf(0, (beer.stock25 ?: 0) + d25) else null,
+            stock50 = if (d50 != 0) maxOf(0, (beer.stock50 ?: 0) + d50) else null,
             kegLiters = if (dKeg != 0.0) maxOf(0.0, (beer.kegLiters ?: 0.0) + dKeg) else null,
         )
         return api().patchBeerStock(beer.id, patch)
     }
 
     /** Remet le stock d'une bière à ses valeurs d'avant ajustement (annulation). */
-    suspend fun restoreBeerStock(beer: Beer, r33: Boolean, r75: Boolean, rKeg: Boolean): Beer =
+    suspend fun restoreBeerStock(
+        beer: Beer, r33: Boolean, r75: Boolean, rKeg: Boolean, r25: Boolean = false, r50: Boolean = false,
+    ): Beer =
         api().patchBeerStock(
             beer.id,
             StockPatch(
                 stock33 = if (r33) beer.stock33 ?: 0 else null,
                 stock75 = if (r75) beer.stock75 ?: 0 else null,
+                stock25 = if (r25) beer.stock25 ?: 0 else null,
+                stock50 = if (r50) beer.stock50 ?: 0 else null,
                 kegLiters = if (rKeg) beer.kegLiters ?: 0.0 else null,
             ),
         )

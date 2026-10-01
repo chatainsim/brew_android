@@ -12,6 +12,8 @@ data class PendingStockOp(
     val d33: Int = 0,
     val d75: Int = 0,
     val dKeg: Double = 0.0,
+    val d25: Int = 0,
+    val d50: Int = 0,
 )
 
 /**
@@ -52,6 +54,8 @@ class PendingQueue(dir: File) {
                     d33 = list.sumOf { it.d33 },
                     d75 = list.sumOf { it.d75 },
                     dKeg = list.sumOf { it.dKeg },
+                    d25 = list.sumOf { it.d25 },
+                    d50 = list.sumOf { it.d50 },
                 )
             }
     }

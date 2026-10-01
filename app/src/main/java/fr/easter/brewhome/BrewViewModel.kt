@@ -275,18 +275,20 @@ class BrewViewModel(
         brews = s.brews, drafts = s.drafts, shopping = s.shopping, loaded = true,
     )
 
-    fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0) {
+    fun adjustBeerStock(beer: Beer, d33: Int = 0, d75: Int = 0, dKeg: Double = 0.0, d25: Int = 0, d50: Int = 0) {
         viewModelScope.launch {
             try {
-                replaceBeer(repo.adjustBeerStock(beer, d33, d75, dKeg))
-                val field = if (d33 != 0) "33" else if (d75 != 0) "75" else "keg"
+                replaceBeer(repo.adjustBeerStock(beer, d33, d75, dKeg, d25, d50))
+                val field = when {
+                    d33 != 0 -> "33"; d75 != 0 -> "75"; d25 != 0 -> "25"; d50 != 0 -> "50"; else -> "keg"
+                }
                 pushUndo(key = "beer-${beer.id}-$field", message = strings(R.string.undo_stock_updated)) {
-                    replaceBeer(repo.restoreBeerStock(beer, d33 != 0, d75 != 0, dKeg != 0.0))
+                    replaceBeer(repo.restoreBeerStock(beer, d33 != 0, d75 != 0, dKeg != 0.0, d25 != 0, d50 != 0))
                 }
             } catch (e: java.io.IOException) {
                 // Hors ligne : appliquer localement et mettre en file pour rejeu
-                replaceBeer(optimisticStock(beer, d33, d75, dKeg))
-                withContext(io) { pending.add(PendingStockOp(beer.id, d33, d75, dKeg)) }
+                replaceBeer(optimisticStock(beer, d33, d75, dKeg, d25, d50))
+                withContext(io) { pending.add(PendingStockOp(beer.id, d33, d75, dKeg, d25, d50)) }
                 _state.value = _state.value.copy(offline = true)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(error = errorMessage(R.string.error_stock_update, e))
@@ -295,9 +297,11 @@ class BrewViewModel(
     }
 
     /** Applique un delta de stock localement (mêmes bornes que le serveur : ≥ 0). */
-    private fun optimisticStock(beer: Beer, d33: Int, d75: Int, dKeg: Double): Beer = beer.copy(
+    private fun optimisticStock(beer: Beer, d33: Int, d75: Int, dKeg: Double, d25: Int = 0, d50: Int = 0): Beer = beer.copy(
         stock33 = if (d33 != 0) maxOf(0, (beer.stock33 ?: 0) + d33) else beer.stock33,
         stock75 = if (d75 != 0) maxOf(0, (beer.stock75 ?: 0) + d75) else beer.stock75,
+        stock25 = if (d25 != 0) maxOf(0, (beer.stock25 ?: 0) + d25) else beer.stock25,
+        stock50 = if (d50 != 0) maxOf(0, (beer.stock50 ?: 0) + d50) else beer.stock50,
         kegLiters = if (dKeg != 0.0) maxOf(0.0, (beer.kegLiters ?: 0.0) + dKeg) else beer.kegLiters,
     )
 
@@ -312,7 +316,7 @@ class BrewViewModel(
         val beers = repo.beers()
         val stillPending = PendingQueue.coalesce(ops).filter { op ->
             val beer = beers.find { it.id == op.beerId }
-            beer == null || runCatching { repo.adjustBeerStock(beer, op.d33, op.d75, op.dKeg) }.isFailure
+            beer == null || runCatching { repo.adjustBeerStock(beer, op.d33, op.d75, op.dKeg, op.d25, op.d50) }.isFailure
         }
         withContext(io) { pending.save(stillPending) }
     }

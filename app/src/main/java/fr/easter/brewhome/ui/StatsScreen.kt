@@ -331,11 +331,15 @@ fun StatsScreen(vm: BrewViewModel, onOpenWrapped: (Int) -> Unit = {}) {
         val n33 = beers.sumOf { it.stock33 ?: 0 }
         val n75 = beers.sumOf { it.stock75 ?: 0 }
         val keg = beers.sumOf { it.kegLiters ?: 0.0 }
-        val caveL = n33 * 0.33 + n75 * 0.75 + keg
+        val n25 = beers.sumOf { it.stock25 ?: 0 }
+        val n50 = beers.sumOf { it.stock50 ?: 0 }
+        val caveL = n33 * 0.33 + n75 * 0.75 + n25 * 0.25 + n50 * 0.50 + keg
         SectionTitle(stringResource(R.string.stat_cave))
         InfoCard {
             InfoLine(stringResource(R.string.stat_bottles_33), "$n33")
             InfoLine(stringResource(R.string.stat_bottles_75), "$n75")
+            InfoLine(stringResource(R.string.stat_bottles_25), n25.takeIf { it > 0 }?.toString())
+            InfoLine(stringResource(R.string.stat_bottles_50), n50.takeIf { it > 0 }?.toString())
             InfoLine(stringResource(R.string.stat_kegs), keg.takeIf { it > 0 }?.let { "${fmtQty(it)} L" })
             InfoLine(stringResource(R.string.stat_total), "${fmtQty(kotlin.math.round(caveL * 100) / 100)} L")
         }

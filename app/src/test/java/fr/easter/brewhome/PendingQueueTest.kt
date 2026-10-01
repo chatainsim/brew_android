@@ -40,4 +40,21 @@ class PendingQueueTest {
         assertEquals(0.0, merged.getValue(2).dKeg, 1e-9)
         assertEquals(2, merged.size)
     }
+
+    @Test
+    fun `coalesce additionne aussi les 25 et 50 cl`() {
+        val merged = PendingQueue.coalesce(listOf(
+            PendingStockOp(1, d25 = -1), PendingStockOp(1, d25 = -1), PendingStockOp(1, d50 = 3),
+        )).single()
+        assertEquals(-2, merged.d25)
+        assertEquals(3, merged.d50)
+    }
+
+    @Test
+    fun `file ecrite par une version precedente toujours relue`() {
+        // Format d'avant les 25 / 50 cl : pas de champs d25 / d50
+        java.io.File(tmp.root, "pending_ops.json").writeText("""[{"beerId":4,"d33":-2}]""")
+        val ops = PendingQueue(tmp.root).load()
+        assertEquals(listOf(PendingStockOp(4, d33 = -2)), ops)
+    }
 }

@@ -69,7 +69,9 @@ fun DashboardScreen(vm: BrewViewModel, onOpenBrew: (Int) -> Unit, onOpen: (Strin
         val n33 = beersInStock.sumOf { it.stock33 ?: 0 }
         val n75 = beersInStock.sumOf { it.stock75 ?: 0 }
         val keg = beersInStock.sumOf { it.kegLiters ?: 0.0 }
-        val caveL = n33 * 0.33 + n75 * 0.75 + keg
+        val n25 = beersInStock.sumOf { it.stock25 ?: 0 }
+        val n50 = beersInStock.sumOf { it.stock50 ?: 0 }
+        val caveL = n33 * 0.33 + n75 * 0.75 + n25 * 0.25 + n50 * 0.50 + keg
 
         LazyColumn(
             contentPadding = PaddingValues(12.dp),
@@ -94,7 +96,11 @@ fun DashboardScreen(vm: BrewViewModel, onOpenBrew: (Int) -> Unit, onOpen: (Strin
                             )
                         }
                         Text(
-                            stringResource(R.string.dash_cave_detail, n33, n75),
+                            listOfNotNull(
+                                stringResource(R.string.dash_cave_detail, n33, n75),
+                                n25.takeIf { it > 0 }?.let { "$it × 25 cl" },
+                                n50.takeIf { it > 0 }?.let { "$it × 50 cl" },
+                            ).joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                         )

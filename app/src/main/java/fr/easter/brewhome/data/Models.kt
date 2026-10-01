@@ -13,6 +13,9 @@ data class Beer(
     val archived: Int? = 0,
     @SerialName("stock_33cl") val stock33: Int? = 0,
     @SerialName("stock_75cl") val stock75: Int? = 0,
+    /** 25 et 50 cl : formats optionnels, activables sur le site. */
+    @SerialName("stock_25cl") val stock25: Int? = 0,
+    @SerialName("stock_50cl") val stock50: Int? = 0,
     @SerialName("keg_liters") val kegLiters: Double? = null,
     @SerialName("keg_initial_liters") val kegInitialLiters: Double? = null,
     val origin: String? = null,
@@ -467,6 +470,9 @@ data class BeerPut(
     val abv: Double? = null,
     @SerialName("stock_33cl") val stock33: Int = 0,
     @SerialName("stock_75cl") val stock75: Int = 0,
+    // Renvoyés tels quels : un site antérieur à 0.1.31 remettait à 0 les formats absents
+    @SerialName("stock_25cl") val stock25: Int = 0,
+    @SerialName("stock_50cl") val stock50: Int = 0,
     @SerialName("keg_liters") val kegLiters: Double? = null,
     val origin: String? = null,
     val description: String? = null,
@@ -800,6 +806,8 @@ data class BrewLogEntry(
 data class StockPatch(
     @SerialName("stock_33cl") val stock33: Int? = null,
     @SerialName("stock_75cl") val stock75: Int? = null,
+    @SerialName("stock_25cl") val stock25: Int? = null,
+    @SerialName("stock_50cl") val stock50: Int? = null,
     @SerialName("keg_liters") val kegLiters: Double? = null,
 )
 

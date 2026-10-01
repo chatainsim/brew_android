@@ -422,6 +422,8 @@
     <string name="no_results">Aucun résultat pour « %1$s ».</string>
     <string name="unit_33">33 cl</string>
     <string name="unit_75">75 cl</string>
+    <string name="unit_25">25 cl</string>
+    <string name="unit_50">50 cl</string>
     <string name="keg">Fût</string>
     <string name="cd_remove_one">Retirer une %1$s</string>
     <string name="cd_add_one">Ajouter une %1$s</string>
@@ -433,6 +435,8 @@
     <string name="label_bottled_on_f">Embouteillée le</string>
     <string name="label_stock_33">Stock 33 cl</string>
     <string name="label_stock_75">Stock 75 cl</string>
+    <string name="label_stock_25">Stock 25 cl</string>
+    <string name="label_stock_50">Stock 50 cl</string>
     <string name="label_description">Description</string>
     <string name="label_tasting">Dégustation</string>
     <string name="cd_edit_tasting">Modifier la dégustation</string>
@@ -571,6 +575,8 @@
     <string name="stat_cave">Cave actuelle</string>
     <string name="stat_bottles_33">Bouteilles 33 cl</string>
     <string name="stat_bottles_75">Bouteilles 75 cl</string>
+    <string name="stat_bottles_25">Bouteilles 25 cl</string>
+    <string name="stat_bottles_50">Bouteilles 50 cl</string>
     <string name="stat_kegs">Fûts</string>
     <string name="stat_total">Total</string>
     <string name="stat_tastings">Dégustations</string>

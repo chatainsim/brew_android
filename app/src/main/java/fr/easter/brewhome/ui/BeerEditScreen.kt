@@ -197,6 +197,8 @@ fun BeerEditScreen(vm: BrewViewModel, beerId: Int?, onSaved: () -> Unit) {
                     abv = abv.trim().replace(',', '.').toDoubleOrNull(),
                     stock33 = beer.stock33 ?: 0,
                     stock75 = beer.stock75 ?: 0,
+                    stock25 = beer.stock25 ?: 0,
+                    stock50 = beer.stock50 ?: 0,
                     kegLiters = beer.kegLiters,
                     origin = origin.trim().ifBlank { null },
                     description = description.trim().ifBlank { null },
