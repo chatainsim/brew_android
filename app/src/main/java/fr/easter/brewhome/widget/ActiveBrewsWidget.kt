@@ -32,9 +32,12 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import fr.easter.brewhome.MainActivity
 import fr.easter.brewhome.R
+import fr.easter.brewhome.data.ACTIVE_BREW_STATUSES
 import fr.easter.brewhome.data.Brew
+import fr.easter.brewhome.data.LastReading
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.ui.brewStatusLabel
+import fr.easter.brewhome.ui.fmtQty
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -103,6 +106,13 @@ class ActiveBrewsWidget : GlanceAppWidget() {
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
                     modifier = GlanceModifier.padding(top = 2.dp),
                 )
+                row.reading?.let {
+                    Text(
+                        it,
+                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 13.sp),
+                        modifier = GlanceModifier.padding(top = 2.dp),
+                    )
+                }
             }
             Text(
                 row.statusLabel,
@@ -128,17 +138,43 @@ private fun statusChipColor(status: String): Color = when (status) {
     else -> Color(0xFFB86E00)
 }
 
-private data class BrewRow(val id: Int, val name: String, val status: String, val statusLabel: String, val dayLabel: String)
-
-private val activeStatuses = setOf("in_progress", "fermenting")
+private data class BrewRow(
+    val id: Int,
+    val name: String,
+    val status: String,
+    val statusLabel: String,
+    val dayLabel: String,
+    /** « 🧪 1.012 · 🌡️ 19,5 °C · 12/10 », null sans mesure. */
+    val reading: String?,
+)
 
 private fun computeActiveBrewsData(context: Context): List<BrewRow> {
     val cached = SnapshotCache(context.filesDir).load() ?: return emptyList()
     val today = LocalDate.now()
     return cached.snapshot.brews
-        .filter { (it.archived ?: 0) == 0 && it.status in activeStatuses }
+        .filter { (it.archived ?: 0) == 0 && it.status in ACTIVE_BREW_STATUSES }
         .sortedBy { it.brewDate ?: "" }
-        .map { b -> BrewRow(b.id, b.name, b.status ?: "", brewStatusLabel(b.status), dayLabelOf(b, today)) }
+        .map { b ->
+            BrewRow(
+                b.id, b.name, b.status ?: "", brewStatusLabel(b.status), dayLabelOf(b, today),
+                cached.snapshot.lastReadings[b.id]?.let(::readingLabel),
+            )
+        }
+}
+
+internal fun readingLabel(r: LastReading): String? = listOfNotNull(
+    r.gravity?.let { "🧪 " + if (it >= 2.0) fmtQty(it) else String.format(java.util.Locale.US, "%.3f", it) },
+    r.temperature?.let { "🌡️ ${fmtQty(it)} °C" },
+    r.recordedAt?.let(::readingTime),
+).joinToString(" · ").ifEmpty { null }
+
+/**
+ * « 12/10 » depuis « 2026-10-12 14:30:00 » : la date seule, car le serveur enregistre les mesures
+ * du densimètre en UTC et les mesures manuelles en heure locale — une heure pourrait être fausse.
+ */
+private fun readingTime(ts: String): String? {
+    if (ts.length < 10) return null
+    return "${ts.substring(8, 10)}/${ts.substring(5, 7)}"
 }
 
 private fun dayLabelOf(b: Brew, today: LocalDate): String {

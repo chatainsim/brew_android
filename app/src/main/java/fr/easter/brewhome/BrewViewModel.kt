@@ -266,7 +266,9 @@ class BrewViewModel(
         val s = _state.value
         _state.value = s.copy(dataAt = System.currentTimeMillis())
         withContext(io) {
-            cache.save(Snapshot(s.beers, s.recipes, s.inventory, s.brews, s.drafts, s.shopping))
+            // les dernières mesures ne sont pas dans l'état de l'écran : reprises du cache
+            val readings = cache.load()?.snapshot?.lastReadings ?: emptyMap()
+            cache.save(Snapshot(s.beers, s.recipes, s.inventory, s.brews, s.drafts, s.shopping, readings))
         }
     }
 

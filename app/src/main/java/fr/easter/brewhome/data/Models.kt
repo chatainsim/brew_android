@@ -512,6 +512,27 @@ data class FermReading(
     val notes: String? = null,
 )
 
+/**
+ * Dernière mesure d'un brassin en cours, gardée dans l'instantané pour le widget : la densité et la
+ * température les plus récentes (pas forcément de la même mesure : une mesure manuelle peut n'avoir
+ * que la densité), datées de la plus récente des deux.
+ */
+@Serializable
+data class LastReading(
+    val gravity: Double? = null,
+    val temperature: Double? = null,
+    @SerialName("recorded_at") val recordedAt: String? = null,
+)
+
+/** Dernière densité et dernière température d'une liste de mesures (manuelles + densimètre), null si aucune. */
+fun lastReadingOf(readings: List<FermReading>): LastReading? {
+    val sorted = readings.sortedBy { it.recordedAt }
+    val g = sorted.lastOrNull { it.gravity != null }
+    val t = sorted.lastOrNull { it.temperature != null }
+    if (g == null && t == null) return null
+    return LastReading(g?.gravity, t?.temperature, listOfNotNull(g?.recordedAt, t?.recordedAt).max())
+}
+
 /** Article de la liste de courses (actif tant que bought_at est null). */
 @Serializable
 data class ShoppingItem(

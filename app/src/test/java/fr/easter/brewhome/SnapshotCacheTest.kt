@@ -2,12 +2,16 @@ package fr.easter.brewhome
 
 import fr.easter.brewhome.data.Beer
 import fr.easter.brewhome.data.Brew
+import fr.easter.brewhome.data.FermReading
+import fr.easter.brewhome.data.LastReading
 import fr.easter.brewhome.data.InventoryItem
 import fr.easter.brewhome.data.Recipe
 import fr.easter.brewhome.data.RecipeIngredient
 import fr.easter.brewhome.data.ShoppingItem
 import fr.easter.brewhome.data.Snapshot
 import fr.easter.brewhome.data.SnapshotCache
+import fr.easter.brewhome.data.lastReadingOf
+import fr.easter.brewhome.widget.readingLabel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -67,5 +71,35 @@ class SnapshotCacheTest {
         assertNotNull(cache.load())
         cache.clear()
         assertNull(cache.load())
+    }
+
+    @Test
+    fun `dernieres mesures gardees dans le cache, ancien cache sans elles toujours lisible`() {
+        val cache = SnapshotCache(tmp.root)
+        val snap = empty.copy(lastReadings = mapOf(5 to LastReading(1.012, 19.5, "2026-10-12 14:30:00")))
+        cache.save(snap, savedAt = 1L)
+        assertEquals(snap, cache.load()!!.snapshot)
+
+        tmp.root.resolve("snapshot.json").writeText(
+            """{"savedAt":2,"snapshot":{"beers":[],"recipes":[],"inventory":[],"brews":[],"drafts":[],"shopping":[]}}""",
+        )
+        assertEquals(emptyMap<Int, LastReading>(), cache.load()!!.snapshot.lastReadings)
+    }
+
+    @Test
+    fun `derniere densite et derniere temperature, chacune la plus recente`() {
+        assertNull(lastReadingOf(emptyList()))
+        assertNull(lastReadingOf(listOf(FermReading(recordedAt = "2026-10-01 10:00:00", notes = "rien"))))
+        val r = lastReadingOf(
+            listOf(
+                FermReading(recordedAt = "2026-10-12 08:00:00", gravity = 1.010, temperature = 19.0),  // densimètre
+                FermReading(recordedAt = "2026-10-01 10:00:00", gravity = 1.050, temperature = 20.0),
+                FermReading(recordedAt = "2026-10-12 09:00:00", gravity = 1.011),                      // manuelle
+            ),
+        )
+        assertEquals(LastReading(1.011, 19.0, "2026-10-12 09:00:00"), r)
+        assertEquals("🧪 1.011 · 🌡️ 19 °C · 12/10", readingLabel(r!!))
+        assertEquals("🌡️ 18,5 °C · 03/10", readingLabel(LastReading(temperature = 18.5, recordedAt = "2026-10-03T22:00:00")))
+        assertEquals("🧪 12,5", readingLabel(LastReading(gravity = 12.5)))                              // degrés Plato
     }
 }

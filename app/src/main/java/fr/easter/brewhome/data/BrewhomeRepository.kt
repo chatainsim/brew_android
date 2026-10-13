@@ -1,6 +1,7 @@
 package fr.easter.brewhome.data
 
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
@@ -19,7 +20,12 @@ data class Snapshot(
     val brews: List<Brew>,
     val drafts: List<Draft>,
     val shopping: List<ShoppingItem>,
+    /** Dernière mesure de chaque brassin en cours (id → mesure), pour le widget. */
+    val lastReadings: Map<Int, LastReading> = emptyMap(),
 )
+
+/** Statuts d'un brassin « en cours » (widget Brassins en cours). */
+val ACTIVE_BREW_STATUSES = setOf("in_progress", "fermenting")
 
 /** Accès aux données principales : cave, recettes, inventaire, brassins. */
 class BrewhomeRepository(private val api: suspend () -> BrewApi) {
@@ -33,9 +39,18 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         val brews = async { api.getBrews() }
         val drafts = async { runCatching { api.getDrafts() }.getOrDefault(emptyList()) }
         val shopping = async { runCatching { api.getShoppingList() }.getOrDefault(emptyList()) }
+        // Brassins en cours seulement (quelques-uns) : mesures en parallèle, une erreur n'en prive qu'un
+        val lastReadings = async {
+            brews.await()
+                .filter { (it.archived ?: 0) == 0 && it.status in ACTIVE_BREW_STATUSES }
+                .map { b -> async { b.id to runCatching { lastReadingOf(api.getBrewFermentation(b.id)) }.getOrNull() } }
+                .awaitAll()
+                .mapNotNull { (id, r) -> r?.let { id to it } }
+                .toMap()
+        }
         Snapshot(
             beers.await(), recipes.await(), inventory.await(),
-            brews.await(), drafts.await(), shopping.await(),
+            brews.await(), drafts.await(), shopping.await(), lastReadings.await(),
         )
     }
 
