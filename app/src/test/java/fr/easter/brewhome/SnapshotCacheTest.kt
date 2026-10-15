@@ -98,8 +98,17 @@ class SnapshotCacheTest {
             ),
         )
         assertEquals(LastReading(1.011, 19.0, "2026-10-12 09:00:00"), r)
-        assertEquals("🧪 1.011 · 🌡️ 19 °C · 12/10", readingLabel(r!!))
-        assertEquals("🌡️ 18,5 °C · 03/10", readingLabel(LastReading(temperature = 18.5, recordedAt = "2026-10-03T22:00:00")))
+        // relevés en UTC côté serveur, affichés à l'heure du téléphone
+        val tz = java.util.TimeZone.getDefault()
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Paris"))
+        try {
+            assertEquals("🧪 1.011 · 🌡️ 19 °C · 12/10 11:00", readingLabel(r!!))
+            assertEquals("🌡️ 18,5 °C · 04/10 00:00", readingLabel(LastReading(temperature = 18.5, recordedAt = "2026-10-03T22:00:00")))
+            assertEquals("2026-01-15 11:00", fr.easter.brewhome.ui.fmtReadingTime("2026-01-15 10:00:00"))   // hiver : UTC+1
+            assertEquals("illisible", fr.easter.brewhome.ui.fmtReadingTime("illisible"))
+        } finally {
+            java.util.TimeZone.setDefault(tz)
+        }
         assertEquals("🧪 12,5", readingLabel(LastReading(gravity = 12.5)))                              // degrés Plato
     }
 }

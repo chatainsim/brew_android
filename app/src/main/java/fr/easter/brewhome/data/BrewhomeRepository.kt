@@ -123,8 +123,9 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
         api().markDryhopDone(brewId, DryhopDonePost(date))
     }
 
-    private fun nowTimestamp(): String = java.time.LocalDateTime.now()
-        .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    /** « 2026-10-15T10:00:00+02:00 » : le serveur convertit en UTC, comme les relevés des densimètres. */
+    private fun nowTimestamp(): String = java.time.OffsetDateTime.now()
+        .truncatedTo(java.time.temporal.ChronoUnit.SECONDS).toString()
 
     suspend fun adjustBeerStock(beer: Beer, d33: Int, d75: Int, dKeg: Double, d25: Int = 0, d50: Int = 0): Beer {
         val patch = StockPatch(

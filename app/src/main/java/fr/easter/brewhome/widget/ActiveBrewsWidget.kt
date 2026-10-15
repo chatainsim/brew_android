@@ -38,6 +38,7 @@ import fr.easter.brewhome.data.LastReading
 import fr.easter.brewhome.data.SnapshotCache
 import fr.easter.brewhome.ui.brewStatusLabel
 import fr.easter.brewhome.ui.fmtQty
+import fr.easter.brewhome.ui.readingLocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -144,7 +145,7 @@ private data class BrewRow(
     val status: String,
     val statusLabel: String,
     val dayLabel: String,
-    /** « 🧪 1.012 · 🌡️ 19,5 °C · 12/10 », null sans mesure. */
+    /** « 🧪 1.012 · 🌡️ 19,5 °C · 12/10 16:30 », null sans mesure. */
     val reading: String?,
 )
 
@@ -168,14 +169,9 @@ internal fun readingLabel(r: LastReading): String? = listOfNotNull(
     r.recordedAt?.let(::readingTime),
 ).joinToString(" · ").ifEmpty { null }
 
-/**
- * « 12/10 » depuis « 2026-10-12 14:30:00 » : la date seule, car le serveur enregistre les mesures
- * du densimètre en UTC et les mesures manuelles en heure locale — une heure pourrait être fausse.
- */
-private fun readingTime(ts: String): String? {
-    if (ts.length < 10) return null
-    return "${ts.substring(8, 10)}/${ts.substring(5, 7)}"
-}
+/** « 12/10 16:30 » : relevé stocké en UTC par le serveur, affiché à l'heure du téléphone. */
+private fun readingTime(ts: String): String? = readingLocalDateTime(ts)
+    ?.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm"))
 
 private fun dayLabelOf(b: Brew, today: LocalDate): String {
     val brewDate = b.brewDate?.take(10)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }

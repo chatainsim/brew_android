@@ -112,6 +112,22 @@ fun fmtInstant(epochMs: Long): String = java.time.Instant.ofEpochMilli(epochMs)
     .atZone(java.time.ZoneId.systemDefault())
     .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm"))
 
+/**
+ * Horodatage d'un relevé (densimètre, sonde, mesure de fermentation) : le serveur les stocke en UTC
+ * (« AAAA-MM-JJ HH:MM:SS ») → « AAAA-MM-JJ HH:MM » dans le fuseau du téléphone. Illisible : tel quel.
+ */
+fun fmtReadingTime(ts: String): String = readingLocalDateTime(ts)
+    ?.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+    ?: ts.take(16).replace('T', ' ')
+
+/** Relevé UTC → date et heure locales du téléphone, null si illisible. */
+fun readingLocalDateTime(ts: String): java.time.LocalDateTime? = runCatching {
+    java.time.LocalDateTime.parse(ts.take(19).replace(' ', 'T'))
+        .atZone(java.time.ZoneOffset.UTC)
+        .withZoneSameInstant(java.time.ZoneId.systemDefault())
+        .toLocalDateTime()
+}.getOrNull()
+
 fun fmtQty(q: Double?): String {
     if (q == null) return "–"
     return if (q % 1.0 == 0.0) q.toInt().toString()

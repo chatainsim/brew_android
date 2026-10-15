@@ -39,7 +39,7 @@ import fr.easter.brewhome.R
 import fr.easter.brewhome.data.TempReading
 import fr.easter.brewhome.data.TempSensor
 
-private fun fmtTempTime(ts: String): String = ts.take(16).replace('T', ' ')
+private fun fmtTempTime(ts: String): String = fmtReadingTime(ts)
 
 /** Vue sondes de température : température, humidité, consigne en direct. */
 @Composable

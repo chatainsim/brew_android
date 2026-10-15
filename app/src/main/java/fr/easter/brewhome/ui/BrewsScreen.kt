@@ -849,7 +849,7 @@ private fun FermentationCard(readings: List<FermReading>, og: Double?, onDelete:
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                fmtTimestamp(last.recordedAt),
+                fmtReadingTime(last.recordedAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -881,7 +881,7 @@ private fun FermentationCard(readings: List<FermReading>, og: Double?, onDelete:
                 manual.asReversed().forEach { r ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val line = listOfNotNull(
-                            fmtTimestamp(r.recordedAt),
+                            fmtReadingTime(r.recordedAt),
                             r.gravity?.let { fmtGravity(it) },
                             r.temperature?.let { "${fmtQty(it)} °C" },
                         ).joinToString(" · ")
@@ -981,7 +981,7 @@ private fun GravityChart(readings: List<FermReading>) {
                     r.gravity?.let { fmtGravity(it) },
                     r.temperature?.let { "${fmtQty(it)} °C" },
                 ).joinToString(" · ").ifEmpty { "—" }
-                ) + " · " + fmtTimestamp(r.recordedAt)
+                ) + " · " + fmtReadingTime(r.recordedAt)
             val layout = textMeasurer.measure(label, labelStyle)
             val labelX = (x - layout.size.width / 2f).coerceIn(0f, (size.width - layout.size.width).coerceAtLeast(0f))
             drawRect(

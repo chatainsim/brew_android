@@ -118,7 +118,7 @@ private fun TimeAxis(timestamps: List<String>) {
     val pattern = if (spanSec <= 36 * 3600) "HH:mm" else "dd/MM HH:mm"
     val fmt = java.time.format.DateTimeFormatter.ofPattern(pattern)
     fun label(sec: Long): String = java.time.Instant.ofEpochSecond(sec)
-        .atZone(java.time.ZoneOffset.UTC).format(fmt)
+        .atZone(java.time.ZoneId.systemDefault()).format(fmt)   // relevés stockés en UTC
 
     Row(
         Modifier

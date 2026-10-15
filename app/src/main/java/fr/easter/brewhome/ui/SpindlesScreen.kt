@@ -50,7 +50,7 @@ import fr.easter.brewhome.data.SpindleReading
 private fun fmtGravity(g: Double): String =
     if (g >= 2.0) fmtQty(g) else String.format(java.util.Locale.US, "%.3f", g)
 
-private fun fmtSpindleTime(ts: String): String = ts.take(16).replace('T', ' ')
+private fun fmtSpindleTime(ts: String): String = fmtReadingTime(ts)
 
 /** Vue densimètres connectés : densité, température, batterie en direct. */
 @Composable
