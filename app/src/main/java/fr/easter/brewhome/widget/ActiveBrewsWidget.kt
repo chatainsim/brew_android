@@ -63,7 +63,7 @@ class ActiveBrewsWidget : GlanceAppWidget() {
         ) {
             Text(
                 "🧪 Brassins en cours",
-                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 18.sp),
+                style = TextStyle(color = amber, fontWeight = FontWeight.Bold, fontSize = 22.sp),
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .clickable(actionStartActivity(openRoute(context, "fr.easter.brewhome.SHORTCUT_BREWS"))),
@@ -71,11 +71,11 @@ class ActiveBrewsWidget : GlanceAppWidget() {
             if (rows.isEmpty()) {
                 Text(
                     "Aucun brassin en cours",
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 15.sp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 18.sp),
                     modifier = GlanceModifier.padding(top = 10.dp),
                 )
             } else {
-                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 6.dp)) {
+                LazyColumn(GlanceModifier.fillMaxSize().padding(top = 8.dp)) {
                     items(rows, itemId = { it.id.toLong() }) { row -> BrewRowContent(context, row) }
                 }
             }
@@ -87,9 +87,9 @@ class ActiveBrewsWidget : GlanceAppWidget() {
         Row(
             GlanceModifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 5.dp)
                 .background(ImageProvider(R.drawable.widget_row_bg))
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
                 .clickable(
                     actionStartActivity(
                         openRoute(context, "fr.easter.brewhome.OPEN_BREW").putExtra("id", row.id),
@@ -100,27 +100,27 @@ class ActiveBrewsWidget : GlanceAppWidget() {
             Column(GlanceModifier.defaultWeight()) {
                 Text(
                     row.name,
-                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = 22.sp),
                 )
                 Text(
                     row.dayLabel,
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
-                    modifier = GlanceModifier.padding(top = 2.dp),
+                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 18.sp),
+                    modifier = GlanceModifier.padding(top = 4.dp),
                 )
                 row.reading?.let {
                     Text(
                         it,
-                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 13.sp),
-                        modifier = GlanceModifier.padding(top = 2.dp),
+                        style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 19.sp),
+                        modifier = GlanceModifier.padding(top = 4.dp),
                     )
                 }
             }
             Text(
                 row.statusLabel,
-                style = TextStyle(color = ColorProvider(Color.White), fontWeight = FontWeight.Bold, fontSize = 12.sp),
+                style = TextStyle(color = ColorProvider(Color.White), fontWeight = FontWeight.Bold, fontSize = 16.sp),
                 modifier = GlanceModifier
                     .background(ImageProvider(R.drawable.widget_chip_bg), colorFilter = ColorFilter.tint(ColorProvider(statusChipColor(row.status))))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
             )
         }
     }
