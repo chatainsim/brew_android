@@ -14,3 +14,9 @@
 # kotlinx.serialization : ceinture et bretelles sur nos modèles
 # (les règles consumer des libs couvrent les sérialiseurs générés)
 -keep class fr.easter.brewhome.data.** { *; }
+
+# Widgets Glance : Glance retrouve les widgets posés par le nom de classe de leur
+# GlanceAppWidget. Sans cette règle, R8 fusionnait les 4 classes de widget en une seule :
+# updateAll() de BrewWidget (à chaque ouverture de l'appli) redessinait alors aussi le
+# widget « Brassins en cours » avec « cave + échéance ».
+-keepnames class * extends androidx.glance.appwidget.GlanceAppWidget
