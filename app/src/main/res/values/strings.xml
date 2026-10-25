@@ -552,6 +552,8 @@
     <string name="ferm_abv_estimate">≈ %1$s %% ABV à date</string>
     <string name="legend_gravity">Densité %1$s → %2$s</string>
     <string name="legend_temp">Temp. %1$s–%2$s °C</string>
+    <string name="ferm_temp_show">Afficher la température</string>
+    <string name="ferm_temp_hide">Masquer la température</string>
 
     <!-- Statistiques -->
     <string name="stat_brews_done">brassins terminés</string>

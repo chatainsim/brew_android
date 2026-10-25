@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -47,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -942,7 +945,8 @@ internal fun timeFractions(timestamps: List<String>): List<Float> {
 
 /** Courbe de densité (et température si dispo) sur toute la fermentation -
  * taper dessus affiche la mesure la plus proche (repere vertical + bulle de
- * valeurs), retaper sur le meme point la masque. */
+ * valeurs), retaper sur le meme point la masque. La courbe de température est
+ * affichée par défaut ; taper sa légende la masque ou la réaffiche. */
 @Composable
 private fun GravityChart(readings: List<FermReading>) {
     val gravityColor = MaterialTheme.colorScheme.primary
@@ -953,6 +957,7 @@ private fun GravityChart(readings: List<FermReading>) {
     val gravities = gravityPts.map { it.second }
 
     var selected by remember(readings) { mutableStateOf<Int?>(null) }
+    var showTemp by rememberSaveable { mutableStateOf(true) }
     val textMeasurer = rememberTextMeasurer()
     val guideColor = MaterialTheme.colorScheme.outline
     val labelStyle = TextStyle(fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
@@ -970,7 +975,7 @@ private fun GravityChart(readings: List<FermReading>) {
             },
     ) {
         drawSeries(gravityPts, gravityColor, fill = true)
-        if (tempPts.size >= 2) drawSeries(tempPts, tempColor)
+        if (showTemp && tempPts.size >= 2) drawSeries(tempPts, tempColor)
 
         selected?.let { idx ->
             val r = readings[idx]
@@ -979,7 +984,7 @@ private fun GravityChart(readings: List<FermReading>) {
             val label = (
                 listOfNotNull(
                     r.gravity?.let { fmtGravity(it) },
-                    r.temperature?.let { "${fmtQty(it)} °C" },
+                    r.temperature?.takeIf { showTemp }?.let { "${fmtQty(it)} °C" },
                 ).joinToString(" · ").ifEmpty { "—" }
                 ) + " · " + fmtReadingTime(r.recordedAt)
             val layout = textMeasurer.measure(label, labelStyle)
@@ -993,11 +998,28 @@ private fun GravityChart(readings: List<FermReading>) {
         }
     }
     Spacer(Modifier.height(4.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Legend(stringResource(R.string.legend_gravity, fmtGravity(gravities.max()), fmtGravity(gravities.min())), gravityColor)
         if (tempPts.size >= 2) {
             val temps = tempPts.map { it.second }
-            Legend(stringResource(R.string.legend_temp, fmtQty(temps.min()), fmtQty(temps.max())), tempColor)
+            val color = if (showTemp) tempColor else MaterialTheme.colorScheme.outline
+            Row(
+                Modifier
+                    .clickable(onClickLabel = stringResource(if (showTemp) R.string.ferm_temp_hide else R.string.ferm_temp_show)) {
+                        showTemp = !showTemp
+                    }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (showTemp) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Legend(stringResource(R.string.legend_temp, fmtQty(temps.min()), fmtQty(temps.max())), color)
+            }
         }
     }
 }
