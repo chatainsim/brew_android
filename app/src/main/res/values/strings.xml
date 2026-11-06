@@ -457,6 +457,8 @@
     <string name="tasting_dialog_title">Notes de dégustation</string>
 
     <!-- Recettes et stock -->
+    <string name="recipes_hide_archived">Masquer les %1$d archivée(s)</string>
+    <string name="recipes_show_archived">Voir les %1$d archivée(s)</string>
     <string name="recipes_seg">Recettes (%1$d)</string>
     <string name="drafts_seg">Brouillons (%1$d)</string>
     <string name="recipes_empty">Aucune recette.</string>

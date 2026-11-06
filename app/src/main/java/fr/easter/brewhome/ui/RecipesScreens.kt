@@ -99,6 +99,7 @@ fun RecipesScreen(
     // Porté par le ViewModel : le bouton d'import de la barre du haut en dépend
     val showDrafts by vm.showDrafts.collectAsState()
     var showArchived by rememberSaveable { mutableStateOf(false) }
+    var showArchivedRecipes by rememberSaveable { mutableStateOf(false) }
     // Liste des archivés rechargée si l'écran revient avec le filtre déjà actif
     LaunchedEffect(showDrafts, showArchived) {
         if (showDrafts && showArchived && state.archivedDrafts == null) vm.loadArchivedDrafts()
@@ -115,7 +116,7 @@ fun RecipesScreen(
                     selected = !showDrafts,
                     onClick = { vm.setShowDrafts(false) },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                ) { Text(stringResource(R.string.recipes_seg, state.recipes.size)) }
+                ) { Text(stringResource(R.string.recipes_seg, state.recipes.count { (it.archived ?: 0) == 0 })) }
                 SegmentedButton(
                     selected = showDrafts,
                     onClick = { vm.setShowDrafts(true) },
@@ -135,6 +136,8 @@ fun RecipesScreen(
             else RecipesList(
                 state.recipes, state, query, { query = it }, onOpen, onNewRecipe,
                 onReorder = { vm.reorderRecipes(it) },
+                showArchived = showArchivedRecipes,
+                onShowArchived = { showArchivedRecipes = it },
             )
         }
     }
@@ -142,20 +145,38 @@ fun RecipesScreen(
 
 @Composable
 private fun RecipesList(
-    recipes: List<Recipe>,
+    allRecipes: List<Recipe>,
     state: fr.easter.brewhome.UiState,
     query: String,
     onQuery: (String) -> Unit,
     onOpen: (Int) -> Unit,
     onNew: () -> Unit,
     onReorder: (List<Recipe>) -> Unit,
+    showArchived: Boolean,
+    onShowArchived: (Boolean) -> Unit,
 ) {
+    // Comme le site : les recettes archivées sont masquées par défaut
+    val archivedCount = allRecipes.count { (it.archived ?: 0) != 0 }
+    val recipes = allRecipes.filter { showArchived || (it.archived ?: 0) == 0 }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            if (recipes.isEmpty()) {
+            if (allRecipes.isEmpty()) {
                 EmptyHint(stringResource(R.string.recipes_empty))
             } else {
                 SearchField(query, onQuery, stringResource(R.string.recipes_search))
+                if (archivedCount > 0) {
+                    FilterChip(
+                        selected = showArchived,
+                        onClick = { onShowArchived(!showArchived) },
+                        label = {
+                            Text(
+                                if (showArchived) stringResource(R.string.recipes_hide_archived, archivedCount)
+                                else stringResource(R.string.recipes_show_archived, archivedCount),
+                            )
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                }
                 if (query.isBlank()) {
                     // Liste complète : réorganisable par appui long + glisser
                     ReorderableRecipes(recipes, state, onOpen, onReorder)

@@ -108,6 +108,8 @@ data class Recipe(
     val name: String,
     @SerialName("batch_no") val batchNo: Int? = null,
     val style: String? = null,
+    /** 1 = archivée : masquée de la liste par défaut, comme sur le site. */
+    val archived: Int? = 0,
     val volume: Double? = null,
     @SerialName("mash_temp") val mashTemp: Double? = null,
     @SerialName("mash_time") val mashTime: Int? = null,
