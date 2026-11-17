@@ -340,7 +340,7 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     suspend fun createInventoryItem(post: InventoryPost): InventoryItem = api().createInventoryItem(post)
 
     suspend fun updateInventoryItem(id: Int, post: InventoryPost): InventoryItem =
-        api().updateInventoryItem(id, post)
+        api().updateInventoryItem(id, inventoryPutBody(post))
 
     suspend fun deleteInventoryItem(id: Int) {
         api().deleteInventoryItem(id)
@@ -495,7 +495,7 @@ class BrewhomeRepository(private val api: suspend () -> BrewApi) {
     suspend fun setBeerArchived(id: Int, archived: Boolean): Beer =
         api().patchBeerArchived(id, BeerArchivePatch(archived))
 
-    suspend fun updateBeer(id: Int, put: BeerPut): Beer = api().updateBeer(id, put)
+    suspend fun updateBeer(id: Int, put: BeerPut): Beer = api().updateBeer(id, beerPutBody(put))
 
     /** Prix eau/gaz/électricité et formule IBU depuis /api/app-settings. */
     suspend fun costSettings(): CostSettings {

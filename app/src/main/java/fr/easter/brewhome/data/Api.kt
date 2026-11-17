@@ -40,7 +40,7 @@ interface BrewApi {
     suspend fun createInventoryItem(@Body body: InventoryPost): InventoryItem
 
     @PUT("api/inventory/{id}")
-    suspend fun updateInventoryItem(@Path("id") id: Int, @Body body: InventoryPost): InventoryItem
+    suspend fun updateInventoryItem(@Path("id") id: Int, @Body body: kotlinx.serialization.json.JsonObject): InventoryItem
 
     @DELETE("api/inventory/{id}")
     suspend fun deleteInventoryItem(@Path("id") id: Int): kotlinx.serialization.json.JsonObject
@@ -334,7 +334,7 @@ interface BrewApi {
     suspend fun patchBeerArchived(@Path("id") id: Int, @Body body: BeerArchivePatch): Beer
 
     @PUT("api/beers/{id}")
-    suspend fun updateBeer(@Path("id") id: Int, @Body body: BeerPut): Beer
+    suspend fun updateBeer(@Path("id") id: Int, @Body body: kotlinx.serialization.json.JsonObject): Beer
 
     @GET("api/activity")
     suspend fun getActivity(

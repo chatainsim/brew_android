@@ -256,7 +256,7 @@ class BrewViewModelTest {
         override suspend fun getRecipe(id: Int): Recipe = throw NotImplementedError()
         override suspend fun patchInventoryQty(id: Int, body: QtyPatch): InventoryItem = throw NotImplementedError()
         override suspend fun createInventoryItem(body: InventoryPost): InventoryItem = throw NotImplementedError()
-        override suspend fun updateInventoryItem(id: Int, body: InventoryPost): InventoryItem = throw NotImplementedError()
+        override suspend fun updateInventoryItem(id: Int, body: JsonObject): InventoryItem = throw NotImplementedError()
         override suspend fun deleteInventoryItem(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun getInventoryHistory(id: Int): fr.easter.brewhome.data.InventoryHistory = throw NotImplementedError()
         override suspend fun getBrewFermentation(id: Int): List<FermReading> = throw NotImplementedError()
@@ -338,7 +338,7 @@ class BrewViewModelTest {
         override suspend fun createSodaKeg(body: JsonObject): JsonObject = throw NotImplementedError()
         override suspend fun deleteSodaKeg(id: Int): JsonObject = throw NotImplementedError()
         override suspend fun patchBeerArchived(id: Int, body: BeerArchivePatch): Beer = throw NotImplementedError()
-        override suspend fun updateBeer(id: Int, body: BeerPut): Beer = throw NotImplementedError()
+        override suspend fun updateBeer(id: Int, body: JsonObject): Beer = throw NotImplementedError()
     }
 
     private val api = FakeApi()
