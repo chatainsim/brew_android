@@ -24,6 +24,39 @@ class BrewCalcTest {
     }
 
     @Test
+    fun `abv a date depuis les mesures de la meme source`() {
+        // Densimètre connecté décalé : fiche 1.061, capteur 1.068 → 1.054.
+        // La chute du capteur (0.014) donne 1,84 %, pas (1.061 − 1.054) = 0,92 %.
+        val r = BrewCalc.abvToDate(
+            listOf(1.068 to "ispindel", 1.067 to "ispindel", null to "ispindel", 1.054 to "ispindel"),
+            1.061,
+        )!!
+        assertEquals(1.8375, r.abv, 1e-9)
+        assertEquals(1.068, r.og, 1e-9)
+        assertTrue(r.fromReadings)
+    }
+
+    @Test
+    fun `abv a date ignore les mesures d'une autre source`() {
+        // Dernière mesure manuelle, seule de sa source → densité initiale de la fiche.
+        val r = BrewCalc.abvToDate(listOf(1.070 to "ispindel", 1.050 to "manual"), 1.060)!!
+        assertEquals(1.3125, r.abv, 1e-9)
+        assertTrue(!r.fromReadings)
+        // Deux mesures manuelles : chute entre elles.
+        val m = BrewCalc.abvToDate(listOf(1.060 to "manual", 1.070 to "ispindel", 1.020 to "manual"), null)!!
+        assertEquals(5.25, m.abv, 1e-9)
+    }
+
+    @Test
+    fun `abv a date sans donnees exploitables`() {
+        assertNull(BrewCalc.abvToDate(emptyList(), 1.060))
+        assertNull(BrewCalc.abvToDate(listOf(1.050 to "ispindel"), null))
+        // Pas encore de chute : repli sur la fiche
+        val r = BrewCalc.abvToDate(listOf(1.060 to "ispindel", 1.060 to "ispindel"), 1.065)!!
+        assertEquals(1.065, r.og, 1e-9)
+    }
+
+    @Test
     fun `correction densimetre`() {
         // Lecture à la température d'étalonnage : aucune correction
         assertEquals(1.050, BrewCalc.hydroCorrection(1.050, 20.0, 20.0), 1e-9)

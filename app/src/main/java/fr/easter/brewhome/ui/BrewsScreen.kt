@@ -857,19 +857,19 @@ private fun FermentationCard(readings: List<FermReading>, og: Double?, onDelete:
                 color = MaterialTheme.colorScheme.outline,
             )
             // Estimation "à date" (pas l'ABV final de la fiche, qui n'existe
-            // qu'une fois la DF officielle saisie à la mise en bouteille) -
-            // meme formule que BrewCalc.abv/RecipeEstimator, appliquée à la
-            // dernière densité mesurée plutôt qu'à une DF pas encore connue.
-            if (og != null) {
-                last.gravity?.let { fg ->
-                    BrewCalc.abv(og, fg)?.let { abv ->
-                        Text(
-                            stringResource(R.string.ferm_abv_estimate, fmtQty(kotlin.math.round(abv * 10) / 10)),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
+            // qu'une fois la DF officielle saisie à la mise en bouteille) :
+            // chute de densité mesurée par la même source que la dernière mesure,
+            // comme les graphiques du site (repli sur la DI de la fiche).
+            BrewCalc.abvToDate(readings.map { it.gravity to it.source }, og)?.let { est ->
+                Text(
+                    stringResource(
+                        R.string.ferm_abv_estimate_from,
+                        fmtQty(kotlin.math.round(est.abv * 10) / 10),
+                        fmtGravity(est.og),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
 
             // Mesures saisies à la main : seules elles sont supprimables côté serveur

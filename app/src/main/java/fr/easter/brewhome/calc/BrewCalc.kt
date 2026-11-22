@@ -19,6 +19,29 @@ object BrewCalc {
         return (og - fg) * 131.25
     }
 
+    /** Résultat de [abvToDate] : l'ABV et la densité de départ retenue. */
+    data class AbvToDate(val abv: Double, val og: Double, val fromReadings: Boolean)
+
+    /**
+     * ABV « à date » pendant la fermentation, à partir des mesures dans l'ordre chronologique
+     * (densité, source). Comme les graphiques densimètre du site (bh-spindles.js), la densité de
+     * départ est la plus haute mesurée par la même source que la dernière mesure : un densimètre
+     * connecté décalé (étalonnage) ne fausse pas la chute, puisque le décalage s'annule. Repli sur
+     * la densité initiale de la fiche s'il n'y a pas au moins deux mesures de cette source.
+     */
+    fun abvToDate(readings: List<Pair<Double?, String?>>, brewOg: Double?): AbvToDate? {
+        val withGravity = readings.filter { it.first != null }
+        val last = withGravity.lastOrNull() ?: return null
+        val fg = last.first!!
+        val same = withGravity.filter { it.second == last.second }.map { it.first!! }
+        val start = same.maxOrNull()
+        if (same.size >= 2 && start != null && start > fg) {
+            abv(start, fg)?.let { return AbvToDate(it, start, true) }
+        }
+        if (brewOg == null) return null
+        return abv(brewOg, fg)?.let { AbvToDate(it, brewOg, false) }
+    }
+
     /** Atténuation apparente en %. */
     fun attenuation(og: Double, fg: Double): Double? {
         if (og <= 1 || fg <= 0 || fg >= og) return null
